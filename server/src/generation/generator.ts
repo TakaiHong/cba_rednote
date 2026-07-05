@@ -3,6 +3,7 @@ import { config } from "../config.js";
 import type { MarketingPost } from "../types.js";
 import { copyAgent, reviewAgent, topicAgent } from "./agents.js";
 import { generateWithOpenAiCompatibleModel } from "./modelClient.js";
+import { checkDuplicatePost } from "./qualityGuard.js";
 
 export async function generateMarketingPost(offset = Math.floor(Date.now() / 1000) % 997): Promise<MarketingPost> {
   const topic = topicAgent(offset);
@@ -34,4 +35,33 @@ export async function generateMarketingPost(offset = Math.floor(Date.now() / 100
     createdAt: now,
     updatedAt: now
   };
+}
+
+export async function generateUniqueMarketingPost(existingPosts: MarketingPost[], baseOffset = 0, maxAttempts = 8) {
+  let bestPost: MarketingPost | undefined;
+  let bestSimilarity = Number.POSITIVE_INFINITY;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const post = await generateMarketingPost(baseOffset + attempt);
+    const similarity = checkDuplicatePost(post, existingPosts);
+
+    if (!similarity.duplicate) {
+      post.review.notes.push(`Similarity guard passed. Max similarity: ${similarity.maxSimilarity}.`);
+      return post;
+    }
+
+    if (similarity.maxSimilarity < bestSimilarity) {
+      bestSimilarity = similarity.maxSimilarity;
+      bestPost = post;
+      bestPost.review.notes.push(
+        `Similarity guard fallback candidate. Max similarity: ${similarity.maxSimilarity} against ${similarity.matchedPostId}.`
+      );
+    }
+  }
+
+  if (!bestPost) return generateMarketingPost(baseOffset);
+  bestPost.status = "draft";
+  bestPost.review.approved = false;
+  bestPost.review.notes.push("Needs manual review: all generated candidates were similar to previous posts.");
+  return bestPost;
 }

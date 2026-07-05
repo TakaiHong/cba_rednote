@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { generateMarketingPost } from "../generation/generator.js";
+import { generateUniqueMarketingPost } from "../generation/generator.js";
 import { createXhsPublishPackage } from "../publishing/xhsPackage.js";
 import { postStore } from "../storage/postStore.js";
 
@@ -53,7 +53,7 @@ router.post("/", async (req, res) => {
 router.post("/generate", async (req, res) => {
   const existingPosts = await postStore.list();
   const offset = Number(req.body?.offset ?? existingPosts.length);
-  const post = await generateMarketingPost(offset);
+  const post = await generateUniqueMarketingPost(existingPosts, offset);
   res.status(201).json(await postStore.createGenerated(post));
 });
 

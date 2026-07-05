@@ -18,7 +18,10 @@
 2. Copy agent 生成标题、正文、标签和图片建议。
 3. Review agent 检查是否自然、重复、过度硬广。
 4. Cost guard 估算成本，超过预算则降级到本地模板或更短输出。
-5. Draft store 保存草稿和成本记录。
+5. Similarity guard 将候选文案与历史草稿比较，尽量避免连续发布相似标题或正文。
+6. Draft store 保存草稿和成本记录。
+
+如果多次生成都与历史内容相似，系统会保留相似度最低的一条并标记为 `draft`，要求人工检查后再发布。
 
 ## Daily Automation
 

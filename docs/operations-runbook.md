@@ -8,6 +8,8 @@
 npm.cmd run generate
 ```
 
+如果生成内容被标记为 `draft` 且审核备注包含 similarity，需要人工确认是否与历史内容过近，再设为待发布。
+
 2. Review and edit in the运营台:
 
 ```powershell
