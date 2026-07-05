@@ -41,7 +41,9 @@
 - `scripts/publish-xhs.ts`：小红书半自动发布脚本，支持 dry-run、登录态复用、辅助填充和发布后状态回写。
 - `scripts/install-daily-task.ps1`：Windows 任务计划程序安装器，用于每天自动生成小红书草稿。
 - `scripts/start-local.ps1`：后台启动本地前后端服务。
+- `scripts/stop-local.ps1`：停止监听本地前后端端口的服务进程。
 - `scripts/health-check.ps1`：检查本地端口、健康接口和状态接口。
+- `scripts/backup-data.ps1`：备份运行时草稿数据。
 
 ## Docs
 
@@ -58,7 +60,9 @@
 - `npm.cmd run build`：生产构建。
 - `npm.cmd run status`：输出内容池、预算和常用命令状态。
 - `npm.cmd run local:start`：后台启动前后端。
+- `npm.cmd run local:stop`：停止本地前后端。
 - `npm.cmd run health`：检查本地运行状态。
+- `npm.cmd run backup`：备份 `data/posts.json` 到 `backups/`。
 - `npm.cmd run export -- --post latest`：导出最新待发布内容的 Markdown 交接包。
 - `npm.cmd run schedule:dry-run`：检查 Windows 每日生成任务安装计划。
 - `npm.cmd run verify`：完整本地验收，包括发布包 dry-run 和定时任务 dry-run。

@@ -9,6 +9,12 @@ npm.cmd run local:start
 npm.cmd run health
 ```
 
+Stop local background services:
+
+```powershell
+npm.cmd run local:stop
+```
+
 1. Generate one draft:
 
 ```powershell
@@ -67,6 +73,22 @@ npm.cmd run verify
 `status` shows content counts, latest post, budget configuration and common commands. `verify` runs type checks, tests, production build, publish dry-run, export smoke test and scheduler dry-run.
 
 Use `local:start` to open backend/frontend in hidden background processes and `health` to check ports plus `/api/health` and `/api/status`.
+
+## Data Backup
+
+Back up local runtime data before larger edits or handoff:
+
+```powershell
+npm.cmd run backup
+```
+
+Preview the backup target without writing:
+
+```powershell
+npm.cmd run backup:dry-run
+```
+
+Backups are written to `backups/`, which is ignored by Git.
 
 ## Daily Automation
 

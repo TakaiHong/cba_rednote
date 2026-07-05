@@ -8,6 +8,7 @@ data/posts.json
 data/run-log.json
 data/*.corrupt-*
 exports/
+backups/
 playwright/.auth/
 test-results/
 coverage/
