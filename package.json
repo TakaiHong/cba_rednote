@@ -16,6 +16,7 @@
     "backup:dry-run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-data.ps1 -DryRun",
     "generate": "tsx server/src/cli/generate.ts",
     "status": "tsx server/src/cli/status.ts",
+    "readiness": "tsx scripts/readiness.ts",
     "export": "tsx scripts/export-xhs.ts",
     "publish": "tsx scripts/publish-xhs.ts",
     "publish:preflight": "tsx scripts/publish-xhs.ts --post latest --preflight --no-pause",
@@ -24,7 +25,7 @@
     "schedule:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -Uninstall",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "verify": "npm run lint && npm run test && npm run build && npm run status && npm run publish -- --post latest --dry-run && npm run export -- --post latest --out .tmp/verify-exports && npm run backup:dry-run && npm run schedule:dry-run"
+    "verify": "npm run lint && npm run test && npm run build && npm run status && npm run readiness && npm run publish -- --post latest --dry-run && npm run export -- --post latest --out .tmp/verify-exports && npm run backup:dry-run && npm run schedule:dry-run"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

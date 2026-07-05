@@ -77,10 +77,11 @@ npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 
 ```powershell
 npm.cmd run status
+npm.cmd run readiness
 npm.cmd run verify
 ```
 
-`status` shows content counts, latest post, model provider, budget configuration and common commands. `verify` runs type checks, tests, production build, publish dry-run, export smoke test and scheduler dry-run.
+`status` shows content counts, latest post, model provider, budget configuration and common commands. `readiness` summarizes handoff checks and separates required failures from warnings. `verify` runs type checks, tests, production build, status, readiness, publish dry-run, export smoke test and scheduler dry-run.
 
 Use `local:start` to open backend/frontend in hidden background processes and `health` to check ports plus `/api/health` and `/api/status`.
 

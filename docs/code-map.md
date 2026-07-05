@@ -46,6 +46,7 @@
 - `scripts/stop-local.ps1`：停止监听本地前后端端口的服务进程。
 - `scripts/health-check.ps1`：检查本地端口、健康接口和状态接口。
 - `scripts/backup-data.ps1`：备份运行时草稿数据。
+- `scripts/readiness.ts`：交接前 readiness 检查，汇总前后端、生成、预算、发布和文档状态。
 
 ## Docs
 
@@ -55,6 +56,7 @@
 - `docs/xiaohongshu-publishing.md`：发布流程和风控说明。
 - `docs/operations-runbook.md`：日常运营、验收和账号验证手册。
 - `docs/model-config.md`：DeepSeek 和 OpenAI-compatible 低成本模型配置说明。
+- `docs/acceptance-checklist.md`：本地验收、DeepSeek、真实账号发布验证和交接证据清单。
 
 ## Verification
 
@@ -62,6 +64,7 @@
 - `npm.cmd run test`：Node test runner 单元测试。
 - `npm.cmd run build`：生产构建。
 - `npm.cmd run status`：输出内容池、预算和常用命令状态。
+- `npm.cmd run readiness`：输出交接前验收清单。
 - `npm.cmd run local:start`：后台启动前后端。
 - `npm.cmd run local:stop`：停止本地前后端。
 - `npm.cmd run health`：检查本地运行状态。

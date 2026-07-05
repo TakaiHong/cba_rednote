@@ -22,6 +22,7 @@ npm.cmd run health
 npm.cmd run backup
 npm.cmd run backup:dry-run
 npm.cmd run status
+npm.cmd run readiness
 npm.cmd run export -- --post latest
 npm.cmd run publish -- --post latest --dry-run
 npm.cmd run publish -- --post latest --image .\assets\cover.png
@@ -59,6 +60,7 @@ npm.cmd run build
 - Windows 本地定时任务可通过 `npm.cmd run schedule:install` 安装，每天自动生成一条草稿。
 - `npm.cmd run export -- --post latest` 可导出 Markdown 图文交接包。
 - `npm.cmd run backup` 可备份运行数据到 `backups/`。
+- `npm.cmd run readiness` 可输出交接前验收清单。
 
 ## 文档
 
@@ -67,3 +69,4 @@ npm.cmd run build
 - [代码地图](docs/code-map.md)
 - [运营手册](docs/operations-runbook.md)
 - [小红书发布说明](docs/xiaohongshu-publishing.md)
+- [验收清单](docs/acceptance-checklist.md)
