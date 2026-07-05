@@ -55,6 +55,14 @@ With prepared images:
 npm.cmd run publish -- --post latest --images-dir .\assets\xhs
 ```
 
+After account validation, final-click publishing can be enabled explicitly:
+
+```powershell
+npm.cmd run publish -- --post latest --images-dir .\assets\xhs --click-publish
+```
+
+This final-click mode also requires `XHS_ALLOW_FINAL_PUBLISH=true` in `.env`.
+
 6. After publishing, write the result back:
 
 ```powershell
@@ -129,3 +137,5 @@ Before relying on assisted publishing for a real account:
 5. Re-run preflight before using `npm.cmd run publish -- --post latest`.
 
 The script does not click the final publish button by default. Keep manual confirmation until the account has stable login state and the page selectors have been verified.
+
+When stable, run `publish:preflight`, confirm `publishButton` is detected, then set `XHS_ALLOW_FINAL_PUBLISH=true` and use `--click-publish` for explicit one-command final publishing.

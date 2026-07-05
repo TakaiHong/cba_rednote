@@ -21,6 +21,14 @@
 npm.cmd run publish -- --post latest
 ```
 
+账号登录态、图片上传、标题/正文选择器和发布按钮选择器都验证稳定后，可以显式启用最终发布点击：
+
+```powershell
+npm.cmd run publish -- --post latest --click-publish
+```
+
+该命令还要求 `.env` 中设置 `XHS_ALLOW_FINAL_PUBLISH=true`。如果只传 `--click-publish` 但没有环境变量，脚本会照常填充内容，但不会点击最终发布按钮。
+
 带本地图片辅助上传：
 
 ```powershell
@@ -73,6 +81,8 @@ npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 - 页面结构变化时仍然可以使用剪贴板模式，不影响内容生成和运营台。
 - 页面结构变化时可以用 `publish:preflight` 检查并更新选择器配置。
 - 保留人工确认，避免不合规或重复内容误发。
+
+如果确实要进入一键最终发布模式，先完成 `publish:preflight`，确认 `title`、`body`、`upload` 和 `publishButton` 至少命中一次，再打开 `XHS_ALLOW_FINAL_PUBLISH=true` 并使用 `--click-publish`。
 
 ## Future Full Automation
 

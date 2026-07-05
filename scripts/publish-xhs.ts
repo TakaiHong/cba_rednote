@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { chromium, type Page } from "playwright";
 import { config } from "../server/src/config.js";
 import { resolveImageInputs } from "../server/src/publishing/imageInputs.js";
+import { finalPublishGuardMessage, shouldAttemptFinalPublish } from "../server/src/publishing/finalPublish.js";
 import { loadXhsSelectorConfig } from "../server/src/publishing/selectorConfig.js";
 import { createXhsPublishPackage } from "../server/src/publishing/xhsPackage.js";
 import { postStore } from "../server/src/storage/postStore.js";
@@ -16,6 +17,7 @@ interface CliOptions {
   noPause: boolean;
   dryRun: boolean;
   preflight: boolean;
+  clickPublish: boolean;
   imagePaths: string[];
   imagesDir?: string;
   publishedUrl?: string;
@@ -29,6 +31,7 @@ function parseArgs(argv: string[]): CliOptions {
     noPause: false,
     dryRun: false,
     preflight: false,
+    clickPublish: false,
     imagePaths: []
   };
 
@@ -40,6 +43,7 @@ function parseArgs(argv: string[]): CliOptions {
     if (arg === "--no-pause") options.noPause = true;
     if (arg === "--dry-run") options.dryRun = true;
     if (arg === "--preflight") options.preflight = true;
+    if (arg === "--click-publish") options.clickPublish = true;
     if (arg === "--image") options.imagePaths.push(argv[index + 1]);
     if (arg === "--images-dir") options.imagesDir = argv[index + 1];
     if (arg === "--published-url") options.publishedUrl = argv[index + 1];
@@ -121,6 +125,23 @@ async function assistFill(page: Page, selectors: Awaited<ReturnType<typeof loadX
   return { titleSelector, bodySelector };
 }
 
+async function clickFinalPublish(page: Page, selectors: Awaited<ReturnType<typeof loadXhsSelectorConfig>>) {
+  for (const selector of selectors.publishButton) {
+    const locator = page.locator(selector);
+    const count = await locator.count().catch(() => 0);
+    if (count === 0) continue;
+
+    const target = locator.first();
+    if (!(await target.isVisible().catch(() => false))) continue;
+    if (!(await target.isEnabled().catch(() => false))) continue;
+
+    await target.click({ timeout: 3000 });
+    return selector;
+  }
+
+  return undefined;
+}
+
 async function inspectSelectors(page: Page, selectors: Awaited<ReturnType<typeof loadXhsSelectorConfig>>) {
   const groups = Object.entries(selectors);
   const result: Record<string, Array<{ selector: string; count: number; visible: boolean }>> = {};
@@ -163,7 +184,18 @@ const imagePaths = await resolveImageInputs({
 });
 
 if (options.dryRun) {
-  console.log(JSON.stringify({ ...publishPackage, imageUploadPaths: imagePaths }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        ...publishPackage,
+        imageUploadPaths: imagePaths,
+        finalPublishRequested: options.clickPublish,
+        finalPublishEnabled: shouldAttemptFinalPublish(options.clickPublish, process.env)
+      },
+      null,
+      2
+    )
+  );
   process.exit(0);
 }
 
@@ -209,7 +241,20 @@ if (options.mode === "assist") {
   console.log(`Image upload selector: ${uploadSelector ?? "not used or not found"}`);
   console.log(`Auto-fill title selector: ${result.titleSelector ?? "not found"}`);
   console.log(`Auto-fill body selector: ${result.bodySelector ?? "not found"}`);
-  console.log("Review the page before publishing. The script does not click the final publish button.");
+
+  if (shouldAttemptFinalPublish(options.clickPublish, process.env)) {
+    if (!result.titleSelector || !result.bodySelector) {
+      throw new Error("Final publish blocked because title/body auto-fill did not both succeed.");
+    }
+    const publishSelector = await clickFinalPublish(page, selectorConfig);
+    if (!publishSelector) {
+      throw new Error("Final publish requested, but no visible enabled publish button was found.");
+    }
+    console.log(`Final publish clicked with selector: ${publishSelector}`);
+  } else {
+    console.log(finalPublishGuardMessage(options.clickPublish));
+    console.log("Review the page before publishing. The script does not click the final publish button by default.");
+  }
 }
 
 console.log("After manual publish, run:");
