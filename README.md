@@ -19,6 +19,8 @@ npm.cmd run generate
 npm.cmd run status
 npm.cmd run export -- --post latest
 npm.cmd run publish -- --post latest --dry-run
+npm.cmd run publish -- --post latest --image .\assets\cover.png
+npm.cmd run publish -- --post latest --images-dir .\assets\xhs
 npm.cmd run publish:preflight
 npm.cmd run publish -- --post latest
 npm.cmd run publish -- --post latest --mode clipboard

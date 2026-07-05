@@ -2,6 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { chromium, type Page } from "playwright";
 import { config } from "../server/src/config.js";
+import { resolveImageInputs } from "../server/src/publishing/imageInputs.js";
 import { loadXhsSelectorConfig } from "../server/src/publishing/selectorConfig.js";
 import { createXhsPublishPackage } from "../server/src/publishing/xhsPackage.js";
 import { postStore } from "../server/src/storage/postStore.js";
@@ -15,6 +16,8 @@ interface CliOptions {
   noPause: boolean;
   dryRun: boolean;
   preflight: boolean;
+  imagePaths: string[];
+  imagesDir?: string;
   publishedUrl?: string;
 }
 
@@ -25,7 +28,8 @@ function parseArgs(argv: string[]): CliOptions {
     markPublished: false,
     noPause: false,
     dryRun: false,
-    preflight: false
+    preflight: false,
+    imagePaths: []
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -36,6 +40,8 @@ function parseArgs(argv: string[]): CliOptions {
     if (arg === "--no-pause") options.noPause = true;
     if (arg === "--dry-run") options.dryRun = true;
     if (arg === "--preflight") options.preflight = true;
+    if (arg === "--image") options.imagePaths.push(argv[index + 1]);
+    if (arg === "--images-dir") options.imagesDir = argv[index + 1];
     if (arg === "--published-url") options.publishedUrl = argv[index + 1];
   }
 
@@ -44,6 +50,35 @@ function parseArgs(argv: string[]): CliOptions {
   }
 
   return options;
+}
+
+async function uploadImages(page: Page, selectors: Awaited<ReturnType<typeof loadXhsSelectorConfig>>, imagePaths: string[]) {
+  if (imagePaths.length === 0) return undefined;
+
+  for (const selector of selectors.upload) {
+    const locator = page.locator(selector);
+    const count = await locator.count().catch(() => 0);
+    if (count === 0) continue;
+
+    const first = locator.first();
+    try {
+      await first.setInputFiles(imagePaths, { timeout: 3000 });
+      return selector;
+    } catch {
+      try {
+        await first.click({ timeout: 1500 });
+        const fileInput = page.locator('input[type="file"]');
+        if ((await fileInput.count()) > 0) {
+          await fileInput.first().setInputFiles(imagePaths, { timeout: 3000 });
+          return 'input[type="file"]';
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 async function writeClipboard(page: Page, text: string) {
@@ -122,9 +157,13 @@ if (options.markPublished) {
 
 const publishPackage = createXhsPublishPackage(post);
 const selectorConfig = await loadXhsSelectorConfig();
+const imagePaths = await resolveImageInputs({
+  imagePaths: options.imagePaths.filter(Boolean),
+  imagesDir: options.imagesDir
+});
 
 if (options.dryRun) {
-  console.log(JSON.stringify(publishPackage, null, 2));
+  console.log(JSON.stringify({ ...publishPackage, imageUploadPaths: imagePaths }, null, 2));
   process.exit(0);
 }
 
@@ -147,6 +186,10 @@ console.log("Opened Xiaohongshu creator center with persistent login profile.");
 console.log(`Post id: ${publishPackage.postId}`);
 console.log(`Title: ${publishPackage.title}`);
 console.log("Draft content is copied to the browser clipboard.");
+if (imagePaths.length > 0) {
+  console.log("Images prepared for upload:");
+  console.log(imagePaths.join("\n"));
+}
 console.log("Visual brief:");
 console.log(publishPackage.visualBrief);
 
@@ -161,7 +204,9 @@ if (options.preflight) {
 }
 
 if (options.mode === "assist") {
+  const uploadSelector = await uploadImages(page, selectorConfig, imagePaths);
   const result = await assistFill(page, selectorConfig, publishPackage.title, publishPackage.fullText);
+  console.log(`Image upload selector: ${uploadSelector ?? "not used or not found"}`);
   console.log(`Auto-fill title selector: ${result.titleSelector ?? "not found"}`);
   console.log(`Auto-fill body selector: ${result.bodySelector ?? "not found"}`);
   console.log("Review the page before publishing. The script does not click the final publish button.");

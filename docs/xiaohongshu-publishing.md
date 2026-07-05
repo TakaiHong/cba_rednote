@@ -21,6 +21,15 @@
 npm.cmd run publish -- --post latest
 ```
 
+带本地图片辅助上传：
+
+```powershell
+npm.cmd run publish -- --post latest --image .\assets\cover.png --image .\assets\detail.png
+npm.cmd run publish -- --post latest --images-dir .\assets\xhs
+```
+
+`--image` 可重复传入。`--images-dir` 会读取 `.jpg`、`.jpeg`、`.png`、`.webp` 文件。脚本会先尝试 `config/xhs-selectors.json` 里的上传选择器，找不到时仍保留剪贴板/手动上传兜底。
+
 只校验发布包，不打开浏览器：
 
 ```powershell
@@ -28,6 +37,7 @@ npm.cmd run publish -- --post latest --dry-run
 ```
 
 dry-run 会输出标题、正文、标签、图片建议、封面文字、图片 brief、AI 出图 prompt 和素材清单。
+如果传入 `--image` 或 `--images-dir`，dry-run 也会列出计划上传的绝对路径。
 
 导出运营交接包：
 

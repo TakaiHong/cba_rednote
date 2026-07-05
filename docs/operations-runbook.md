@@ -32,6 +32,12 @@ npm.cmd run publish -- --post latest --dry-run
 npm.cmd run publish -- --post latest
 ```
 
+With prepared images:
+
+```powershell
+npm.cmd run publish -- --post latest --images-dir .\assets\xhs
+```
+
 6. After publishing, write the result back:
 
 ```powershell

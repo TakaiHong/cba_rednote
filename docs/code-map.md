@@ -19,6 +19,7 @@
 - `server/src/generation/generator.ts`：生成流程编排。
 - `server/src/publishing/xhsPackage.ts`：小红书发布包格式化，供 API、前端和脚本共用，包含正文、标签、封面文字和图片 brief。
 - `server/src/publishing/selectorConfig.ts`：读取和校验小红书页面选择器配置。
+- `server/src/publishing/imageInputs.ts`：解析发布脚本的本地图片输入。
 - `server/src/routes/posts.ts`：草稿列表、创建、编辑、生成接口。
 - `server/src/scheduler.ts`：每日生成定时任务。
 - `server/src/cli/generate.ts`：命令行生成入口。
