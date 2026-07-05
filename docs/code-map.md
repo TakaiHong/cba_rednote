@@ -12,6 +12,7 @@
 
 - `server/src/index.ts`：Express 服务入口，挂载 API 和定时任务。
 - `server/src/config.ts`：环境变量和成本配置。
+- `server/src/status.ts`：系统状态汇总，供 API 和 CLI 使用。
 - `server/src/types.ts`：帖子、状态、agent 输出等共享类型。
 - `server/src/storage/postStore.ts`：JSON 文件存储。
 - `server/src/generation/agents.ts`：选题、文案、审核和成本 agent。
@@ -21,6 +22,7 @@
 - `server/src/routes/posts.ts`：草稿列表、创建、编辑、生成接口。
 - `server/src/scheduler.ts`：每日生成定时任务。
 - `server/src/cli/generate.ts`：命令行生成入口。
+- `server/src/cli/status.ts`：命令行状态输出入口。
 
 ## Client
 
@@ -42,12 +44,14 @@
 - `docs/architecture.md`：架构文档。
 - `docs/code-map.md`：代码地图。
 - `docs/xiaohongshu-publishing.md`：发布流程和风控说明。
+- `docs/operations-runbook.md`：日常运营、验收和账号验证手册。
 
 ## Verification
 
 - `npm.cmd run lint`：TypeScript 类型检查。
 - `npm.cmd run test`：Node test runner 单元测试。
 - `npm.cmd run build`：生产构建。
+- `npm.cmd run status`：输出内容池、预算和常用命令状态。
 - `npm.cmd run export -- --post latest`：导出最新待发布内容的 Markdown 交接包。
 - `npm.cmd run schedule:dry-run`：检查 Windows 每日生成任务安装计划。
 - `npm.cmd run verify`：完整本地验收，包括发布包 dry-run 和定时任务 dry-run。

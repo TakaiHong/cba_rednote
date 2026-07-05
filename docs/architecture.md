@@ -10,6 +10,8 @@
 - `docs/`：工程和运营文档。
 - `data/`：运行时数据，默认不提交 Git。
 
+`/api/status` 和 `npm.cmd run status` 提供当前内容池、预算、模型配置和常用命令的机器可读状态，方便本地验收和运营交接。
+
 ## Content Generation Flow
 
 1. Topic agent 选择目标人群、场景和内容角度。

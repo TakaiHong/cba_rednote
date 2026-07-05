@@ -16,6 +16,7 @@ npm.cmd run dev
 
 ```powershell
 npm.cmd run generate
+npm.cmd run status
 npm.cmd run export -- --post latest
 npm.cmd run publish -- --post latest --dry-run
 npm.cmd run publish:preflight
@@ -46,4 +47,5 @@ npm.cmd run build
 - [需求文档](docs/requirements.md)
 - [架构说明](docs/architecture.md)
 - [代码地图](docs/code-map.md)
+- [运营手册](docs/operations-runbook.md)
 - [小红书发布说明](docs/xiaohongshu-publishing.md)
