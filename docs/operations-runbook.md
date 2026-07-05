@@ -21,6 +21,15 @@ npm.cmd run local:stop
 npm.cmd run generate
 ```
 
+Prepare several drafts in one run:
+
+```powershell
+npm.cmd run generate:batch -- --count 7 --dry-run
+npm.cmd run generate:batch -- --count 7 --max-model-posts 1
+```
+
+`--max-model-posts` limits how many drafts may use a paid OpenAI-compatible provider such as DeepSeek. Keep it low when testing.
+
 如果生成内容被标记为 `draft` 且审核备注包含 similarity，需要人工确认是否与历史内容过近，再设为待发布。
 
 2. Review and edit in the运营台:

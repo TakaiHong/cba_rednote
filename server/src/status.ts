@@ -41,6 +41,7 @@ export async function getSystemStatus() {
     strategy,
     commands: {
       generate: "npm.cmd run generate",
+      generateBatch: "npm.cmd run generate:batch -- --count 7 --max-model-posts 1",
       calendar: "npm.cmd run calendar -- --days 7",
       export: "npm.cmd run export -- --post latest",
       publishDryRun: "npm.cmd run publish -- --post latest --dry-run",

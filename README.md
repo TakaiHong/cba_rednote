@@ -16,6 +16,8 @@ npm.cmd run dev
 
 ```powershell
 npm.cmd run generate
+npm.cmd run generate:batch -- --count 7 --dry-run
+npm.cmd run generate:batch -- --count 7 --max-model-posts 1
 npm.cmd run local:start
 npm.cmd run local:stop
 npm.cmd run health
@@ -59,6 +61,7 @@ npm.cmd run build
 - 运营台支持录入曝光、点赞、收藏、评论、关注和咨询数，用来比较不同内容角度的实际效果。
 - 内容池支持按状态筛选和关键词搜索，适合长期积累草稿后运营查找。
 - `npm.cmd run calendar -- --days 7` 可规划未来 7 天选题，帮助每日生成保持人群和内容形式多样。
+- `npm.cmd run generate:batch -- --count 7 --max-model-posts 1` 可一次准备一周草稿，并限制最多 1 条走付费模型。
 - Windows 本地定时任务可通过 `npm.cmd run schedule:install` 安装，每天自动生成一条草稿。
 - `npm.cmd run export -- --post latest` 可导出 Markdown 图文交接包。
 - `npm.cmd run backup` 可备份运行数据到 `backups/`。
