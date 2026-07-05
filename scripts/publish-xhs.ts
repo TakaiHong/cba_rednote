@@ -1,5 +1,5 @@
-import { mkdir } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { chromium, type Page } from "playwright";
 import { config } from "../server/src/config.js";
 import { resolveImageInputs } from "../server/src/publishing/imageInputs.js";
@@ -20,6 +20,7 @@ interface CliOptions {
   clickPublish: boolean;
   imagePaths: string[];
   imagesDir?: string;
+  preflightReport?: string;
   publishedUrl?: string;
 }
 
@@ -46,6 +47,7 @@ function parseArgs(argv: string[]): CliOptions {
     if (arg === "--click-publish") options.clickPublish = true;
     if (arg === "--image") options.imagePaths.push(argv[index + 1]);
     if (arg === "--images-dir") options.imagesDir = argv[index + 1];
+    if (arg === "--preflight-report") options.preflightReport = argv[index + 1];
     if (arg === "--published-url") options.publishedUrl = argv[index + 1];
   }
 
@@ -159,6 +161,20 @@ async function inspectSelectors(page: Page, selectors: Awaited<ReturnType<typeof
   return result;
 }
 
+async function writePreflightReport(
+  path: string,
+  report: {
+    postId: string;
+    title: string;
+    url: string;
+    generatedAt: string;
+    selectors: Awaited<ReturnType<typeof inspectSelectors>>;
+  }
+) {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
+
 const options = parseArgs(process.argv.slice(2));
 const post = options.post === "latest" ? await postStore.latestDraft() : await postStore.get(options.post);
 
@@ -226,8 +242,19 @@ console.log("Visual brief:");
 console.log(publishPackage.visualBrief);
 
 if (options.preflight) {
+  const selectorReport = await inspectSelectors(page, selectorConfig);
   console.log("Selector preflight:");
-  console.log(JSON.stringify(await inspectSelectors(page, selectorConfig), null, 2));
+  console.log(JSON.stringify(selectorReport, null, 2));
+  if (options.preflightReport) {
+    await writePreflightReport(options.preflightReport, {
+      postId: post.id,
+      title: post.title,
+      url: page.url(),
+      generatedAt: new Date().toISOString(),
+      selectors: selectorReport
+    });
+    console.log(`Preflight report written: ${options.preflightReport}`);
+  }
   if (!options.noPause) {
     await page.pause();
   }

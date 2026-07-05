@@ -134,8 +134,9 @@ Before relying on assisted publishing for a real account:
 1. Run `npm.cmd run publish:preflight`.
 2. Log in or scan QR code in the opened browser.
 3. Confirm title/body/upload/publish selectors are detected.
-4. If selectors miss, update `config/xhs-selectors.json`.
-5. Re-run preflight before using `npm.cmd run publish -- --post latest`.
+4. Review `.tmp/xhs-preflight-report.json` as the saved selector evidence.
+5. If selectors miss, update `config/xhs-selectors.json`.
+6. Re-run preflight before using `npm.cmd run publish -- --post latest`.
 
 The script does not click the final publish button by default. Keep manual confirmation until the account has stable login state and the page selectors have been verified.
 

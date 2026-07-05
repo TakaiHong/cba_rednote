@@ -19,7 +19,7 @@
     "readiness": "tsx scripts/readiness.ts",
     "export": "tsx scripts/export-xhs.ts",
     "publish": "tsx scripts/publish-xhs.ts",
-    "publish:preflight": "tsx scripts/publish-xhs.ts --post latest --preflight --no-pause",
+    "publish:preflight": "tsx scripts/publish-xhs.ts --post latest --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json",
     "schedule:dry-run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -DryRun",
     "schedule:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1",
     "schedule:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -Uninstall",

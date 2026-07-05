@@ -67,6 +67,12 @@ npm.cmd run publish -- --post latest --mode clipboard
 npm.cmd run publish:preflight
 ```
 
+默认会写入 `.tmp/xhs-preflight-report.json`，用于记录真实账号页面里 `title`、`body`、`upload` 和 `publishButton` 选择器的命中情况。也可以自定义路径：
+
+```powershell
+npm.cmd run publish -- --post latest --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json
+```
+
 如果 preflight 显示标题或正文选择器都没有命中，优先更新 `config/xhs-selectors.json`，再运行辅助发布。
 
 发布后回写状态：

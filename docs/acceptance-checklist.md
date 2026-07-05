@@ -55,9 +55,10 @@ Before enabling final-click publishing:
 1. Run `npm.cmd run publish:preflight`.
 2. Log in to the creator center in the opened browser.
 3. Confirm `title`, `body`, `upload`, and `publishButton` selectors are visible.
-4. Run a normal assisted publish with `npm.cmd run publish -- --post latest --images-dir .\assets\xhs`.
-5. Only after a stable manual review, set `XHS_ALLOW_FINAL_PUBLISH=true`.
-6. Use `npm.cmd run publish -- --post latest --images-dir .\assets\xhs --click-publish`.
+4. Save or review `.tmp/xhs-preflight-report.json` as the selector evidence.
+5. Run a normal assisted publish with `npm.cmd run publish -- --post latest --images-dir .\assets\xhs`.
+6. Only after a stable manual review, set `XHS_ALLOW_FINAL_PUBLISH=true`.
+7. Use `npm.cmd run publish -- --post latest --images-dir .\assets\xhs --click-publish`.
 
 The final-click mode is intentionally disabled by default.
 
@@ -69,5 +70,5 @@ Capture these before considering the first version ready:
 - `npm.cmd run health` output with backend and frontend online
 - `npm.cmd run readiness` output with no required failures
 - one exported Markdown handoff package from `npm.cmd run export -- --post latest`
-- one Xiaohongshu `publish:preflight` result from the real account
+- one Xiaohongshu `publish:preflight` report from the real account, defaulting to `.tmp/xhs-preflight-report.json`
 - at least one manually reviewed published URL, then marked with `--mark-published`
