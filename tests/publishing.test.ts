@@ -36,6 +36,10 @@ describe("createXhsPublishPackage", () => {
     assert.equal(pkg.postId, "post-1");
     assert.equal(pkg.title, "新加坡租房断档，东西可以这样先过渡");
     assert.equal(pkg.tagsLine, "#新加坡生活 #迷你仓 #租房断档");
+    assert.equal(pkg.coverText, "新加坡租房断档，东西可以这样先过渡");
+    assert.ok(pkg.visualBrief.includes("封面文字"));
+    assert.ok(pkg.imagePrompt.includes("Singapore mini storage"));
+    assert.equal(pkg.assetChecklist.length >= 3, true);
     assert.ok(pkg.fullText.includes("旧房到期"));
     assert.ok(pkg.fullText.includes("私信物品清单"));
     assert.ok(pkg.fullText.endsWith("#新加坡生活 #迷你仓 #租房断档"));

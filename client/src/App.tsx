@@ -29,6 +29,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [publishHint, setPublishHint] = useState("");
+  const [visualBrief, setVisualBrief] = useState("");
 
   const selected = useMemo(
     () => posts.find((post) => post.id === selectedId) ?? posts[0],
@@ -95,6 +96,24 @@ function App() {
     const publishPackage = await getPublishPackage(selected.id);
     await navigator.clipboard.writeText([publishPackage.title, "", publishPackage.fullText].join("\n"));
     setPublishHint("已复制发布文本，可以直接粘贴到小红书编辑器。");
+    setVisualBrief(publishPackage.visualBrief);
+  }
+
+  async function handleCopyVisualBrief() {
+    if (!selected) return;
+    const publishPackage = await getPublishPackage(selected.id);
+    const brief = [
+      publishPackage.visualBrief,
+      "",
+      "AI 出图 prompt:",
+      publishPackage.imagePrompt,
+      "",
+      "素材清单:",
+      ...publishPackage.assetChecklist.map((item) => `- ${item}`)
+    ].join("\n");
+    await navigator.clipboard.writeText(brief);
+    setVisualBrief(publishPackage.visualBrief);
+    setPublishHint("已复制图片 brief，可以发给拍摄/设计/AI 出图。");
   }
 
   function updateMetric(name: keyof MarketingPost["metrics"], value: string) {
@@ -265,8 +284,10 @@ function App() {
             <div className="publish-helper">
               <strong>发布助手</strong>
               <button onClick={handleCopyPublishText}>复制发布文本</button>
+              <button onClick={handleCopyVisualBrief}>复制图片 brief</button>
               <code>npm.cmd run publish -- --post {selected.id}</code>
               {publishHint && <p>{publishHint}</p>}
+              {visualBrief && <pre>{visualBrief}</pre>}
             </div>
           </aside>
         )}

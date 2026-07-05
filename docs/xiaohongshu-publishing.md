@@ -9,8 +9,9 @@
 3. 脚本使用 `playwright/.auth/xhs-profile` 复用本地登录态，并打开小红书创作者中心。
 4. 用户第一次运行时完成登录或扫码。
 5. 脚本复制标题、正文、标签到浏览器剪贴板，并在 `assist` 模式下尝试填充页面字段。
-6. 用户检查内容并手动点击发布。
-7. 发布成功后执行 `npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>` 回写状态。
+6. 运营台或 dry-run 输出图片 brief，用于拍摄封面图、仓储空间图或 AI 出图。
+7. 用户检查内容并手动点击发布。
+8. 发布成功后执行 `npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>` 回写状态。
 
 ## Commands
 
@@ -25,6 +26,8 @@ npm.cmd run publish -- --post latest
 ```powershell
 npm.cmd run publish -- --post latest --dry-run
 ```
+
+dry-run 会输出标题、正文、标签、图片建议、封面文字、图片 brief、AI 出图 prompt 和素材清单。
 
 只打开页面和复制内容，不尝试填充字段：
 

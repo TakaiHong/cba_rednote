@@ -144,6 +144,8 @@ console.log("Opened Xiaohongshu creator center with persistent login profile.");
 console.log(`Post id: ${publishPackage.postId}`);
 console.log(`Title: ${publishPackage.title}`);
 console.log("Draft content is copied to the browser clipboard.");
+console.log("Visual brief:");
+console.log(publishPackage.visualBrief);
 
 if (options.mode === "assist") {
   const result = await assistFill(page, publishPackage.title, publishPackage.fullText);

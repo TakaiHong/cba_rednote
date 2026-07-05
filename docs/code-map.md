@@ -15,7 +15,7 @@
 - `server/src/storage/postStore.ts`：JSON 文件存储。
 - `server/src/generation/agents.ts`：选题、文案、审核和成本 agent。
 - `server/src/generation/generator.ts`：生成流程编排。
-- `server/src/publishing/xhsPackage.ts`：小红书发布包格式化，供 API、前端和脚本共用。
+- `server/src/publishing/xhsPackage.ts`：小红书发布包格式化，供 API、前端和脚本共用，包含正文、标签、封面文字和图片 brief。
 - `server/src/routes/posts.ts`：草稿列表、创建、编辑、生成接口。
 - `server/src/scheduler.ts`：每日生成定时任务。
 - `server/src/cli/generate.ts`：命令行生成入口。

@@ -42,6 +42,10 @@ export interface XhsPublishPackage {
   body: string;
   tagsLine: string;
   imageIdeas: string[];
+  coverText: string;
+  visualBrief: string;
+  imagePrompt: string;
+  assetChecklist: string[];
   fullText: string;
 }
 
