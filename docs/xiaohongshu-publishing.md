@@ -6,15 +6,36 @@
 
 1. 运营台生成并审核草稿。
 2. 执行 `npm.cmd run publish -- --post latest`。
-3. 脚本打开小红书创作者中心。
-4. 用户完成登录或扫码。
-5. 脚本辅助复制标题、正文、标签和图片建议。
+3. 脚本使用 `playwright/.auth/xhs-profile` 复用本地登录态，并打开小红书创作者中心。
+4. 用户第一次运行时完成登录或扫码。
+5. 脚本复制标题、正文、标签到浏览器剪贴板，并在 `assist` 模式下尝试填充页面字段。
 6. 用户检查内容并手动点击发布。
+7. 发布成功后执行 `npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>` 回写状态。
+
+## Commands
+
+默认辅助填充：
+
+```powershell
+npm.cmd run publish -- --post latest
+```
+
+只打开页面和复制内容，不尝试填充字段：
+
+```powershell
+npm.cmd run publish -- --post latest --mode clipboard
+```
+
+发布后回写状态：
+
+```powershell
+npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
+```
 
 ## Why Semi-automatic
 
 - 降低账号异常和验证码风险。
-- 页面结构变化时不影响内容生成和运营台。
+- 页面结构变化时仍然可以使用剪贴板模式，不影响内容生成和运营台。
 - 保留人工确认，避免不合规或重复内容误发。
 
 ## Future Full Automation

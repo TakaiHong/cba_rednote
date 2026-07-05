@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import type { CreatePostInput, MarketingPost, TopicPlan, UpdatePostInput } from "../types.js";
@@ -18,7 +18,15 @@ async function ensureDataFile() {
 async function readPosts(): Promise<MarketingPost[]> {
   await ensureDataFile();
   const raw = await readFile(dataFile, "utf8");
-  return JSON.parse(raw) as MarketingPost[];
+  try {
+    return JSON.parse(raw) as MarketingPost[];
+  } catch {
+    const corruptFile = `${dataFile}.corrupt-${Date.now()}`;
+    await rename(dataFile, corruptFile);
+    await writeFile(dataFile, "[]\n", "utf8");
+    console.warn(`[postStore] moved corrupt data file to ${corruptFile}`);
+    return [];
+  }
 }
 
 async function writePosts(posts: MarketingPost[]) {

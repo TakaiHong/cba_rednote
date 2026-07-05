@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { generatePost, listPosts, type MarketingPost, updatePost } from "./api.js";
+import {
+  generatePost,
+  getPublishPackage,
+  listPosts,
+  type MarketingPost,
+  updatePost
+} from "./api.js";
 
 const statusLabels: Record<MarketingPost["status"], string> = {
   draft: "草稿",
@@ -13,6 +19,7 @@ function App() {
   const [selectedId, setSelectedId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [publishHint, setPublishHint] = useState("");
 
   const selected = useMemo(
     () => posts.find((post) => post.id === selectedId) ?? posts[0],
@@ -48,6 +55,13 @@ function App() {
     if (!selected) return;
     const updated = await updatePost(selected.id, patch);
     setPosts((current) => current.map((post) => (post.id === updated.id ? updated : post)));
+  }
+
+  async function handleCopyPublishText() {
+    if (!selected) return;
+    const publishPackage = await getPublishPackage(selected.id);
+    await navigator.clipboard.writeText([publishPackage.title, "", publishPackage.fullText].join("\n"));
+    setPublishHint("已复制发布文本，可以直接粘贴到小红书编辑器。");
   }
 
   useEffect(() => {
@@ -166,6 +180,12 @@ function App() {
               <h2>{selected.title}</h2>
               <p>{selected.body}</p>
               <p className="tags">{selected.tags.map((tag) => `#${tag}`).join(" ")}</p>
+            </div>
+            <div className="publish-helper">
+              <strong>发布助手</strong>
+              <button onClick={handleCopyPublishText}>复制发布文本</button>
+              <code>npm.cmd run publish -- --post {selected.id}</code>
+              {publishHint && <p>{publishHint}</p>}
             </div>
           </aside>
         )}

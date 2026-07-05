@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { generateMarketingPost } from "../generation/generator.js";
+import { createXhsPublishPackage } from "../publishing/xhsPackage.js";
 import { postStore } from "../storage/postStore.js";
 
 const router = Router();
@@ -26,6 +27,12 @@ router.get("/latest", async (_req, res) => {
   const post = await postStore.latestDraft();
   if (!post) return res.status(404).json({ error: "No draft found" });
   res.json(post);
+});
+
+router.get("/:id/publish-package", async (req, res) => {
+  const post = await postStore.get(req.params.id);
+  if (!post) return res.status(404).json({ error: "Post not found" });
+  res.json(createXhsPublishPackage(post));
 });
 
 router.post("/", async (req, res) => {

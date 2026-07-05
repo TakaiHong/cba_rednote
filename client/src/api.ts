@@ -28,6 +28,15 @@ export interface MarketingPost {
   publishedUrl?: string;
 }
 
+export interface XhsPublishPackage {
+  postId: string;
+  title: string;
+  body: string;
+  tagsLine: string;
+  imageIdeas: string[];
+  fullText: string;
+}
+
 const apiBase = "http://127.0.0.1:8787/api";
 
 export async function listPosts() {
@@ -54,4 +63,10 @@ export async function updatePost(id: string, patch: Partial<MarketingPost>) {
   });
   if (!response.ok) throw new Error("Failed to update post");
   return (await response.json()) as MarketingPost;
+}
+
+export async function getPublishPackage(id: string) {
+  const response = await fetch(`${apiBase}/posts/${id}/publish-package`);
+  if (!response.ok) throw new Error("Failed to load publish package");
+  return (await response.json()) as XhsPublishPackage;
 }
