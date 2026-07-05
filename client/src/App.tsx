@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   generatePost,
+  getContentCalendar,
   getStatus,
   getPublishPackage,
   listPosts,
+  type CalendarItem,
   type ContentStrategySummary,
   type MarketingPost,
   updatePost
@@ -36,6 +38,7 @@ function App() {
   const [publishHint, setPublishHint] = useState("");
   const [visualBrief, setVisualBrief] = useState("");
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
+  const [calendar, setCalendar] = useState<CalendarItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -85,8 +88,10 @@ function App() {
     try {
       const nextPosts = await listPosts();
       const status = await getStatus();
+      const nextCalendar = await getContentCalendar(7);
       setPosts(nextPosts);
       setStrategy(status.strategy);
+      setCalendar(nextCalendar);
       if (!selectedId && nextPosts[0]) setSelectedId(nextPosts[0].id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载失败");
@@ -215,6 +220,31 @@ function App() {
           </div>
         </section>
       )}
+
+      <section className="calendar-panel">
+        <div className="calendar-header">
+          <div>
+            <span>内容排期</span>
+            <strong>未来 7 天选题方向</strong>
+          </div>
+          <code>npm.cmd run calendar -- --days 7</code>
+        </div>
+        <div className="calendar-grid">
+          {calendar.map((item) => (
+            <article className="calendar-item" key={`${item.date}-${item.slot}`}>
+              <div className="calendar-date">
+                <strong>{item.date.slice(5)}</strong>
+                <span>Day {item.slot}</span>
+              </div>
+              <p>{item.topic.hook}</p>
+              <small>
+                {item.topic.style} / {item.topic.targetSegment}
+              </small>
+              <em>{item.objective}</em>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <section className="workspace">
         <aside className="post-list">

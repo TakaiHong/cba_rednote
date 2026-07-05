@@ -69,6 +69,21 @@ export interface ContentStrategySummary {
   recommendation: string;
 }
 
+export interface CalendarItem {
+  date: string;
+  slot: number;
+  topic: {
+    style: string;
+    targetSegment: string;
+    scene: string;
+    angle: string;
+    hook: string;
+    localSignals: string[];
+  };
+  objective: string;
+  suggestedFormat: string;
+}
+
 export interface SystemStatus {
   ok: boolean;
   strategy: ContentStrategySummary;
@@ -112,4 +127,10 @@ export async function getStatus() {
   const response = await fetch(`${apiBase}/status`);
   if (!response.ok) throw new Error("Failed to load status");
   return (await response.json()) as SystemStatus;
+}
+
+export async function getContentCalendar(days = 7) {
+  const response = await fetch(`${apiBase}/posts/calendar/plan?days=${days}`);
+  if (!response.ok) throw new Error("Failed to load content calendar");
+  return (await response.json()) as CalendarItem[];
 }
