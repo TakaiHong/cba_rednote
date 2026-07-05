@@ -6,6 +6,7 @@ client/dist/
 .tmp/
 data/posts.json
 data/run-log.json
+data/*.corrupt-*
 playwright/.auth/
 test-results/
 coverage/

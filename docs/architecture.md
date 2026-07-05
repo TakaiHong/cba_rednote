@@ -18,6 +18,15 @@
 4. Cost guard 估算成本，超过预算则降级到本地模板或更短输出。
 5. Draft store 保存草稿和成本记录。
 
+## Daily Automation
+
+系统有两种每日生成方式：
+
+- 后端服务运行时，`server/src/scheduler.ts` 使用 `DAILY_CRON` 定时生成。
+- Windows 本地任务计划程序可通过 `npm.cmd run schedule:install` 安装，即使不打开前端，也会每天执行 `npm.cmd run generate`。
+
+定时任务日志写入 `.tmp/daily-generate.out.log` 和 `.tmp/daily-generate.err.log`，卸载命令为 `npm.cmd run schedule:uninstall`。
+
 ## Storage
 
 当前版本使用 JSON 文件存储，便于本地运行和 Git 之外的数据备份：

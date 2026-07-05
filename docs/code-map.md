@@ -31,6 +31,7 @@
 ## Scripts
 
 - `scripts/publish-xhs.ts`：小红书半自动发布脚本，支持 dry-run、登录态复用、辅助填充和发布后状态回写。
+- `scripts/install-daily-task.ps1`：Windows 任务计划程序安装器，用于每天自动生成小红书草稿。
 
 ## Docs
 
@@ -44,4 +45,5 @@
 - `npm.cmd run lint`：TypeScript 类型检查。
 - `npm.cmd run test`：Node test runner 单元测试。
 - `npm.cmd run build`：生产构建。
-- `npm.cmd run verify`：完整本地验收，包括发布包 dry-run。
+- `npm.cmd run schedule:dry-run`：检查 Windows 每日生成任务安装计划。
+- `npm.cmd run verify`：完整本地验收，包括发布包 dry-run 和定时任务 dry-run。
