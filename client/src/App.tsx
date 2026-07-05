@@ -14,6 +14,15 @@ const statusLabels: Record<MarketingPost["status"], string> = {
   archived: "归档"
 };
 
+const metricLabels: Array<[keyof MarketingPost["metrics"], string]> = [
+  ["views", "曝光"],
+  ["likes", "点赞"],
+  ["saves", "收藏"],
+  ["comments", "评论"],
+  ["follows", "关注"],
+  ["inquiries", "咨询"]
+];
+
 function App() {
   const [posts, setPosts] = useState<MarketingPost[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
@@ -25,6 +34,30 @@ function App() {
     () => posts.find((post) => post.id === selectedId) ?? posts[0],
     [posts, selectedId]
   );
+
+  const performance = useMemo(() => {
+    const views = posts.reduce((sum, post) => sum + (post.metrics?.views ?? 0), 0);
+    const inquiries = posts.reduce((sum, post) => sum + (post.metrics?.inquiries ?? 0), 0);
+    const interactions = posts.reduce(
+      (sum, post) =>
+        sum +
+        (post.metrics?.likes ?? 0) +
+        (post.metrics?.saves ?? 0) +
+        (post.metrics?.comments ?? 0) +
+        (post.metrics?.follows ?? 0),
+      0
+    );
+    const bestPost = [...posts].sort((a, b) => (b.metrics?.inquiries ?? 0) - (a.metrics?.inquiries ?? 0))[0];
+
+    return {
+      views,
+      inquiries,
+      interactions,
+      inquiryRate: views ? ((inquiries / views) * 100).toFixed(2) : "0.00",
+      interactionRate: views ? ((interactions / views) * 100).toFixed(2) : "0.00",
+      bestPost
+    };
+  }, [posts]);
 
   async function refresh() {
     setError("");
@@ -64,6 +97,17 @@ function App() {
     setPublishHint("已复制发布文本，可以直接粘贴到小红书编辑器。");
   }
 
+  function updateMetric(name: keyof MarketingPost["metrics"], value: string) {
+    if (!selected) return;
+    const numericValue = Math.max(0, Number.parseInt(value || "0", 10));
+    void handlePatch({
+      metrics: {
+        ...selected.metrics,
+        [name]: Number.isNaN(numericValue) ? 0 : numericValue
+      }
+    });
+  }
+
   useEffect(() => {
     void refresh();
   }, []);
@@ -81,6 +125,25 @@ function App() {
       </section>
 
       {error && <div className="error">{error}</div>}
+
+      <section className="scoreboard">
+        <div>
+          <span>总曝光</span>
+          <strong>{performance.views}</strong>
+        </div>
+        <div>
+          <span>互动率</span>
+          <strong>{performance.interactionRate}%</strong>
+        </div>
+        <div>
+          <span>咨询率</span>
+          <strong>{performance.inquiryRate}%</strong>
+        </div>
+        <div>
+          <span>最强选题</span>
+          <strong>{performance.bestPost?.topic.style ?? "暂无"}</strong>
+        </div>
+      </section>
 
       <section className="workspace">
         <aside className="post-list">
@@ -154,6 +217,24 @@ function App() {
                 onChange={(event) => handlePatch({ callToAction: event.target.value })}
               />
             </label>
+
+            <div className="metrics-editor">
+              <div className="panel-title">发布效果</div>
+              <div className="metric-grid">
+                {metricLabels.map(([name, label]) => (
+                  <label key={name}>
+                    {label}
+                    <input
+                      inputMode="numeric"
+                      min="0"
+                      type="number"
+                      value={selected.metrics?.[name] ?? 0}
+                      onChange={(event) => updateMetric(name, event.target.value)}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
 
             <div className="actions">
               <button onClick={() => handlePatch({ status: "approved" })}>设为待发布</button>

@@ -21,6 +21,14 @@ export interface MarketingPost {
     notes: string[];
     approved: boolean;
   };
+  metrics: {
+    views: number;
+    likes: number;
+    saves: number;
+    comments: number;
+    follows: number;
+    inquiries: number;
+  };
   estimatedCostCny: number;
   generator: string;
   createdAt: string;

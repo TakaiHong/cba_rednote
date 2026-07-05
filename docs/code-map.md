@@ -23,13 +23,13 @@
 
 - `client/index.html`：Vite HTML 入口。
 - `client/src/main.tsx`：React 入口。
-- `client/src/App.tsx`：运营台主界面。
+- `client/src/App.tsx`：运营台主界面，含草稿编辑、发布助手和效果指标录入。
 - `client/src/api.ts`：前端 API 客户端。
 - `client/src/styles.css`：界面样式。
 
 ## Scripts
 
-- `scripts/publish-xhs.ts`：小红书半自动发布脚本，支持登录态复用、辅助填充和发布后状态回写。
+- `scripts/publish-xhs.ts`：小红书半自动发布脚本，支持 dry-run、登录态复用、辅助填充和发布后状态回写。
 
 ## Docs
 

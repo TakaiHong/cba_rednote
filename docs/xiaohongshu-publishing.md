@@ -20,6 +20,12 @@
 npm.cmd run publish -- --post latest
 ```
 
+只校验发布包，不打开浏览器：
+
+```powershell
+npm.cmd run publish -- --post latest --dry-run
+```
+
 只打开页面和复制内容，不尝试填充字段：
 
 ```powershell

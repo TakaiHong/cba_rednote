@@ -12,6 +12,7 @@ interface CliOptions {
   post: string;
   markPublished: boolean;
   noPause: boolean;
+  dryRun: boolean;
   publishedUrl?: string;
 }
 
@@ -20,7 +21,8 @@ function parseArgs(argv: string[]): CliOptions {
     mode: "assist",
     post: "latest",
     markPublished: false,
-    noPause: false
+    noPause: false,
+    dryRun: false
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -29,6 +31,7 @@ function parseArgs(argv: string[]): CliOptions {
     if (arg === "--mode") options.mode = (argv[index + 1] as PublishMode) ?? options.mode;
     if (arg === "--mark-published") options.markPublished = true;
     if (arg === "--no-pause") options.noPause = true;
+    if (arg === "--dry-run") options.dryRun = true;
     if (arg === "--published-url") options.publishedUrl = argv[index + 1];
   }
 
@@ -116,6 +119,12 @@ if (options.markPublished) {
 }
 
 const publishPackage = createXhsPublishPackage(post);
+
+if (options.dryRun) {
+  console.log(JSON.stringify(publishPackage, null, 2));
+  process.exit(0);
+}
+
 const profileDir = join(process.cwd(), "playwright/.auth/xhs-profile");
 await mkdir(profileDir, { recursive: true });
 

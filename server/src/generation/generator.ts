@@ -28,6 +28,7 @@ export async function generateMarketingPost(offset = Math.floor(Date.now() / 100
     status: review.approved ? "approved" : "draft",
     topic,
     review,
+    metrics: { views: 0, likes: 0, saves: 0, comments: 0, follows: 0, inquiries: 0 },
     estimatedCostCny: generator === "openai-compatible" ? config.openAiModelCostCnyPerPostEstimate : 0,
     generator,
     createdAt: now,

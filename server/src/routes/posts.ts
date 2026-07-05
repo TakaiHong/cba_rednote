@@ -12,7 +12,17 @@ const postInputSchema = z.object({
   tags: z.array(z.string()).default([]),
   imageIdeas: z.array(z.string()).default([]),
   callToAction: z.string().default(""),
-  status: z.enum(["draft", "approved", "published", "archived"]).optional()
+  status: z.enum(["draft", "approved", "published", "archived"]).optional(),
+  metrics: z
+    .object({
+      views: z.number().int().nonnegative().optional(),
+      likes: z.number().int().nonnegative().optional(),
+      saves: z.number().int().nonnegative().optional(),
+      comments: z.number().int().nonnegative().optional(),
+      follows: z.number().int().nonnegative().optional(),
+      inquiries: z.number().int().nonnegative().optional()
+    })
+    .optional()
 });
 
 const updateSchema = postInputSchema.partial().extend({

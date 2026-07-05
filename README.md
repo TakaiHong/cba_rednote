@@ -16,6 +16,7 @@ npm.cmd run dev
 
 ```powershell
 npm.cmd run generate
+npm.cmd run publish -- --post latest --dry-run
 npm.cmd run publish -- --post latest
 npm.cmd run publish -- --post latest --mode clipboard
 npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
@@ -29,6 +30,7 @@ npm.cmd run build
 - 配置 `OPENAI_API_KEY` 后，可以切换到低成本模型生成更自然的版本。
 - 每条帖子预算上限通过 `MAX_COST_CNY_PER_POST` 控制，默认 0.5 元人民币。
 - 小红书发布优先采用半自动 Playwright：复用本地登录态、打开创作者中心、复制并尝试填充内容、由人工最后确认发布，降低账号风控风险。
+- 运营台支持录入曝光、点赞、收藏、评论、关注和咨询数，用来比较不同内容角度的实际效果。
 
 ## 文档
 

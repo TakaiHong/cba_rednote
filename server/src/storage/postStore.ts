@@ -19,7 +19,7 @@ async function readPosts(): Promise<MarketingPost[]> {
   await ensureDataFile();
   const raw = await readFile(dataFile, "utf8");
   try {
-    return JSON.parse(raw) as MarketingPost[];
+    return (JSON.parse(raw) as MarketingPost[]).map(withDefaults);
   } catch {
     const corruptFile = `${dataFile}.corrupt-${Date.now()}`;
     await rename(dataFile, corruptFile);
@@ -42,6 +42,18 @@ const manualTopic: TopicPlan = {
   hook: "manual",
   localSignals: ["Singapore", "mini storage"]
 };
+
+const emptyMetrics = { views: 0, likes: 0, saves: 0, comments: 0, follows: 0, inquiries: 0 };
+
+function withDefaults(post: MarketingPost): MarketingPost {
+  return {
+    ...post,
+    metrics: {
+      ...emptyMetrics,
+      ...(post.metrics ?? {})
+    }
+  };
+}
 
 export const postStore = {
   async list() {
@@ -78,6 +90,7 @@ export const postStore = {
       status: input.status ?? "draft",
       topic: manualTopic,
       review: { score: 80, notes: ["Manual draft"], approved: true },
+      metrics: { ...emptyMetrics, ...input.metrics },
       estimatedCostCny: 0,
       generator: "local-template",
       createdAt: now,
@@ -99,6 +112,7 @@ export const postStore = {
     posts[index] = {
       ...existing,
       ...input,
+      metrics: input.metrics ? { ...emptyMetrics, ...existing.metrics, ...input.metrics } : existing.metrics,
       status,
       publishedAt: status === "published" ? existing.publishedAt ?? new Date().toISOString() : existing.publishedAt,
       updatedAt: new Date().toISOString()

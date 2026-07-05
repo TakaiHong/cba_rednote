@@ -75,6 +75,35 @@ h1 {
   padding: 10px 12px;
 }
 
+.scoreboard {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  margin-bottom: 18px;
+}
+
+.scoreboard div {
+  background: #ffffff;
+  border: 1px solid #dfe5da;
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.scoreboard span {
+  color: #66715f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.scoreboard strong {
+  color: #18201b;
+  font-size: 22px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
 .workspace {
   display: grid;
   gap: 18px;
@@ -174,6 +203,23 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.metrics-editor {
+  border-top: 1px solid #dfe5da;
+  display: grid;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.metric-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.metric-grid input {
+  min-height: 38px;
 }
 
 .actions button:nth-child(2) {
@@ -287,5 +333,10 @@ dd {
 
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .scoreboard,
+  .metric-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }

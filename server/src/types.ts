@@ -40,11 +40,21 @@ export interface ReviewResult {
   approved: boolean;
 }
 
+export interface PostMetrics {
+  views: number;
+  likes: number;
+  saves: number;
+  comments: number;
+  follows: number;
+  inquiries: number;
+}
+
 export interface MarketingPost extends GeneratedPost {
   id: string;
   status: PostStatus;
   topic: TopicPlan;
   review: ReviewResult;
+  metrics: PostMetrics;
   estimatedCostCny: number;
   generator: "local-template" | "openai-compatible";
   createdAt: string;
@@ -60,6 +70,7 @@ export interface CreatePostInput {
   imageIdeas: string[];
   callToAction: string;
   status?: PostStatus;
+  metrics?: Partial<PostMetrics>;
 }
 
 export interface UpdatePostInput {
@@ -70,4 +81,5 @@ export interface UpdatePostInput {
   callToAction?: string;
   status?: PostStatus;
   publishedUrl?: string;
+  metrics?: Partial<PostMetrics>;
 }
