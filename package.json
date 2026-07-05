@@ -17,6 +17,7 @@
     "generate": "tsx server/src/cli/generate.ts",
     "status": "tsx server/src/cli/status.ts",
     "readiness": "tsx scripts/readiness.ts",
+    "calendar": "tsx scripts/plan-calendar.ts",
     "export": "tsx scripts/export-xhs.ts",
     "publish": "tsx scripts/publish-xhs.ts",
     "publish:preflight": "tsx scripts/publish-xhs.ts --post latest --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json",

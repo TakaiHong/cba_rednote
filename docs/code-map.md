@@ -18,6 +18,7 @@
 - `server/src/types.ts`：帖子、状态、agent 输出等共享类型。
 - `server/src/storage/postStore.ts`：JSON 文件存储。
 - `server/src/generation/agents.ts`：选题、文案、审核和成本 agent。
+- `server/src/generation/contentCalendar.ts`：生成未来 1 到 30 天的小红书选题排期。
 - `server/src/generation/generator.ts`：生成流程编排。
 - `server/src/generation/qualityGuard.ts`：标题和正文相似度检查，降低重复内容风险。
 - `server/src/publishing/xhsPackage.ts`：小红书发布包格式化，供 API、前端和脚本共用，包含正文、标签、封面文字和图片 brief。
@@ -40,6 +41,7 @@
 ## Scripts
 
 - `scripts/export-xhs.ts`：导出小红书 Markdown 图文交接包。
+- `scripts/plan-calendar.ts`：导出未来内容排期，支持 Markdown 或 JSON。
 - `scripts/publish-xhs.ts`：小红书半自动发布脚本，支持 dry-run、登录态复用、辅助填充和发布后状态回写。
 - `scripts/install-daily-task.ps1`：Windows 任务计划程序安装器，用于每天自动生成小红书草稿。
 - `scripts/start-local.ps1`：后台启动本地前后端服务。
@@ -65,6 +67,7 @@
 - `npm.cmd run build`：生产构建。
 - `npm.cmd run status`：输出内容池、预算和常用命令状态。
 - `npm.cmd run readiness`：输出交接前验收清单。
+- `npm.cmd run calendar -- --days 7`：输出未来 7 天内容排期。
 - `npm.cmd run local:start`：后台启动前后端。
 - `npm.cmd run local:stop`：停止本地前后端。
 - `npm.cmd run health`：检查本地运行状态。

@@ -23,6 +23,7 @@ npm.cmd run backup
 npm.cmd run backup:dry-run
 npm.cmd run status
 npm.cmd run readiness
+npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md
 npm.cmd run export -- --post latest
 npm.cmd run publish -- --post latest --dry-run
 npm.cmd run publish -- --post latest --image .\assets\cover.png
@@ -57,6 +58,7 @@ npm.cmd run build
 - 小红书发布优先采用半自动 Playwright：复用本地登录态、打开创作者中心、复制并尝试填充内容、由人工最后确认发布，降低账号风控风险；账号和选择器验证稳定后，可通过 `XHS_ALLOW_FINAL_PUBLISH=true` 搭配 `--click-publish` 显式启用最终发布点击。
 - 运营台支持录入曝光、点赞、收藏、评论、关注和咨询数，用来比较不同内容角度的实际效果。
 - 内容池支持按状态筛选和关键词搜索，适合长期积累草稿后运营查找。
+- `npm.cmd run calendar -- --days 7` 可规划未来 7 天选题，帮助每日生成保持人群和内容形式多样。
 - Windows 本地定时任务可通过 `npm.cmd run schedule:install` 安装，每天自动生成一条草稿。
 - `npm.cmd run export -- --post latest` 可导出 Markdown 图文交接包。
 - `npm.cmd run backup` 可备份运行数据到 `backups/`。

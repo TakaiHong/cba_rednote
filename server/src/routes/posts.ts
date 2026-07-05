@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { planContentCalendar } from "../generation/contentCalendar.js";
 import { generateUniqueMarketingPost } from "../generation/generator.js";
 import { createXhsPublishPackage } from "../publishing/xhsPackage.js";
 import { postStore } from "../storage/postStore.js";
@@ -37,6 +38,11 @@ router.get("/latest", async (_req, res) => {
   const post = await postStore.latestDraft();
   if (!post) return res.status(404).json({ error: "No draft found" });
   res.json(post);
+});
+
+router.get("/calendar/plan", async (req, res) => {
+  const days = Number(req.query.days ?? 7);
+  res.json(planContentCalendar(days));
 });
 
 router.get("/:id/publish-package", async (req, res) => {

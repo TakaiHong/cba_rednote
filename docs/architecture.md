@@ -23,6 +23,8 @@
 
 如果多次生成都与历史内容相似，系统会保留相似度最低的一条并标记为 `draft`，要求人工检查后再发布。
 
+`server/src/generation/contentCalendar.ts` 复用 Topic agent 生成未来 1 到 30 天的内容排期。运营可以通过 `npm.cmd run calendar -- --days 7` 导出 Markdown 或 JSON，用来提前检查人群、场景和内容形式是否足够分散。
+
 ## Daily Automation
 
 系统有两种每日生成方式：

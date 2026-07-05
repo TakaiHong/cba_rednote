@@ -51,9 +51,12 @@ async function main() {
     },
     {
       name: "daily generation command",
-      ok: (await packageScriptExists("generate")) && (await packageScriptExists("schedule:install")),
+      ok:
+        (await packageScriptExists("generate")) &&
+        (await packageScriptExists("calendar")) &&
+        (await packageScriptExists("schedule:install")),
       severity: "required",
-      detail: "CLI generation and Windows scheduled task installer are present."
+      detail: "CLI generation, content calendar, and Windows scheduled task installer are present."
     },
     {
       name: "publishing command",

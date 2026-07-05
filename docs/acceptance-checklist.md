@@ -14,6 +14,7 @@ The command checks:
 
 - frontend and backend npm scripts
 - daily generation command and Windows scheduler installer
+- content calendar planning command
 - publish script and selector configuration
 - final publish double opt-in
 - model budget guard
@@ -69,6 +70,7 @@ Capture these before considering the first version ready:
 - `npm.cmd run verify` output with all checks passing
 - `npm.cmd run health` output with backend and frontend online
 - `npm.cmd run readiness` output with no required failures
+- one 7-day content calendar from `npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md`
 - one exported Markdown handoff package from `npm.cmd run export -- --post latest`
 - one Xiaohongshu `publish:preflight` report from the real account, defaulting to `.tmp/xhs-preflight-report.json`
 - at least one manually reviewed published URL, then marked with `--mark-published`

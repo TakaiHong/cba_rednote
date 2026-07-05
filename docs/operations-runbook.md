@@ -31,6 +31,12 @@ npm.cmd run dev
 
 Use the content pool search box and status filters to find draft, approved, published or archived posts.
 
+Plan upcoming topics:
+
+```powershell
+npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md
+```
+
 3. Export a handoff package if another person will publish:
 
 ```powershell
