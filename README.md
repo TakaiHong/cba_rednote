@@ -16,6 +16,7 @@ npm.cmd run dev
 
 ```powershell
 npm.cmd run generate
+npm.cmd run export -- --post latest
 npm.cmd run publish -- --post latest --dry-run
 npm.cmd run publish:preflight
 npm.cmd run publish -- --post latest
@@ -38,6 +39,7 @@ npm.cmd run build
 - 小红书发布优先采用半自动 Playwright：复用本地登录态、打开创作者中心、复制并尝试填充内容、由人工最后确认发布，降低账号风控风险。
 - 运营台支持录入曝光、点赞、收藏、评论、关注和咨询数，用来比较不同内容角度的实际效果。
 - Windows 本地定时任务可通过 `npm.cmd run schedule:install` 安装，每天自动生成一条草稿。
+- `npm.cmd run export -- --post latest` 可导出 Markdown 图文交接包。
 
 ## 文档
 

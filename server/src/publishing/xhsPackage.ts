@@ -52,3 +52,40 @@ export function createXhsPublishPackage(post: MarketingPost): XhsPublishPackage 
     fullText
   };
 }
+
+export function renderXhsMarkdownExport(pkg: XhsPublishPackage): string {
+  return [
+    `# ${pkg.title}`,
+    "",
+    `Post ID: ${pkg.postId}`,
+    "",
+    "## 发布正文",
+    "",
+    pkg.fullText,
+    "",
+    "## 标签",
+    "",
+    pkg.tagsLine,
+    "",
+    "## 图片建议",
+    "",
+    ...pkg.imageIdeas.map((idea) => `- ${idea}`),
+    "",
+    "## 封面文字",
+    "",
+    pkg.coverText,
+    "",
+    "## 图片 Brief",
+    "",
+    pkg.visualBrief,
+    "",
+    "## AI 出图 Prompt",
+    "",
+    pkg.imagePrompt,
+    "",
+    "## 素材清单",
+    "",
+    ...pkg.assetChecklist.map((item) => `- ${item}`),
+    ""
+  ].join("\n");
+}

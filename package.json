@@ -10,6 +10,7 @@
     "build": "tsc -p tsconfig.json && vite build client",
     "start": "node dist/server/src/index.js",
     "generate": "tsx server/src/cli/generate.ts",
+    "export": "tsx scripts/export-xhs.ts",
     "publish": "tsx scripts/publish-xhs.ts",
     "publish:preflight": "tsx scripts/publish-xhs.ts --post latest --preflight --no-pause",
     "schedule:dry-run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -DryRun",
@@ -17,7 +18,7 @@
     "schedule:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -Uninstall",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "verify": "npm run lint && npm run test && npm run build && npm run publish -- --post latest --dry-run && npm run schedule:dry-run"
+    "verify": "npm run lint && npm run test && npm run build && npm run publish -- --post latest --dry-run && npm run export -- --post latest --out .tmp/verify-exports && npm run schedule:dry-run"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

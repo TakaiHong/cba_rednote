@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { createXhsPublishPackage } from "../server/src/publishing/xhsPackage.js";
+import { createXhsPublishPackage, renderXhsMarkdownExport } from "../server/src/publishing/xhsPackage.js";
 import type { MarketingPost } from "../server/src/types.js";
 
 function postFixture(): MarketingPost {
@@ -43,5 +43,14 @@ describe("createXhsPublishPackage", () => {
     assert.ok(pkg.fullText.includes("旧房到期"));
     assert.ok(pkg.fullText.includes("私信物品清单"));
     assert.ok(pkg.fullText.endsWith("#新加坡生活 #迷你仓 #租房断档"));
+  });
+
+  it("renders a Markdown handoff package", () => {
+    const markdown = renderXhsMarkdownExport(createXhsPublishPackage(postFixture()));
+
+    assert.ok(markdown.includes("# 新加坡租房断档，东西可以这样先过渡"));
+    assert.ok(markdown.includes("## 发布正文"));
+    assert.ok(markdown.includes("## 图片 Brief"));
+    assert.ok(markdown.includes("## 素材清单"));
   });
 });

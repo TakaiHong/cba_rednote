@@ -29,6 +29,14 @@ npm.cmd run publish -- --post latest --dry-run
 
 dry-run 会输出标题、正文、标签、图片建议、封面文字、图片 brief、AI 出图 prompt 和素材清单。
 
+导出运营交接包：
+
+```powershell
+npm.cmd run export -- --post latest
+```
+
+导出文件会写入 `exports/`，包含发布正文、标签、图片 brief、AI 出图 prompt 和素材清单。
+
 只打开页面和复制内容，不尝试填充字段：
 
 ```powershell
