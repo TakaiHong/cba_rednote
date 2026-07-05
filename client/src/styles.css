@@ -35,6 +35,14 @@ textarea {
   padding-bottom: 18px;
 }
 
+.topbar-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .eyebrow {
   color: #66715f;
   font-size: 13px;
@@ -67,10 +75,36 @@ h1 {
   opacity: 0.65;
 }
 
+.secondary-button {
+  background: #2f4e88;
+  border: 0;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 40px;
+  padding: 0 16px;
+}
+
+.secondary-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .error {
   background: #ffe7dd;
   border: 1px solid #e58e71;
   border-radius: 6px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+}
+
+.notice {
+  background: #edf7f0;
+  border: 1px solid #9ac8a8;
+  border-radius: 6px;
+  color: #1e5f4a;
+  font-weight: 800;
   margin-bottom: 16px;
   padding: 10px 12px;
 }
@@ -498,6 +532,10 @@ dd {
     align-items: stretch;
     display: grid;
     gap: 12px;
+  }
+
+  .topbar-actions {
+    justify-content: stretch;
   }
 
   .workspace {

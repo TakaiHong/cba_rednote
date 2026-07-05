@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   generatePost,
+  generatePostBatch,
   getContentCalendar,
   getStatus,
   getPublishPackage,
@@ -35,6 +36,7 @@ function App() {
   const [selectedId, setSelectedId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [batchHint, setBatchHint] = useState("");
   const [publishHint, setPublishHint] = useState("");
   const [visualBrief, setVisualBrief] = useState("");
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
@@ -112,6 +114,24 @@ function App() {
     }
   }
 
+  async function handleGenerateBatch() {
+    setLoading(true);
+    setError("");
+    setBatchHint("");
+    try {
+      const result = await generatePostBatch(7, 1);
+      await refresh();
+      if (result.posts[0]) setSelectedId(result.posts[0].id);
+      setBatchHint(
+        `已生成 ${result.posts.length} 条草稿，最高模型成本约 ${result.plan.estimatedMaxCostCny.toFixed(2)} 元。`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "批量生成失败");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handlePatch(patch: Partial<MarketingPost>) {
     if (!selected) return;
     const updated = await updatePost(selected.id, patch);
@@ -172,12 +192,18 @@ function App() {
           <p className="eyebrow">Singapore Mini Storage</p>
           <h1>小红书运营台</h1>
         </div>
-        <button className="primary-button" onClick={handleGenerate} disabled={loading}>
-          {loading ? "生成中..." : "生成今日文案"}
-        </button>
+        <div className="topbar-actions">
+          <button className="primary-button" onClick={handleGenerate} disabled={loading}>
+            {loading ? "生成中..." : "生成今日文案"}
+          </button>
+          <button className="secondary-button" onClick={handleGenerateBatch} disabled={loading}>
+            批量准备 7 条
+          </button>
+        </div>
       </section>
 
       {error && <div className="error">{error}</div>}
+      {batchHint && <div className="notice">{batchHint}</div>}
 
       <section className="scoreboard">
         <div>

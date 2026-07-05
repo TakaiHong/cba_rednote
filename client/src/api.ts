@@ -89,6 +89,16 @@ export interface SystemStatus {
   strategy: ContentStrategySummary;
 }
 
+export interface BatchGenerationResult {
+  plan: {
+    count: number;
+    modelConfigured: boolean;
+    estimatedMaxCostCny: number;
+    maxModelPosts: number;
+  };
+  posts: MarketingPost[];
+}
+
 const apiBase = "http://127.0.0.1:8787/api";
 
 export async function listPosts() {
@@ -105,6 +115,16 @@ export async function generatePost() {
   });
   if (!response.ok) throw new Error("Failed to generate post");
   return (await response.json()) as MarketingPost;
+}
+
+export async function generatePostBatch(count = 7, maxModelPosts = 1) {
+  const response = await fetch(`${apiBase}/posts/generate-batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ count, maxModelPosts })
+  });
+  if (!response.ok) throw new Error("Failed to generate post batch");
+  return (await response.json()) as BatchGenerationResult;
 }
 
 export async function updatePost(id: string, patch: Partial<MarketingPost>) {

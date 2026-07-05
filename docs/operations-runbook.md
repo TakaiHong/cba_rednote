@@ -28,6 +28,8 @@ npm.cmd run generate:batch -- --count 7 --dry-run
 npm.cmd run generate:batch -- --count 7 --max-model-posts 1
 ```
 
+The dashboard also has a `批量准备 7 条` button with the same paid-model limit.
+
 `--max-model-posts` limits how many drafts may use a paid OpenAI-compatible provider such as DeepSeek. Keep it low when testing.
 
 如果生成内容被标记为 `draft` 且审核备注包含 similarity，需要人工确认是否与历史内容过近，再设为待发布。

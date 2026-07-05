@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { generatePostBatch } from "../generation/batch.js";
 import { planContentCalendar } from "../generation/contentCalendar.js";
 import { generateUniqueMarketingPost } from "../generation/generator.js";
 import { createXhsPublishPackage } from "../publishing/xhsPackage.js";
@@ -28,6 +29,11 @@ const postInputSchema = z.object({
 
 const updateSchema = postInputSchema.partial().extend({
   publishedUrl: z.string().optional()
+});
+
+const batchGenerateSchema = z.object({
+  count: z.number().int().min(1).max(14).default(7),
+  maxModelPosts: z.number().int().min(0).max(14).default(1)
 });
 
 router.get("/", async (_req, res) => {
@@ -61,6 +67,19 @@ router.post("/generate", async (req, res) => {
   const offset = Number(req.body?.offset ?? existingPosts.length);
   const post = await generateUniqueMarketingPost(existingPosts, offset);
   res.status(201).json(await postStore.createGenerated(post));
+});
+
+router.post("/generate-batch", async (req, res) => {
+  const input = batchGenerateSchema.parse(req.body ?? {});
+  const existingPosts = await postStore.list();
+  const result = await generatePostBatch(existingPosts, input);
+  const saved = [];
+
+  for (const post of result.posts) {
+    saved.push(await postStore.createGenerated(post));
+  }
+
+  res.status(201).json({ plan: result.plan, posts: saved });
 });
 
 router.patch("/:id", async (req, res) => {
