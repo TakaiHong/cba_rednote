@@ -16,6 +16,8 @@ npm.cmd run dev
 
 ```powershell
 npm.cmd run generate
+npm.cmd run local:start
+npm.cmd run health
 npm.cmd run status
 npm.cmd run export -- --post latest
 npm.cmd run publish -- --post latest --dry-run

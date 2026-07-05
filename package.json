@@ -9,6 +9,8 @@
     "dev:client": "vite --host 127.0.0.1 --port 5173 client",
     "build": "tsc -p tsconfig.json && vite build client",
     "start": "node dist/server/src/index.js",
+    "local:start": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local.ps1",
+    "health": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/health-check.ps1",
     "generate": "tsx server/src/cli/generate.ts",
     "status": "tsx server/src/cli/status.ts",
     "export": "tsx scripts/export-xhs.ts",
