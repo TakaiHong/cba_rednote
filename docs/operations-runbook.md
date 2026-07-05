@@ -102,6 +102,8 @@ npm.cmd run verify
 
 `status` shows content counts, latest post, model provider, budget configuration and common commands. `readiness` summarizes handoff checks and separates required failures from warnings. `verify` runs type checks, tests, production build, status, readiness, publish dry-run, export smoke test and scheduler dry-run.
 
+Use the dashboard or `npm.cmd run status` to monitor total estimated content cost, average cost per post, paid model post count and whether every post is still within the per-post budget.
+
 Use `local:start` to open backend/frontend in hidden background processes and `health` to check ports plus `/api/health` and `/api/status`.
 
 ## Model Provider

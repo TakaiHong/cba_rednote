@@ -14,6 +14,9 @@ export async function getSystemStatus() {
   );
   const latest = posts[0];
   const strategy = summarizeContentStrategy(posts);
+  const totalEstimatedCostCny = Number(posts.reduce((sum, post) => sum + post.estimatedCostCny, 0).toFixed(4));
+  const averageEstimatedCostCny = posts.length ? Number((totalEstimatedCostCny / posts.length).toFixed(4)) : 0;
+  const paidModelPosts = posts.filter((post) => post.generator === "openai-compatible").length;
 
   return {
     service: "xhs-mini-storage-platform",
@@ -37,6 +40,12 @@ export async function getSystemStatus() {
       modelConfigured: Boolean(config.openAiApiKey),
       model: config.openAiModel,
       xhsCreatorUrl: config.xhsCreatorUrl
+    },
+    cost: {
+      totalEstimatedCostCny,
+      averageEstimatedCostCny,
+      paidModelPosts,
+      withinPerPostBudget: posts.every((post) => post.estimatedCostCny <= config.maxCostCnyPerPost)
     },
     strategy,
     commands: {

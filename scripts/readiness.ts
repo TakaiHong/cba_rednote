@@ -74,9 +74,9 @@ async function main() {
     },
     {
       name: "budget guard",
-      ok: config.openAiModelCostCnyPerPostEstimate <= config.maxCostCnyPerPost,
+      ok: config.openAiModelCostCnyPerPostEstimate <= config.maxCostCnyPerPost && status.cost.withinPerPostBudget,
       severity: "required",
-      detail: `Estimated model cost ${config.openAiModelCostCnyPerPostEstimate} CNY <= max ${config.maxCostCnyPerPost} CNY.`
+      detail: `Estimated model cost ${config.openAiModelCostCnyPerPostEstimate} CNY <= max ${config.maxCostCnyPerPost} CNY. Total recorded cost: ${status.cost.totalEstimatedCostCny} CNY.`
     },
     {
       name: "content pool",

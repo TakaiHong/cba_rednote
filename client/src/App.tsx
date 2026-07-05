@@ -9,6 +9,7 @@ import {
   type CalendarItem,
   type ContentStrategySummary,
   type MarketingPost,
+  type SystemStatus,
   updatePost
 } from "./api.js";
 
@@ -40,6 +41,7 @@ function App() {
   const [publishHint, setPublishHint] = useState("");
   const [visualBrief, setVisualBrief] = useState("");
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
+  const [cost, setCost] = useState<SystemStatus["cost"]>();
   const [calendar, setCalendar] = useState<CalendarItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -93,6 +95,7 @@ function App() {
       const nextCalendar = await getContentCalendar(7);
       setPosts(nextPosts);
       setStrategy(status.strategy);
+      setCost(status.cost);
       setCalendar(nextCalendar);
       if (!selectedId && nextPosts[0]) setSelectedId(nextPosts[0].id);
     } catch (err) {
@@ -221,6 +224,22 @@ function App() {
         <div>
           <span>最强选题</span>
           <strong>{performance.bestPost?.topic.style ?? "暂无"}</strong>
+        </div>
+        <div>
+          <span>累计成本</span>
+          <strong>¥{(cost?.totalEstimatedCostCny ?? 0).toFixed(2)}</strong>
+        </div>
+        <div>
+          <span>平均成本</span>
+          <strong>¥{(cost?.averageEstimatedCostCny ?? 0).toFixed(2)}</strong>
+        </div>
+        <div>
+          <span>付费生成</span>
+          <strong>{cost?.paidModelPosts ?? 0} 条</strong>
+        </div>
+        <div>
+          <span>预算状态</span>
+          <strong>{cost?.withinPerPostBudget === false ? "超预算" : "正常"}</strong>
         </div>
       </section>
 

@@ -87,6 +87,12 @@ export interface CalendarItem {
 export interface SystemStatus {
   ok: boolean;
   strategy: ContentStrategySummary;
+  cost: {
+    totalEstimatedCostCny: number;
+    averageEstimatedCostCny: number;
+    paidModelPosts: number;
+    withinPerPostBudget: boolean;
+  };
 }
 
 export interface BatchGenerationResult {

@@ -60,6 +60,7 @@ npm.cmd run build
 - 每条帖子预算上限通过 `MAX_COST_CNY_PER_POST` 控制，默认 0.5 元人民币。
 - 小红书发布优先采用半自动 Playwright：复用本地登录态、打开创作者中心、复制并尝试填充内容、由人工最后确认发布，降低账号风控风险；账号和选择器验证稳定后，可通过 `XHS_ALLOW_FINAL_PUBLISH=true` 搭配 `--click-publish` 显式启用最终发布点击。
 - 运营台支持录入曝光、点赞、收藏、评论、关注和咨询数，用来比较不同内容角度的实际效果。
+- 运营台和 `npm.cmd run status` 会汇总累计成本、平均成本、付费生成条数和预算状态。
 - 内容池支持按状态筛选和关键词搜索，适合长期积累草稿后运营查找。
 - `npm.cmd run calendar -- --days 7` 可规划未来 7 天选题，帮助每日生成保持人群和内容形式多样。
 - 运营台和 `npm.cmd run generate:batch -- --count 7 --max-model-posts 1` 都可一次准备一周草稿，并限制最多 1 条走付费模型。
