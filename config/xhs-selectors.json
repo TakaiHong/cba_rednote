@@ -1,0 +1,22 @@
+{
+  "title": [
+    "input[placeholder*=\"标题\"]",
+    "textarea[placeholder*=\"标题\"]",
+    "input[maxlength=\"20\"]",
+    "input[type=\"text\"]"
+  ],
+  "body": [
+    "textarea[placeholder*=\"正文\"]",
+    "textarea[placeholder*=\"描述\"]",
+    "[contenteditable=\"true\"]",
+    "textarea"
+  ],
+  "publishButton": [
+    "button:has-text(\"发布\")",
+    "button:has-text(\"提交\")"
+  ],
+  "upload": [
+    "input[type=\"file\"]",
+    "button:has-text(\"上传\")"
+  ]
+}

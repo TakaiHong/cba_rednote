@@ -11,6 +11,7 @@
     "start": "node dist/server/src/index.js",
     "generate": "tsx server/src/cli/generate.ts",
     "publish": "tsx scripts/publish-xhs.ts",
+    "publish:preflight": "tsx scripts/publish-xhs.ts --post latest --preflight --no-pause",
     "schedule:dry-run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -DryRun",
     "schedule:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1",
     "schedule:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -Uninstall",

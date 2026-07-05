@@ -17,6 +17,7 @@ npm.cmd run dev
 ```powershell
 npm.cmd run generate
 npm.cmd run publish -- --post latest --dry-run
+npm.cmd run publish:preflight
 npm.cmd run publish -- --post latest
 npm.cmd run publish -- --post latest --mode clipboard
 npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>

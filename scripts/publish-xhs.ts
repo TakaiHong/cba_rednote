@@ -2,6 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { chromium, type Page } from "playwright";
 import { config } from "../server/src/config.js";
+import { loadXhsSelectorConfig } from "../server/src/publishing/selectorConfig.js";
 import { createXhsPublishPackage } from "../server/src/publishing/xhsPackage.js";
 import { postStore } from "../server/src/storage/postStore.js";
 
@@ -13,6 +14,7 @@ interface CliOptions {
   markPublished: boolean;
   noPause: boolean;
   dryRun: boolean;
+  preflight: boolean;
   publishedUrl?: string;
 }
 
@@ -22,7 +24,8 @@ function parseArgs(argv: string[]): CliOptions {
     post: "latest",
     markPublished: false,
     noPause: false,
-    dryRun: false
+    dryRun: false,
+    preflight: false
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -32,6 +35,7 @@ function parseArgs(argv: string[]): CliOptions {
     if (arg === "--mark-published") options.markPublished = true;
     if (arg === "--no-pause") options.noPause = true;
     if (arg === "--dry-run") options.dryRun = true;
+    if (arg === "--preflight") options.preflight = true;
     if (arg === "--published-url") options.publishedUrl = argv[index + 1];
   }
 
@@ -75,30 +79,28 @@ async function tryFillFirst(page: Page, selectors: string[], value: string) {
   return undefined;
 }
 
-async function assistFill(page: Page, title: string, fullText: string) {
-  const titleSelector = await tryFillFirst(
-    page,
-    [
-      'input[placeholder*="标题"]',
-      'textarea[placeholder*="标题"]',
-      'input[maxlength="20"]',
-      'input[type="text"]'
-    ],
-    title
-  );
-
-  const bodySelector = await tryFillFirst(
-    page,
-    [
-      'textarea[placeholder*="正文"]',
-      'textarea[placeholder*="描述"]',
-      '[contenteditable="true"]',
-      "textarea"
-    ],
-    fullText
-  );
+async function assistFill(page: Page, selectors: Awaited<ReturnType<typeof loadXhsSelectorConfig>>, title: string, fullText: string) {
+  const titleSelector = await tryFillFirst(page, selectors.title, title);
+  const bodySelector = await tryFillFirst(page, selectors.body, fullText);
 
   return { titleSelector, bodySelector };
+}
+
+async function inspectSelectors(page: Page, selectors: Awaited<ReturnType<typeof loadXhsSelectorConfig>>) {
+  const groups = Object.entries(selectors);
+  const result: Record<string, Array<{ selector: string; count: number; visible: boolean }>> = {};
+
+  for (const [groupName, groupSelectors] of groups) {
+    result[groupName] = [];
+    for (const selector of groupSelectors) {
+      const locator = page.locator(selector);
+      const count = await locator.count().catch(() => 0);
+      const visible = count > 0 ? await locator.first().isVisible().catch(() => false) : false;
+      result[groupName].push({ selector, count, visible });
+    }
+  }
+
+  return result;
 }
 
 const options = parseArgs(process.argv.slice(2));
@@ -119,6 +121,7 @@ if (options.markPublished) {
 }
 
 const publishPackage = createXhsPublishPackage(post);
+const selectorConfig = await loadXhsSelectorConfig();
 
 if (options.dryRun) {
   console.log(JSON.stringify(publishPackage, null, 2));
@@ -147,8 +150,18 @@ console.log("Draft content is copied to the browser clipboard.");
 console.log("Visual brief:");
 console.log(publishPackage.visualBrief);
 
+if (options.preflight) {
+  console.log("Selector preflight:");
+  console.log(JSON.stringify(await inspectSelectors(page, selectorConfig), null, 2));
+  if (!options.noPause) {
+    await page.pause();
+  }
+  await context.close();
+  process.exit(0);
+}
+
 if (options.mode === "assist") {
-  const result = await assistFill(page, publishPackage.title, publishPackage.fullText);
+  const result = await assistFill(page, selectorConfig, publishPackage.title, publishPackage.fullText);
   console.log(`Auto-fill title selector: ${result.titleSelector ?? "not found"}`);
   console.log(`Auto-fill body selector: ${result.bodySelector ?? "not found"}`);
   console.log("Review the page before publishing. The script does not click the final publish button.");
