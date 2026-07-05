@@ -22,6 +22,7 @@ The command checks:
 - required docs
 - current content pool status
 - model provider status
+- handoff package command
 
 Required failures should be fixed before handoff. Warnings can be acceptable, but they need an explicit owner.
 
@@ -73,6 +74,7 @@ Capture these before considering the first version ready:
 - `npm.cmd run readiness` output with no required failures
 - one 7-day content calendar from `npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md`
 - one batch-generation dry-run from `npm.cmd run generate:batch -- --count 7 --dry-run`
+- one handoff package from `npm.cmd run handoff -- --out .tmp/handoff`
 - one exported Markdown handoff package from `npm.cmd run export -- --post latest`
 - one Xiaohongshu `publish:preflight` report from the real account, defaulting to `.tmp/xhs-preflight-report.json`
 - at least one manually reviewed published URL, then recorded through the dashboard or `--mark-published`

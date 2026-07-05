@@ -55,9 +55,10 @@ async function main() {
         (await packageScriptExists("generate")) &&
         (await packageScriptExists("generate:batch")) &&
         (await packageScriptExists("calendar")) &&
+        (await packageScriptExists("handoff")) &&
         (await packageScriptExists("schedule:install")),
       severity: "required",
-      detail: "Single draft generation, batch generation, content calendar, and Windows scheduled task installer are present."
+      detail: "Single draft generation, batch generation, content calendar, handoff export, and Windows scheduled task installer are present."
     },
     {
       name: "publishing command",

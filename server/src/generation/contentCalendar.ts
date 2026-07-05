@@ -51,3 +51,23 @@ export function planContentCalendar(days = 7, startDate = new Date()): CalendarI
     };
   });
 }
+
+export function renderCalendarMarkdown(calendar: CalendarItem[]) {
+  const lines = ["# XHS Content Calendar", ""];
+
+  for (const item of calendar) {
+    lines.push(`## ${item.date} - Day ${item.slot}`);
+    lines.push("");
+    lines.push(`- Style: ${item.topic.style}`);
+    lines.push(`- Segment: ${item.topic.targetSegment}`);
+    lines.push(`- Scene: ${item.topic.scene}`);
+    lines.push(`- Angle: ${item.topic.angle}`);
+    lines.push(`- Hook: ${item.topic.hook}`);
+    lines.push(`- Local signals: ${item.topic.localSignals.join(", ")}`);
+    lines.push(`- Objective: ${item.objective}`);
+    lines.push(`- Suggested format: ${item.suggestedFormat}`);
+    lines.push("");
+  }
+
+  return `${lines.join("\n")}\n`;
+}
