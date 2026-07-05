@@ -3,8 +3,8 @@ import { dirname, join } from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import type { CreatePostInput, MarketingPost, TopicPlan, UpdatePostInput } from "../types.js";
 
-const rootDir = process.cwd();
-const dataFile = join(rootDir, "data/posts.json");
+const dataDir = process.env.DATA_DIR ? join(process.cwd(), process.env.DATA_DIR) : join(process.cwd(), "data");
+const dataFile = join(dataDir, "posts.json");
 
 async function ensureDataFile() {
   await mkdir(dirname(dataFile), { recursive: true });

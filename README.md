@@ -21,6 +21,8 @@ npm.cmd run publish -- --post latest
 npm.cmd run publish -- --post latest --mode clipboard
 npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 npm.cmd run lint
+npm.cmd run test
+npm.cmd run verify
 npm.cmd run build
 ```
 

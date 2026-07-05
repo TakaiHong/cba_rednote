@@ -5,6 +5,7 @@
 - `package.json`：脚本、依赖和项目入口。
 - `tsconfig.json`：TypeScript 配置。
 - `.env.example`：本地环境变量模板。
+- `tests/`：生成器、发布包和存储层的自动化测试。
 
 ## Server
 
@@ -37,3 +38,10 @@
 - `docs/architecture.md`：架构文档。
 - `docs/code-map.md`：代码地图。
 - `docs/xiaohongshu-publishing.md`：发布流程和风控说明。
+
+## Verification
+
+- `npm.cmd run lint`：TypeScript 类型检查。
+- `npm.cmd run test`：Node test runner 单元测试。
+- `npm.cmd run build`：生产构建。
+- `npm.cmd run verify`：完整本地验收，包括发布包 dry-run。

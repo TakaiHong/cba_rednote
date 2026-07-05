@@ -11,7 +11,9 @@
     "start": "node dist/server/src/index.js",
     "generate": "tsx server/src/cli/generate.ts",
     "publish": "tsx scripts/publish-xhs.ts",
-    "lint": "tsc -p tsconfig.json --noEmit"
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "verify": "npm run lint && npm run test && npm run build && npm run publish -- --post latest --dry-run"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
