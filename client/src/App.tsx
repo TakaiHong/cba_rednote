@@ -16,6 +16,9 @@ const statusLabels: Record<MarketingPost["status"], string> = {
   archived: "归档"
 };
 
+const statusFilters = ["all", "draft", "approved", "published", "archived"] as const;
+type StatusFilter = (typeof statusFilters)[number];
+
 const metricLabels: Array<[keyof MarketingPost["metrics"], string]> = [
   ["views", "曝光"],
   ["likes", "点赞"],
@@ -33,6 +36,20 @@ function App() {
   const [publishHint, setPublishHint] = useState("");
   const [visualBrief, setVisualBrief] = useState("");
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredPosts = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    return posts.filter((post) => {
+      const matchesStatus = statusFilter === "all" || post.status === statusFilter;
+      const searchable = [post.title, post.body, post.topic.scene, post.topic.angle, post.tags.join(" ")]
+        .join(" ")
+        .toLowerCase();
+      const matchesSearch = !normalizedQuery || searchable.includes(normalizedQuery);
+      return matchesStatus && matchesSearch;
+    });
+  }, [posts, searchQuery, statusFilter]);
 
   const selected = useMemo(
     () => posts.find((post) => post.id === selectedId) ?? posts[0],
@@ -136,6 +153,13 @@ function App() {
     void refresh();
   }, []);
 
+  useEffect(() => {
+    if (filteredPosts.length === 0) return;
+    if (!filteredPosts.some((post) => post.id === selectedId)) {
+      setSelectedId(filteredPosts[0].id);
+    }
+  }, [filteredPosts, selectedId]);
+
   return (
     <main className="app-shell">
       <section className="topbar">
@@ -195,8 +219,28 @@ function App() {
       <section className="workspace">
         <aside className="post-list">
           <div className="panel-title">内容池</div>
+          <div className="list-tools">
+            <input
+              aria-label="搜索内容"
+              placeholder="搜索标题、正文、标签"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+            <div className="status-filters" aria-label="内容状态筛选">
+              {statusFilters.map((status) => (
+                <button
+                  className={statusFilter === status ? "active" : ""}
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                >
+                  {status === "all" ? "全部" : statusLabels[status]}
+                </button>
+              ))}
+            </div>
+          </div>
           {posts.length === 0 && <p className="empty">还没有草稿，先生成一条。</p>}
-          {posts.map((post) => (
+          {posts.length > 0 && filteredPosts.length === 0 && <p className="empty">没有符合条件的内容。</p>}
+          {filteredPosts.map((post) => (
             <button
               className={`post-item ${post.id === selected?.id ? "active" : ""}`}
               key={post.id}

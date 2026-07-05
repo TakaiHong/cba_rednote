@@ -57,3 +57,5 @@
 ## Cost Control
 
 默认模板生成器成本为 0。配置 `OPENAI_API_KEY` 后，后端会调用 OpenAI-compatible Chat Completions 接口；如果 `OPENAI_MODEL_COST_CNY_PER_POST_ESTIMATE` 超过 `MAX_COST_CNY_PER_POST`，或模型调用失败，系统会自动回落到本地模板生成器。
+
+也可以直接配置 `DEEPSEEK_API_KEY` 使用 DeepSeek 的 OpenAI-compatible 接口。未显式配置 `OPENAI_BASE_URL` 时，DeepSeek alias 默认使用 `https://api.deepseek.com`；未显式配置模型时，默认使用 `deepseek-v4-flash`。具体环境变量见 `docs/model-config.md`。

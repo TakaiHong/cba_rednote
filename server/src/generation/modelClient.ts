@@ -25,6 +25,7 @@ export async function generateWithOpenAiCompatibleModel(topic: TopicPlan): Promi
     body: JSON.stringify({
       model: config.openAiModel,
       temperature: 0.85,
+      max_tokens: 1200,
       response_format: { type: "json_object" },
       messages: [
         {

@@ -29,6 +29,8 @@ npm.cmd run generate
 npm.cmd run dev
 ```
 
+Use the content pool search box and status filters to find draft, approved, published or archived posts.
+
 3. Export a handoff package if another person will publish:
 
 ```powershell
@@ -70,9 +72,15 @@ npm.cmd run status
 npm.cmd run verify
 ```
 
-`status` shows content counts, latest post, budget configuration and common commands. `verify` runs type checks, tests, production build, publish dry-run, export smoke test and scheduler dry-run.
+`status` shows content counts, latest post, model provider, budget configuration and common commands. `verify` runs type checks, tests, production build, publish dry-run, export smoke test and scheduler dry-run.
 
 Use `local:start` to open backend/frontend in hidden background processes and `health` to check ports plus `/api/health` and `/api/status`.
+
+## Model Provider
+
+Use the local template generator when you want zero API cost. To use DeepSeek, set `DEEPSEEK_API_KEY` in `.env`; the default DeepSeek model is `deepseek-v4-flash`, with `https://api.deepseek.com` as the base URL. Keep `MAX_COST_CNY_PER_POST=0.5` and adjust `MODEL_COST_CNY_PER_POST_ESTIMATE` if pricing assumptions change.
+
+Full setup notes are in `docs/model-config.md`.
 
 ## Data Backup
 

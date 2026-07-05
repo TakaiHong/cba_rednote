@@ -39,6 +39,14 @@ npm.cmd run verify
 npm.cmd run build
 ```
 
+## 模型配置
+
+- 不配置 key 时，平台使用本地模板生成器，单条成本为 0 元。
+- 使用 DeepSeek 时，填写 `DEEPSEEK_API_KEY`，可选填写 `DEEPSEEK_MODEL=deepseek-v4-flash`。
+- 使用其他 OpenAI-compatible 模型时，填写 `OPENAI_API_KEY`、`OPENAI_BASE_URL` 和 `OPENAI_MODEL`。
+- 单条预算继续由 `MAX_COST_CNY_PER_POST=0.5` 控制，估算成本超出时自动回落本地模板。
+- 详细说明见 [模型配置](docs/model-config.md)。
+
 ## 当前策略
 
 - 默认使用本地低成本模板生成器，保证没有 API key 也能跑通。
@@ -46,6 +54,7 @@ npm.cmd run build
 - 每条帖子预算上限通过 `MAX_COST_CNY_PER_POST` 控制，默认 0.5 元人民币。
 - 小红书发布优先采用半自动 Playwright：复用本地登录态、打开创作者中心、复制并尝试填充内容、由人工最后确认发布，降低账号风控风险。
 - 运营台支持录入曝光、点赞、收藏、评论、关注和咨询数，用来比较不同内容角度的实际效果。
+- 内容池支持按状态筛选和关键词搜索，适合长期积累草稿后运营查找。
 - Windows 本地定时任务可通过 `npm.cmd run schedule:install` 安装，每天自动生成一条草稿。
 - `npm.cmd run export -- --post latest` 可导出 Markdown 图文交接包。
 - `npm.cmd run backup` 可备份运行数据到 `backups/`。

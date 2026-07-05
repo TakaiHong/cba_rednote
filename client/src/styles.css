@@ -159,6 +159,40 @@ h1 {
   margin: 0;
 }
 
+.list-tools {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.list-tools input {
+  min-height: 38px;
+}
+
+.status-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.status-filters button {
+  background: #f0f3ed;
+  border: 1px solid #d8ded2;
+  border-radius: 999px;
+  color: #3d4a3b;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.status-filters button.active {
+  background: #1e5f4a;
+  border-color: #1e5f4a;
+  color: #ffffff;
+}
+
 .post-item {
   background: transparent;
   border: 1px solid transparent;

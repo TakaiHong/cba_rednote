@@ -33,6 +33,7 @@ export async function getSystemStatus() {
     config: {
       dailyCron: config.dailyCron,
       maxCostCnyPerPost: config.maxCostCnyPerPost,
+      modelProvider: config.modelProvider,
       modelConfigured: Boolean(config.openAiApiKey),
       model: config.openAiModel,
       xhsCreatorUrl: config.xhsCreatorUrl

@@ -13,6 +13,7 @@
 - `server/src/index.ts`：Express 服务入口，挂载 API 和定时任务。
 - `server/src/analytics/contentStrategy.ts`：按内容风格和目标人群汇总效果，并生成下一条内容建议。
 - `server/src/config.ts`：环境变量和成本配置。
+- `server/src/modelConfig.ts`：模型供应商、DeepSeek alias、base URL、模型名和单条成本估算解析。
 - `server/src/status.ts`：系统状态汇总，供 API 和 CLI 使用。
 - `server/src/types.ts`：帖子、状态、agent 输出等共享类型。
 - `server/src/storage/postStore.ts`：JSON 文件存储。
@@ -52,6 +53,7 @@
 - `docs/code-map.md`：代码地图。
 - `docs/xiaohongshu-publishing.md`：发布流程和风控说明。
 - `docs/operations-runbook.md`：日常运营、验收和账号验证手册。
+- `docs/model-config.md`：DeepSeek 和 OpenAI-compatible 低成本模型配置说明。
 
 ## Verification
 
