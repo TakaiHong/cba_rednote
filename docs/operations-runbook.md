@@ -86,6 +86,8 @@ This final-click mode also requires `XHS_ALLOW_FINAL_PUBLISH=true` in `.env`.
 npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 ```
 
+You can also paste the published Xiaohongshu note URL into the dashboard field `小红书链接`.
+
 7. Fill in exposure, likes, saves, comments, follows and inquiries in the运营台.
 
 8. Check the strategy recommendation in the运营台 or `npm.cmd run status`. Treat it as directional until at least 3 posts have performance data.

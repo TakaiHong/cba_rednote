@@ -381,6 +381,14 @@ function App() {
                   </label>
                 ))}
               </div>
+              <label>
+                小红书链接
+                <input
+                  placeholder="发布后粘贴笔记链接"
+                  value={selected.publishedUrl ?? ""}
+                  onChange={(event) => handlePatch({ publishedUrl: event.target.value })}
+                />
+              </label>
             </div>
 
             <div className="actions">
@@ -414,6 +422,11 @@ function App() {
               <button onClick={handleCopyPublishText}>复制发布文本</button>
               <button onClick={handleCopyVisualBrief}>复制图片 brief</button>
               <code>npm.cmd run publish -- --post {selected.id}</code>
+              {selected.publishedUrl && (
+                <a href={selected.publishedUrl} rel="noreferrer" target="_blank">
+                  打开已发布笔记
+                </a>
+              )}
               {publishHint && <p>{publishHint}</p>}
               {visualBrief && <pre>{visualBrief}</pre>}
             </div>
