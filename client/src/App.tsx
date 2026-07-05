@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   generatePost,
+  getStatus,
   getPublishPackage,
   listPosts,
+  type ContentStrategySummary,
   type MarketingPost,
   updatePost
 } from "./api.js";
@@ -30,6 +32,7 @@ function App() {
   const [error, setError] = useState("");
   const [publishHint, setPublishHint] = useState("");
   const [visualBrief, setVisualBrief] = useState("");
+  const [strategy, setStrategy] = useState<ContentStrategySummary>();
 
   const selected = useMemo(
     () => posts.find((post) => post.id === selectedId) ?? posts[0],
@@ -64,7 +67,9 @@ function App() {
     setError("");
     try {
       const nextPosts = await listPosts();
+      const status = await getStatus();
       setPosts(nextPosts);
+      setStrategy(status.strategy);
       if (!selectedId && nextPosts[0]) setSelectedId(nextPosts[0].id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载失败");
@@ -163,6 +168,29 @@ function App() {
           <strong>{performance.bestPost?.topic.style ?? "暂无"}</strong>
         </div>
       </section>
+
+      {strategy && (
+        <section className="strategy-panel">
+          <div>
+            <span>策略建议</span>
+            <strong>{strategy.recommendation}</strong>
+          </div>
+          <div>
+            <span>已回填样本</span>
+            <strong>
+              {strategy.measuredPosts}/{strategy.sampleSize}
+            </strong>
+          </div>
+          <div>
+            <span>最佳风格</span>
+            <strong>{strategy.bestStyle?.key ?? "暂无"}</strong>
+          </div>
+          <div>
+            <span>最佳人群</span>
+            <strong>{strategy.bestSegment?.key ?? "暂无"}</strong>
+          </div>
+        </section>
+      )}
 
       <section className="workspace">
         <aside className="post-list">

@@ -49,6 +49,31 @@ export interface XhsPublishPackage {
   fullText: string;
 }
 
+export interface StrategyBucket {
+  key: string;
+  posts: number;
+  views: number;
+  interactions: number;
+  inquiries: number;
+  interactionRate: number;
+  inquiryRate: number;
+}
+
+export interface ContentStrategySummary {
+  sampleSize: number;
+  measuredPosts: number;
+  bestStyle?: StrategyBucket;
+  bestSegment?: StrategyBucket;
+  styleBuckets: StrategyBucket[];
+  segmentBuckets: StrategyBucket[];
+  recommendation: string;
+}
+
+export interface SystemStatus {
+  ok: boolean;
+  strategy: ContentStrategySummary;
+}
+
 const apiBase = "http://127.0.0.1:8787/api";
 
 export async function listPosts() {
@@ -81,4 +106,10 @@ export async function getPublishPackage(id: string) {
   const response = await fetch(`${apiBase}/posts/${id}/publish-package`);
   if (!response.ok) throw new Error("Failed to load publish package");
   return (await response.json()) as XhsPublishPackage;
+}
+
+export async function getStatus() {
+  const response = await fetch(`${apiBase}/status`);
+  if (!response.ok) throw new Error("Failed to load status");
+  return (await response.json()) as SystemStatus;
 }

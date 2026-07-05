@@ -32,5 +32,6 @@ describe("getSystemStatus", () => {
     assert.equal(status.counts.approved, 1);
     assert.equal(status.config.maxCostCnyPerPost <= 0.5, true);
     assert.equal(status.commands.verify, "npm.cmd run verify");
+    assert.ok(status.strategy.recommendation);
   });
 });

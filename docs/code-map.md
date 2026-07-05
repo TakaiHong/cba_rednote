@@ -11,6 +11,7 @@
 ## Server
 
 - `server/src/index.ts`：Express 服务入口，挂载 API 和定时任务。
+- `server/src/analytics/contentStrategy.ts`：按内容风格和目标人群汇总效果，并生成下一条内容建议。
 - `server/src/config.ts`：环境变量和成本配置。
 - `server/src/status.ts`：系统状态汇总，供 API 和 CLI 使用。
 - `server/src/types.ts`：帖子、状态、agent 输出等共享类型。

@@ -82,6 +82,34 @@ h1 {
   margin-bottom: 18px;
 }
 
+.strategy-panel {
+  background: #ffffff;
+  border: 1px solid #dfe5da;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(260px, 1.5fr) repeat(3, minmax(120px, 1fr));
+  margin-bottom: 18px;
+  padding: 14px;
+}
+
+.strategy-panel div {
+  display: grid;
+  gap: 6px;
+}
+
+.strategy-panel span {
+  color: #66715f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.strategy-panel strong {
+  color: #18201b;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
 .scoreboard div {
   background: #ffffff;
   border: 1px solid #dfe5da;
@@ -353,6 +381,7 @@ dd {
   }
 
   .scoreboard,
+  .strategy-panel,
   .metric-grid {
     grid-template-columns: 1fr 1fr;
   }

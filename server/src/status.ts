@@ -1,3 +1,4 @@
+import { summarizeContentStrategy } from "./analytics/contentStrategy.js";
 import { config } from "./config.js";
 import { postStore } from "./storage/postStore.js";
 
@@ -12,6 +13,7 @@ export async function getSystemStatus() {
     { total: 0, draft: 0, approved: 0, published: 0, archived: 0 }
   );
   const latest = posts[0];
+  const strategy = summarizeContentStrategy(posts);
 
   return {
     service: "xhs-mini-storage-platform",
@@ -35,6 +37,7 @@ export async function getSystemStatus() {
       model: config.openAiModel,
       xhsCreatorUrl: config.xhsCreatorUrl
     },
+    strategy,
     commands: {
       generate: "npm.cmd run generate",
       export: "npm.cmd run export -- --post latest",
