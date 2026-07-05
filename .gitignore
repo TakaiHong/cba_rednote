@@ -1,0 +1,12 @@
+node_modules/
+dist/
+client/dist/
+.env
+.env.local
+.tmp/
+data/posts.json
+data/run-log.json
+playwright/.auth/
+test-results/
+coverage/
+npm-debug.log*

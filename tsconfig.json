@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "outDir": "dist",
+    "jsx": "react-jsx"
+  },
+  "include": ["server/src/**/*.ts", "scripts/**/*.ts", "client/src/**/*.ts", "client/src/**/*.tsx"]
+}
