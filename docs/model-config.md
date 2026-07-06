@@ -35,9 +35,22 @@ MAX_COST_CNY_PER_POST=0.5
 
 Explicit `OPENAI_*` settings take priority over `DEEPSEEK_*` aliases. This makes it easy to swap providers while keeping the publishing and review workflow unchanged.
 
+## Image Generation
+
+The current platform generates image ideas, cover text, visual briefs, AI image prompts, and asset checklists for every post. These are included in dry-runs, Markdown exports, and handoff packages.
+
+It does not generate image files by itself yet. DeepSeek is used here as a low-cost text model and should not be treated as the image-generation provider. To generate images inside the platform, add a separate image model provider and save generated assets under an ignored local folder such as `assets/` or `exports/`, then pass that folder to:
+
+```powershell
+npm.cmd run publish -- --post latest --images-dir .\assets\xhs
+```
+
+Recommended low-cost first step: use the generated `visualBrief` and `imagePrompt` with a dedicated image tool, then upload the resulting local images through the existing publish script.
+
 ## Safety
 
 - Never commit `.env` or real API keys.
 - Keep `MAX_COST_CNY_PER_POST=0.5` unless you intentionally raise the per-post budget.
 - Use `npm.cmd run status` to confirm `modelProvider`, `modelConfigured`, `model`, and budget settings.
+- Use `npm.cmd run secrets:scan` before committing if you changed model or environment configuration.
 - Use `npm.cmd run verify` after changing model settings.

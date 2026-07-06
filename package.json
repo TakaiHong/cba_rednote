@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "tsx watch server/src/index.ts",
     "dev:client": "vite --host 127.0.0.1 --port 5173 client",
-    "build": "tsc -p tsconfig.json && vite build client",
+    "build": "tsc -p tsconfig.json && vite build client --outDir ../dist --emptyOutDir",
     "start": "node dist/server/src/index.js",
     "local:start": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local.ps1",
     "local:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stop-local.ps1",
@@ -26,9 +26,10 @@
     "schedule:dry-run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -DryRun",
     "schedule:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1",
     "schedule:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -Uninstall",
+    "secrets:scan": "tsx scripts/check-secrets.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "verify": "npm run lint && npm run test && npm run build && npm run status && npm run readiness && npm run generate:batch -- --count 7 --dry-run && npm run publish -- --post latest --dry-run && npm run export -- --post latest --out .tmp/verify-exports && npm run handoff -- --out .tmp/verify-handoff && npm run backup:dry-run && npm run schedule:dry-run"
+    "verify": "npm run secrets:scan && npm run lint && npm run test && npm run build && npm run status && npm run readiness && npm run generate:batch -- --count 7 --dry-run && npm run publish -- --post latest --dry-run && npm run export -- --post latest --out .tmp/verify-exports && npm run handoff -- --out .tmp/verify-handoff && npm run backup:dry-run && npm run schedule:dry-run"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

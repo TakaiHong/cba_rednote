@@ -130,6 +130,12 @@ export async function buildReadinessChecks(): Promise<CheckResult[]> {
       detail: `Estimated model cost ${config.openAiModelCostCnyPerPostEstimate} CNY <= max ${config.maxCostCnyPerPost} CNY. Total recorded cost: ${status.cost.totalEstimatedCostCny} CNY.`
     },
     {
+      name: "secret scan command",
+      ok: await packageScriptExists("secrets:scan"),
+      severity: "required",
+      detail: "Tracked-file API key scan is available and runs during verify."
+    },
+    {
       name: "content pool",
       ok: status.counts.total > 0,
       severity: "warning",
