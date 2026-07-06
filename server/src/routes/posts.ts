@@ -5,6 +5,7 @@ import { planContentCalendar } from "../generation/contentCalendar.js";
 import { generateUniqueMarketingPost } from "../generation/generator.js";
 import { createXhsPublishPackage } from "../publishing/xhsPackage.js";
 import { postStore } from "../storage/postStore.js";
+import { runLogStore } from "../storage/runLogStore.js";
 
 const router = Router();
 
@@ -59,14 +60,32 @@ router.get("/:id/publish-package", async (req, res) => {
 
 router.post("/", async (req, res) => {
   const input = postInputSchema.parse(req.body);
-  res.status(201).json(await postStore.createManual(input));
+  const post = await postStore.createManual(input);
+  await runLogStore.append({
+    action: "api-create-manual",
+    status: "ok",
+    message: `Created manual post ${post.id}`,
+    metadata: { postId: post.id, status: post.status }
+  });
+  res.status(201).json(post);
 });
 
 router.post("/generate", async (req, res) => {
   const existingPosts = await postStore.list();
   const offset = Number(req.body?.offset ?? existingPosts.length);
   const post = await generateUniqueMarketingPost(existingPosts, offset);
-  res.status(201).json(await postStore.createGenerated(post));
+  const saved = await postStore.createGenerated(post);
+  await runLogStore.append({
+    action: "api-generate",
+    status: "ok",
+    message: `Generated post ${saved.id} from dashboard/API`,
+    metadata: {
+      postId: saved.id,
+      generator: saved.generator,
+      estimatedCostCny: saved.estimatedCostCny
+    }
+  });
+  res.status(201).json(saved);
 });
 
 router.post("/generate-batch", async (req, res) => {
@@ -79,6 +98,17 @@ router.post("/generate-batch", async (req, res) => {
     saved.push(await postStore.createGenerated(post));
   }
 
+  await runLogStore.append({
+    action: "api-generate-batch",
+    status: "ok",
+    message: `Generated ${saved.length} posts from dashboard/API`,
+    metadata: {
+      count: saved.length,
+      maxModelPosts: result.plan.maxModelPosts,
+      estimatedMaxCostCny: result.plan.estimatedMaxCostCny
+    }
+  });
+
   res.status(201).json({ plan: result.plan, posts: saved });
 });
 
@@ -86,6 +116,18 @@ router.patch("/:id", async (req, res) => {
   const input = updateSchema.parse(req.body);
   const post = await postStore.update(req.params.id, input);
   if (!post) return res.status(404).json({ error: "Post not found" });
+  if (input.status === "published" || input.publishedUrl) {
+    await runLogStore.append({
+      action: "api-update-publish",
+      status: "ok",
+      message: `Updated publish state for post ${post.id}`,
+      metadata: {
+        postId: post.id,
+        status: post.status,
+        hasPublishedUrl: Boolean(post.publishedUrl)
+      }
+    });
+  }
   res.json(post);
 });
 
