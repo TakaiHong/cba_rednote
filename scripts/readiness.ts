@@ -1,7 +1,9 @@
 import { access, readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
 import { config } from "../server/src/config.js";
 import { finalPublishGuardMessage, shouldAttemptFinalPublish } from "../server/src/publishing/finalPublish.js";
 import { loadXhsSelectorConfig } from "../server/src/publishing/selectorConfig.js";
+import { postStore } from "../server/src/storage/postStore.js";
 import { getSystemStatus } from "../server/src/status.js";
 
 interface CheckResult {
@@ -9,6 +11,17 @@ interface CheckResult {
   ok: boolean;
   severity: "required" | "warning";
   detail: string;
+}
+
+interface SelectorEvidence {
+  selector: string;
+  count: number;
+  visible: boolean;
+}
+
+interface PreflightReport {
+  generatedAt?: string;
+  selectors?: Partial<Record<"title" | "body" | "upload" | "publishButton", SelectorEvidence[]>>;
 }
 
 async function fileExists(path: string) {
@@ -26,17 +39,55 @@ async function packageScriptExists(scriptName: string) {
   return Boolean(pkg.scripts?.[scriptName]);
 }
 
+function selectorGroupHasVisibleHit(report: PreflightReport | undefined, group: keyof NonNullable<PreflightReport["selectors"]>) {
+  return Boolean(report?.selectors?.[group]?.some((item) => item.count > 0 && item.visible));
+}
+
+export async function readPreflightEvidence(path = process.env.XHS_PREFLIGHT_REPORT ?? ".tmp/xhs-preflight-report.json") {
+  try {
+    const report = JSON.parse(await readFile(path, "utf8")) as PreflightReport;
+    const requiredGroups = ["title", "body", "upload", "publishButton"] as const;
+    const missingGroups = requiredGroups.filter((group) => !selectorGroupHasVisibleHit(report, group));
+    return {
+      ok: missingGroups.length === 0,
+      detail:
+        missingGroups.length === 0
+          ? `Preflight report ${path} has visible selector hits for title, body, upload, and publishButton.`
+          : `Preflight report ${path} is missing visible hits for: ${missingGroups.join(", ")}.`
+    };
+  } catch {
+    return {
+      ok: false,
+      detail: `No usable preflight report found at ${path}. Run npm.cmd run publish:preflight in a real logged-in Xiaohongshu session.`
+    };
+  }
+}
+
+export async function readPublishedUrlEvidence() {
+  const posts = await postStore.list();
+  const publishedWithUrl = posts.filter((post) => post.status === "published" && Boolean(post.publishedUrl));
+  return {
+    ok: publishedWithUrl.length > 0,
+    detail:
+      publishedWithUrl.length > 0
+        ? `${publishedWithUrl.length} published post(s) have a recorded Xiaohongshu URL.`
+        : "No published Xiaohongshu URL has been recorded yet. Mark one reviewed note as published after the first real post."
+  };
+}
+
 function formatStatus(ok: boolean, severity: CheckResult["severity"]) {
   if (ok) return "OK";
   return severity === "required" ? "FAIL" : "WARN";
 }
 
-async function main() {
+export async function buildReadinessChecks(): Promise<CheckResult[]> {
   const status = await getSystemStatus();
   const selectors = await loadXhsSelectorConfig();
   const finalPublishEnabled = shouldAttemptFinalPublish(true, process.env);
+  const preflightEvidence = await readPreflightEvidence();
+  const publishedUrlEvidence = await readPublishedUrlEvidence();
 
-  const checks: CheckResult[] = [
+  return [
     {
       name: "frontend command",
       ok: await packageScriptExists("dev:client"),
@@ -102,12 +153,22 @@ async function main() {
       detail: `Provider=${status.config.modelProvider}, model=${status.config.model}. Local template is acceptable when no API key is intended.`
     },
     {
-      name: "external account validation",
-      ok: false,
+      name: "preflight evidence",
+      ok: preflightEvidence.ok,
       severity: "warning",
-      detail: "Run publish:preflight in a real logged-in Xiaohongshu creator session before relying on final-click publishing."
+      detail: preflightEvidence.detail
+    },
+    {
+      name: "published URL evidence",
+      ok: publishedUrlEvidence.ok,
+      severity: "warning",
+      detail: publishedUrlEvidence.detail
     }
   ];
+}
+
+async function main() {
+  const checks = await buildReadinessChecks();
 
   const failedRequired = checks.filter((check) => !check.ok && check.severity === "required");
   const warnings = checks.filter((check) => !check.ok && check.severity === "warning");
@@ -135,4 +196,6 @@ async function main() {
   }
 }
 
-await main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}

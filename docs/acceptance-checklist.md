@@ -65,6 +65,14 @@ Before enabling final-click publishing:
 
 The final-click mode is intentionally disabled by default.
 
+`npm.cmd run readiness` reads `.tmp/xhs-preflight-report.json` by default and turns the preflight warning into OK only when `title`, `body`, `upload`, and `publishButton` all have visible selector hits. To use a custom report path, set `XHS_PREFLIGHT_REPORT`.
+
+The published URL warning turns into OK after at least one reviewed post is marked `published` with a Xiaohongshu URL, either through the dashboard or:
+
+```powershell
+npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
+```
+
 ## Handoff Evidence
 
 Capture these before considering the first version ready:
