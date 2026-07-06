@@ -6,6 +6,7 @@ import { createXhsPublishPackage, renderXhsMarkdownExport } from "../server/src/
 import { getSystemStatus } from "../server/src/status.js";
 import { postStore } from "../server/src/storage/postStore.js";
 import { runLogStore } from "../server/src/storage/runLogStore.js";
+import { buildReadinessChecks } from "./readiness.js";
 
 interface Options {
   outDir: string;
@@ -24,6 +25,7 @@ function safeFilename(value: string) {
 
 function renderSummary(input: {
   status: Awaited<ReturnType<typeof getSystemStatus>>;
+  readinessChecks: Awaited<ReturnType<typeof buildReadinessChecks>>;
   latestExportPath?: string;
   calendarPath: string;
   batchDryRunPath: string;
@@ -55,9 +57,14 @@ function renderSummary(input: {
       ? input.status.recentRuns.map((run) => `- ${run.createdAt} [${run.status}] ${run.action}: ${run.message}`)
       : ["- No recent run records yet."]),
     "",
+    "## Readiness Checks",
+    "",
+    ...input.readinessChecks.map((check) => `- ${check.ok ? "OK" : check.severity.toUpperCase()} ${check.name}: ${check.detail}`),
+    "",
     "## Files",
     "",
     `- Status JSON: status.json`,
+    `- Readiness JSON: readiness-checks.json`,
     `- Content calendar: ${input.calendarPath}`,
     `- Batch dry-run: ${input.batchDryRunPath}`,
     `- Latest publish package: ${input.latestExportPath ?? "not available"}`,
@@ -77,6 +84,9 @@ await mkdir(outDir, { recursive: true });
 
 const status = await getSystemStatus();
 await writeFile(join(outDir, "status.json"), `${JSON.stringify(status, null, 2)}\n`, "utf8");
+
+const readinessChecks = await buildReadinessChecks();
+await writeFile(join(outDir, "readiness-checks.json"), `${JSON.stringify(readinessChecks, null, 2)}\n`, "utf8");
 
 const calendar = planContentCalendar(7);
 const calendarFile = "content-calendar.md";
@@ -99,6 +109,7 @@ await writeFile(
   join(outDir, "handoff-summary.md"),
   renderSummary({
     status,
+    readinessChecks,
     latestExportPath,
     calendarPath: calendarFile,
     batchDryRunPath: batchDryRunFile

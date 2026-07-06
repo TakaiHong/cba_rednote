@@ -64,6 +64,8 @@ npm.cmd run export -- --post latest
 npm.cmd run handoff -- --out .tmp/handoff
 ```
 
+handoff 包会包含 `status.json`、`readiness-checks.json`、7 天内容日历、批量生成 dry-run 和最新发布包。`readiness-checks.json` 会把真实账号 preflight 和已发布链接回填证据一起列出来。
+
 5. 校验发布包。
 
 ```powershell

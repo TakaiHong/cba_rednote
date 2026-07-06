@@ -162,6 +162,13 @@ async function inspectSelectors(page: Page, selectors: Awaited<ReturnType<typeof
   return result;
 }
 
+function hasVisibleSelectorHit(
+  report: Awaited<ReturnType<typeof inspectSelectors>>,
+  group: "title" | "body" | "upload" | "publishButton"
+) {
+  return Boolean(report[group]?.some((item) => item.count > 0 && item.visible));
+}
+
 async function writePreflightReport(
   path: string,
   report: {
@@ -253,6 +260,8 @@ console.log(publishPackage.visualBrief);
 
 if (options.preflight) {
   const selectorReport = await inspectSelectors(page, selectorConfig);
+  const requiredGroups = ["title", "body", "upload", "publishButton"] as const;
+  const missingGroups = requiredGroups.filter((group) => !hasVisibleSelectorHit(selectorReport, group));
   console.log("Selector preflight:");
   console.log(JSON.stringify(selectorReport, null, 2));
   if (options.preflightReport) {
@@ -265,6 +274,22 @@ if (options.preflight) {
     });
     console.log(`Preflight report written: ${options.preflightReport}`);
   }
+  await runLogStore.append({
+    action: "publish-preflight",
+    status: missingGroups.length === 0 ? "ok" : "error",
+    message:
+      missingGroups.length === 0
+        ? `Preflight selectors ready for post ${post.id}`
+        : `Preflight missing visible selector hits: ${missingGroups.join(", ")}`,
+    metadata: {
+      postId: post.id,
+      reportPath: options.preflightReport,
+      titleVisible: hasVisibleSelectorHit(selectorReport, "title"),
+      bodyVisible: hasVisibleSelectorHit(selectorReport, "body"),
+      uploadVisible: hasVisibleSelectorHit(selectorReport, "upload"),
+      publishButtonVisible: hasVisibleSelectorHit(selectorReport, "publishButton")
+    }
+  });
   if (!options.noPause) {
     await page.pause();
   }
