@@ -11,6 +11,7 @@
 ## Server
 
 - `server/src/index.ts`：Express 服务入口，挂载 API 和定时任务。
+- `server/src/app.ts`：创建 Express app，供生产入口和路由测试复用。
 - `server/src/analytics/contentStrategy.ts`：按内容风格和目标人群汇总效果，并生成下一条内容建议。
 - `server/src/config.ts`：环境变量和成本配置。
 - `server/src/modelConfig.ts`：模型供应商、DeepSeek alias、base URL、模型名和单条成本估算解析。
