@@ -84,7 +84,7 @@ npm.cmd run publish -- --post latest --preflight --no-pause --preflight-report .
 npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 ```
 
-也可以在运营台中粘贴小红书笔记链接，并保存状态。回写后，运行日志会记录这次发布回写动作。
+`--published-url` 必须是合法的 `http` 或 `https` 链接。也可以在运营台中粘贴小红书笔记链接，并保存状态。回写后，运行日志会记录这次发布回写动作。
 
 ## 最终点击发布
 

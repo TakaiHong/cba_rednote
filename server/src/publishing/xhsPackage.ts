@@ -18,8 +18,9 @@ export function createXhsPublishPackage(post: MarketingPost): XhsPublishPackage 
   const parts = [post.body];
   if (post.callToAction) parts.push("", post.callToAction);
   if (tagsLine) parts.push("", tagsLine);
+
   const fullText = parts.join("\n");
-  const coverText = post.title.length > 18 ? post.title.slice(0, 17) + "..." : post.title;
+  const coverText = post.title.length > 18 ? `${post.title.slice(0, 17)}...` : post.title;
   const visualBrief = [
     `封面文字：${coverText}`,
     `场景：${post.topic.scene}`,

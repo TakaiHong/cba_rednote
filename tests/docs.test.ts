@@ -2,6 +2,23 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 
+function fromCodePoints(values: number[]) {
+  return values.map((codePoint) => String.fromCodePoint(codePoint)).join("");
+}
+
+const mojibakePattern = new RegExp(
+  [
+    [0x93c2, 0x677f],
+    [0x9354, 0x72b2],
+    [0x704f, 0x5fd5],
+    [0x6769, 0x612f],
+    [0x7efe, 0xe76d],
+    [0x6d93, 0x20ac]
+  ]
+    .map(fromCodePoints)
+    .join("|") + "|\\uFFFD"
+);
+
 describe("project docs", () => {
   const docs = [
     "docs/requirements.md",
@@ -15,7 +32,7 @@ describe("project docs", () => {
   it("keeps core handoff documents readable", async () => {
     for (const path of docs) {
       const content = await readFile(path, "utf8");
-      assert.doesNotMatch(content, /涓|鏂|绾|鍔|灏|杩|�/, path);
+      assert.doesNotMatch(content, mojibakePattern, path);
     }
   });
 

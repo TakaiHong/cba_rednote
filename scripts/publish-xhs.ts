@@ -4,6 +4,7 @@ import { chromium, type Page } from "playwright";
 import { config } from "../server/src/config.js";
 import { resolveImageInputs } from "../server/src/publishing/imageInputs.js";
 import { finalPublishGuardMessage, shouldAttemptFinalPublish } from "../server/src/publishing/finalPublish.js";
+import { normalizePublishedUrl } from "../server/src/publishing/publishedUrl.js";
 import { loadXhsSelectorConfig } from "../server/src/publishing/selectorConfig.js";
 import { createXhsPublishPackage } from "../server/src/publishing/xhsPackage.js";
 import { postStore } from "../server/src/storage/postStore.js";
@@ -192,9 +193,15 @@ if (!post) {
 }
 
 if (options.markPublished) {
+  const publishedUrl = normalizePublishedUrl(options.publishedUrl);
+  if (!publishedUrl) {
+    console.error("--mark-published requires a valid http(s) --published-url <url>.");
+    process.exit(1);
+  }
+
   await postStore.update(post.id, {
     status: "published",
-    publishedUrl: options.publishedUrl
+    publishedUrl
   });
   await runLogStore.append({
     action: "mark-published",
@@ -202,7 +209,7 @@ if (options.markPublished) {
     message: `Marked post ${post.id} as published`,
     metadata: {
       postId: post.id,
-      hasPublishedUrl: Boolean(options.publishedUrl)
+      hasPublishedUrl: true
     }
   });
   console.log(`Marked post as published: ${post.id}`);

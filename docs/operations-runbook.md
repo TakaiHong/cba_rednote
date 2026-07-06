@@ -94,7 +94,7 @@ npm.cmd run publish -- --post latest --images-dir .\assets\xhs
 npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 ```
 
-也可以在运营台里把小红书笔记链接粘贴到“发布链接”字段，并保存状态。
+CLI 回写要求 `--published-url` 是合法的 `http` 或 `https` 链接，避免产生“已发布但没有证据”的记录。也可以在运营台里把小红书笔记链接粘贴到“发布链接”字段，并保存状态。
 
 8. 回填效果数据。
 
