@@ -8,7 +8,8 @@ describe("generateMarketingPost", () => {
 
     assert.ok(post.id);
     assert.ok(post.title.length > 0);
-    assert.ok(post.body.includes("新加坡") || post.tags.includes("新加坡生活"));
+    assert.ok(post.body.length > 50);
+    assert.ok(post.tags.some((tag) => tag.includes("新加坡") || tag.includes("迷你仓")));
     assert.ok(post.tags.length >= 5);
     assert.ok(post.imageIdeas.length >= 1);
     assert.equal(post.estimatedCostCny <= 0.5, true);
