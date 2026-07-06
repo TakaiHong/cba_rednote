@@ -1,19 +1,21 @@
-# Xiaohongshu Publishing
+# 小红书发布流程
 
-## Recommended First Version
+## 第一版推荐方式
 
 小红书没有稳定公开的普通账号发帖 API，因此第一版采用半自动发布：
 
-1. 运营台生成并审核草稿。
+1. 在运营台生成并审核草稿。
 2. 执行 `npm.cmd run publish -- --post latest`。
-3. 脚本使用 `playwright/.auth/xhs-profile` 复用本地登录态，并打开小红书创作者中心。
-4. 用户第一次运行时完成登录或扫码。
-5. 脚本复制标题、正文、标签到浏览器剪贴板，并在 `assist` 模式下尝试填充页面字段。
-6. 运营台或 dry-run 输出图片 brief，用于拍摄封面图、仓储空间图或 AI 出图。
-7. 用户检查内容并手动点击发布。
-8. 发布成功后执行 `npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>` 回写状态。
+3. 脚本用 `playwright/.auth/xhs-profile` 复用本地浏览器登录态，并打开小红书创作者中心。
+4. 第一次运行时，运营人员在浏览器里完成登录或扫码。
+5. 脚本把标题、正文和标签复制到浏览器剪贴板，并在 `assist` 模式下尝试填充页面字段。
+6. 如果传入图片，脚本会尝试上传；如果页面结构变化导致上传失败，仍保留人工上传兜底。
+7. 运营人员检查内容、图片、封面和话题后，手动点击发布。
+8. 发布成功后，把小红书链接回写到系统。
 
-## Commands
+这种方式把重复劳动交给脚本，把账号风控、最终内容确认和页面异常判断留给人工。
+
+## 常用命令
 
 默认辅助填充：
 
@@ -21,13 +23,19 @@
 npm.cmd run publish -- --post latest
 ```
 
-账号登录态、图片上传、标题/正文选择器和发布按钮选择器都验证稳定后，可以显式启用最终发布点击：
+只打开页面和复制内容，不尝试填充字段：
 
 ```powershell
-npm.cmd run publish -- --post latest --click-publish
+npm.cmd run publish -- --post latest --mode clipboard
 ```
 
-该命令还要求 `.env` 中设置 `XHS_ALLOW_FINAL_PUBLISH=true`。如果只传 `--click-publish` 但没有环境变量，脚本会照常填充内容，但不会点击最终发布按钮。
+校验发布包，不打开浏览器：
+
+```powershell
+npm.cmd run publish -- --post latest --dry-run
+```
+
+dry-run 会输出标题、正文、标签、图片建议、封面文字、图片 brief、AI 出图 prompt、素材清单和计划上传的图片路径。
 
 带本地图片辅助上传：
 
@@ -36,16 +44,7 @@ npm.cmd run publish -- --post latest --image .\assets\cover.png --image .\assets
 npm.cmd run publish -- --post latest --images-dir .\assets\xhs
 ```
 
-`--image` 可重复传入。`--images-dir` 会读取 `.jpg`、`.jpeg`、`.png`、`.webp` 文件。脚本会先尝试 `config/xhs-selectors.json` 里的上传选择器，找不到时仍保留剪贴板/手动上传兜底。
-
-只校验发布包，不打开浏览器：
-
-```powershell
-npm.cmd run publish -- --post latest --dry-run
-```
-
-dry-run 会输出标题、正文、标签、图片建议、封面文字、图片 brief、AI 出图 prompt 和素材清单。
-如果传入 `--image` 或 `--images-dir`，dry-run 也会列出计划上传的绝对路径。
+`--image` 可以重复传入。`--images-dir` 会读取 `.jpg`、`.jpeg`、`.png`、`.webp` 文件。
 
 导出运营交接包：
 
@@ -53,56 +52,81 @@ dry-run 会输出标题、正文、标签、图片建议、封面文字、图片
 npm.cmd run export -- --post latest
 ```
 
-导出文件会写入 `exports/`，包含发布正文、标签、图片 brief、AI 出图 prompt 和素材清单。
+导出文件写入 `exports/`，包含发布正文、标签、图片 brief、AI 出图 prompt 和素材清单。
 
-只打开页面和复制内容，不尝试填充字段：
+## 真实账号预检
 
-```powershell
-npm.cmd run publish -- --post latest --mode clipboard
-```
-
-检查真实创作者中心页面选择器命中情况：
+正式依赖辅助发布前，先检查真实创作者中心页面里的选择器：
 
 ```powershell
 npm.cmd run publish:preflight
 ```
 
-默认会写入 `.tmp/xhs-preflight-report.json`，用于记录真实账号页面里 `title`、`body`、`upload` 和 `publishButton` 选择器的命中情况。也可以自定义路径：
+默认报告路径：
+
+```text
+.tmp/xhs-preflight-report.json
+```
+
+报告会记录 `title`、`body`、`upload` 和 `publishButton` 四组选项的命中数量与可见性。也可以自定义路径：
 
 ```powershell
 npm.cmd run publish -- --post latest --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json
 ```
 
-如果 preflight 显示标题或正文选择器都没有命中，优先更新 `config/xhs-selectors.json`，再运行辅助发布。
+如果标题、正文或上传选择器没有命中，优先更新 `config/xhs-selectors.json`，再重新运行 preflight。
 
-发布后回写状态：
+## 发布后回写
+
+发布成功后标记为已发布：
 
 ```powershell
 npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 ```
 
-## Why Semi-automatic
+也可以在运营台中粘贴小红书笔记链接，并保存状态。回写后，运行日志会记录这次发布回写动作。
 
-- 降低账号异常和验证码风险。
-- 页面结构变化时仍然可以使用剪贴板模式，不影响内容生成和运营台。
-- 页面结构变化时可以用 `publish:preflight` 检查并更新选择器配置。
-- 保留人工确认，避免不合规或重复内容误发。
+## 最终点击发布
 
-如果确实要进入一键最终发布模式，先完成 `publish:preflight`，确认 `title`、`body`、`upload` 和 `publishButton` 至少命中一次，再打开 `XHS_ALLOW_FINAL_PUBLISH=true` 并使用 `--click-publish`。
+最终点击发布默认关闭。即使传入 `--click-publish`，如果没有环境变量允许，脚本也只会辅助填充，不会点击最终发布按钮。
 
-## Future Full Automation
+只有在满足以下条件后，才考虑一键最终发布：
 
-如果账号、浏览器状态和页面结构稳定，可以继续补充：
+- 已经在真实账号中完成 `publish:preflight`。
+- 报告显示 `title`、`body` 和 `publishButton` 至少有可用命中。
+- 账号登录态稳定，没有频繁要求扫码或验证码。
+- 运营人员已经确认该内容可以发布。
+- `.env` 或当前 shell 中显式设置 `XHS_ALLOW_FINAL_PUBLISH=true`。
 
-- 登录态持久化。
-- 自动上传图片。
-- 自动填充标题、正文、话题。
-- 发布前截图和二次确认。
-- 发布后抓取链接并回写状态。
+启用后命令：
 
-## Risk Notes
+```powershell
+npm.cmd run publish -- --post latest --images-dir .\assets\xhs --click-publish
+```
 
-- 避免高频发布和重复文案。
-- 不要批量新号硬发广告。
-- 每天建议先 1 到 3 条，观察阅读和互动。
-- 内容中少用夸张承诺，重点讲真实场景和解决方案。
+如果标题或正文自动填充失败，脚本会阻止最终点击。
+
+## 为什么不默认全自动
+
+- 降低账号异常、验证码和风控风险。
+- 小红书页面结构会变化，半自动模式更容易恢复。
+- 剪贴板模式可以在选择器失效时继续使用，不影响内容生产。
+- 保留人工确认，避免重复内容、不合规表达或图片错误直接发出。
+
+## 未来可扩展方向
+
+账号、浏览器状态和页面结构稳定后，可以继续补：
+
+- 登录态健康检查。
+- 发布前截图和人工确认记录。
+- 自动识别发布成功后的笔记链接。
+- 自动回写已发布链接。
+- 针对不同账号的发布频率限制。
+
+## 风险备注
+
+- 不要高频批量硬发广告。
+- 每天建议先发布 1 到 3 条，观察曝光和互动。
+- 内容尽量讲真实场景和解决方案，少用夸张承诺。
+- 不要把最终发布点击作为默认行为。
+- 小红书页面变化后，先跑 `publish:preflight`，再更新选择器配置。

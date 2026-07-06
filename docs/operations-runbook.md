@@ -1,98 +1,106 @@
-# Operations Runbook
+# 运营手册
 
-## Daily Flow
+## 每日流程
 
-Start the local platform:
+启动本地平台：
 
 ```powershell
 npm.cmd run local:start
 npm.cmd run health
 ```
 
-Stop local background services:
+停止本地后台服务：
 
 ```powershell
 npm.cmd run local:stop
 ```
 
-1. Generate one draft:
+1. 生成草稿。
+
+生成单条草稿：
 
 ```powershell
 npm.cmd run generate
 ```
 
-Prepare several drafts in one run:
+一次准备多条草稿：
 
 ```powershell
 npm.cmd run generate:batch -- --count 7 --dry-run
 npm.cmd run generate:batch -- --count 7 --max-model-posts 1
 ```
 
-The dashboard also has a `批量准备 7 条` button with the same paid-model limit.
+运营台里的“批量准备 7 条”按钮使用同一套批量生成逻辑。`--max-model-posts` 用来限制本次批量任务里最多多少条可以调用 DeepSeek 等付费模型；测试时建议保持较低。
 
-`--max-model-posts` limits how many drafts may use a paid OpenAI-compatible provider such as DeepSeek. Keep it low when testing.
+如果生成内容被标记为 `draft`，并且审核备注里出现相似度提示，需要人工确认是否与历史内容过近，再改成待发布状态。
 
-如果生成内容被标记为 `draft` 且审核备注包含 similarity，需要人工确认是否与历史内容过近，再设为待发布。
-
-2. Review and edit in the运营台:
+2. 在运营台审核和编辑。
 
 ```powershell
 npm.cmd run dev
 ```
 
-Use the content pool search box and status filters to find draft, approved, published or archived posts.
+用内容池搜索框和状态筛选查看草稿、待发布、已发布或归档内容。审核时重点看标题是否像真人写的、正文是否自然、标签是否贴合新加坡场景、CTA 是否过硬。
 
-Plan upcoming topics:
+3. 规划未来选题。
 
 ```powershell
 npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md
 ```
 
-3. Export a handoff package if another person will publish:
+内容日历用于检查人群和内容形式是否足够分散，避免连续几天都写同一种“搬家断档”硬广。
+
+4. 导出交接包。
+
+如果发布由另一个人执行，先导出 Markdown：
 
 ```powershell
 npm.cmd run export -- --post latest
 ```
 
-4. Validate the publish package:
+如需一次性打包当前状态、最近草稿和发布材料：
+
+```powershell
+npm.cmd run handoff -- --out .tmp/handoff
+```
+
+5. 校验发布包。
 
 ```powershell
 npm.cmd run publish -- --post latest --dry-run
 ```
 
-5. Publish with assisted browser flow:
+dry-run 会输出标题、正文、标签、封面文字、图片 brief、AI 出图 prompt 和素材清单，不打开浏览器。
+
+6. 使用半自动浏览器发布。
 
 ```powershell
 npm.cmd run publish -- --post latest
 ```
 
-With prepared images:
+带本地图片：
 
 ```powershell
 npm.cmd run publish -- --post latest --images-dir .\assets\xhs
 ```
 
-After account validation, final-click publishing can be enabled explicitly:
+脚本会打开小红书创作者中心，复用本地登录态，复制内容并尽量填充标题、正文和图片。默认不点击最终发布按钮，发布前必须人工检查页面。
 
-```powershell
-npm.cmd run publish -- --post latest --images-dir .\assets\xhs --click-publish
-```
-
-This final-click mode also requires `XHS_ALLOW_FINAL_PUBLISH=true` in `.env`.
-
-6. After publishing, write the result back:
+7. 发布后回写链接和状态。
 
 ```powershell
 npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 ```
 
-You can also paste the published Xiaohongshu note URL into the dashboard field `小红书链接`.
+也可以在运营台里把小红书笔记链接粘贴到“发布链接”字段，并保存状态。
 
-7. Fill in exposure, likes, saves, comments, follows and inquiries in the运营台.
+8. 回填效果数据。
 
-8. Check the strategy recommendation in the运营台 or `npm.cmd run status`. Treat it as directional until at least 3 posts have performance data.
+在运营台录入曝光、点赞、收藏、评论、关注和咨询数。至少积累 3 条有指标的内容后，再看系统给出的下一步内容建议。
 
-## Status Checks
+## 状态检查
+
+常用检查命令：
 
 ```powershell
 npm.cmd run status
@@ -100,65 +108,90 @@ npm.cmd run readiness
 npm.cmd run verify
 ```
 
-`status` shows content counts, latest post, model provider, budget configuration and common commands. `readiness` summarizes handoff checks and separates required failures from warnings. `verify` runs type checks, tests, production build, status, readiness, publish dry-run, export smoke test and scheduler dry-run.
+- `status` 展示内容数量、最新草稿、模型配置、成本汇总、常用命令、最近运行记录和内容策略建议。
+- `readiness` 检查交付必备项，把 required failure 和 warning 分开。
+- `verify` 运行类型检查、测试、生产构建、状态输出、readiness、批量生成 dry-run、发布 dry-run、导出、handoff、备份 dry-run 和定时任务 dry-run。
 
-Use the dashboard or `npm.cmd run status` to monitor total estimated content cost, average cost per post, paid model post count and whether every post is still within the per-post budget.
+用 `npm.cmd run health` 检查前端、后端端口和 `/api/health`、`/api/status` 是否正常。
 
-Use `local:start` to open backend/frontend in hidden background processes and `health` to check ports plus `/api/health` and `/api/status`.
+## 模型成本
 
-## Model Provider
+默认本地模板生成不产生 API 成本。要使用 DeepSeek，把 `DEEPSEEK_API_KEY` 写到 `.env` 或当前 shell 环境变量里，不要提交到 Git。
 
-Use the local template generator when you want zero API cost. To use DeepSeek, set `DEEPSEEK_API_KEY` in `.env`; the default DeepSeek model is `deepseek-v4-flash`, with `https://api.deepseek.com` as the base URL. Keep `MAX_COST_CNY_PER_POST=0.5` and adjust `MODEL_COST_CNY_PER_POST_ESTIMATE` if pricing assumptions change.
+建议配置：
 
-Full setup notes are in `docs/model-config.md`.
+```powershell
+DEEPSEEK_MODEL=deepseek-v4-flash
+MODEL_COST_CNY_PER_POST_ESTIMATE=0.12
+MAX_COST_CNY_PER_POST=0.5
+```
 
-## Data Backup
+首次测试 DeepSeek 时只生成 1 条；批量准备内容时用 `--max-model-posts 1` 控制预算。
 
-Back up local runtime data before larger edits or handoff:
+## 数据备份
+
+较大改动或交接前先备份运行数据：
 
 ```powershell
 npm.cmd run backup
 ```
 
-Preview the backup target without writing:
+只预览备份目标：
 
 ```powershell
 npm.cmd run backup:dry-run
 ```
 
-Backups are written to `backups/`, which is ignored by Git.
+备份写入 `backups/`，该目录不会提交到 Git。
 
-## Daily Automation
+## 每日自动化
 
-Install the Windows scheduled task:
+安装 Windows 任务计划程序：
 
 ```powershell
 npm.cmd run schedule:install
 ```
 
-Check the task plan without installing:
+只检查安装计划：
 
 ```powershell
 npm.cmd run schedule:dry-run
 ```
 
-Uninstall:
+卸载任务：
 
 ```powershell
 npm.cmd run schedule:uninstall
 ```
 
-## Xiaohongshu Account Validation
+默认每日时间由 `.env` 的 `DAILY_CRON` 控制。
 
-Before relying on assisted publishing for a real account:
+## 小红书账号验证
 
-1. Run `npm.cmd run publish:preflight`.
-2. Log in or scan QR code in the opened browser.
-3. Confirm title/body/upload/publish selectors are detected.
-4. Review `.tmp/xhs-preflight-report.json` as the saved selector evidence.
-5. If selectors miss, update `config/xhs-selectors.json`.
-6. Re-run preflight before using `npm.cmd run publish -- --post latest`.
+第一次真实发布前先做预检：
 
-The script does not click the final publish button by default. Keep manual confirmation until the account has stable login state and the page selectors have been verified.
+1. 运行 `npm.cmd run publish:preflight`。
+2. 在打开的浏览器里登录或扫码。
+3. 确认标题、正文、上传和发布按钮选择器有命中。
+4. 查看 `.tmp/xhs-preflight-report.json`，作为真实账号页面的选择器证据。
+5. 如果选择器没有命中，更新 `config/xhs-selectors.json`。
+6. 再次运行 preflight，确认通过后再执行真实辅助发布。
 
-When stable, run `publish:preflight`, confirm `publishButton` is detected, then set `XHS_ALLOW_FINAL_PUBLISH=true` and use `--click-publish` for explicit one-command final publishing.
+最终发布点击默认关闭。只有当账号登录态稳定、preflight 报告显示 `publishButton` 可用，并且人工确认过页面内容后，才设置 `XHS_ALLOW_FINAL_PUBLISH=true` 并使用：
+
+```powershell
+npm.cmd run publish -- --post latest --images-dir .\assets\xhs --click-publish
+```
+
+## 交接前证据
+
+交接给运营或发布人员前，建议保留这些输出：
+
+- `npm.cmd run verify` 通过记录。
+- `npm.cmd run health` 通过记录。
+- `npm.cmd run readiness` 输出，required failure 必须为 0。
+- `.tmp/content-calendar.md`。
+- `.tmp/handoff`。
+- 最新导出的 Markdown 发布包。
+- 真实账号的 `.tmp/xhs-preflight-report.json`。
+- 至少一条已经发布并回填链接的内容。
