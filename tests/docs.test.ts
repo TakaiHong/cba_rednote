@@ -26,7 +26,8 @@ describe("project docs", () => {
     "docs/xiaohongshu-publishing.md",
     "docs/architecture.md",
     "docs/code-map.md",
-    "docs/acceptance-checklist.md"
+    "docs/acceptance-checklist.md",
+    "docs/model-config.md"
   ];
 
   it("keeps core handoff documents readable", async () => {
@@ -51,6 +52,19 @@ describe("project docs", () => {
     for (const keyword of ["publish:preflight", "XHS_ALLOW_FINAL_PUBLISH=true", "--click-publish"]) {
       assert.match(publishing, new RegExp(keyword));
       assert.match(runbook, new RegExp(keyword));
+    }
+  });
+
+  it("documents model safety and image generation boundaries", async () => {
+    const modelConfig = await readFile("docs/model-config.md", "utf8");
+    const acceptance = await readFile("docs/acceptance-checklist.md", "utf8");
+
+    for (const keyword of ["DeepSeek", "Image Generation", "secrets:scan", "imagePrompt"]) {
+      assert.match(modelConfig, new RegExp(keyword));
+    }
+
+    for (const keyword of ["secrets:scan", "图片", "发布脚本"]) {
+      assert.match(acceptance, new RegExp(keyword));
     }
   });
 });

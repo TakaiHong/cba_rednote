@@ -19,6 +19,7 @@ The command checks:
 - publish script and selector configuration
 - final publish double opt-in
 - model budget guard
+- tracked-file secret scan command
 - required docs
 - current content pool status
 - model provider status
@@ -34,7 +35,7 @@ Run:
 npm.cmd run verify
 ```
 
-This runs type checks, unit tests, production build, status output, readiness, publish dry-run, export smoke test, backup dry-run, and scheduler dry-run.
+This runs the tracked-file secret scan, type checks, unit tests, production build, status output, readiness, publish dry-run, export smoke test, backup dry-run, and scheduler dry-run.
 
 ## DeepSeek
 
@@ -50,6 +51,26 @@ MAX_COST_CNY_PER_POST=0.5
 ```
 
 Use a single generated draft to validate the paid model path, then continue with dry-runs unless more quality samples are needed.
+
+Before committing model configuration changes, run:
+
+```powershell
+npm.cmd run secrets:scan
+```
+
+This checks Git-tracked files for real-looking `DEEPSEEK_API_KEY` or OpenAI-compatible API key values. Keep real keys in `.env` or the current shell only.
+
+## Image Assets / 图片素材
+
+The platform currently generates image ideas, cover text, `visualBrief`, `imagePrompt`, and an asset checklist for each post. It does not generate image files by itself yet.
+
+Use those prompts with a dedicated image tool or real photos, save the final images locally, then pass them to the publishing script / 发布脚本:
+
+```powershell
+npm.cmd run publish -- --post latest --images-dir .\assets\xhs
+```
+
+If native image generation is added later, use a separate image provider rather than DeepSeek text generation, and keep generated assets in ignored folders such as `assets/`, `exports/`, or `.tmp/`.
 
 ## Xiaohongshu Account Validation
 
@@ -78,6 +99,7 @@ npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 Capture these before considering the first version ready:
 
 - `npm.cmd run verify` output with all checks passing
+- `npm.cmd run secrets:scan` output showing no tracked API secrets
 - `npm.cmd run health` output with backend and frontend online
 - `npm.cmd run readiness` output with no required failures
 - one 7-day content calendar from `npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md`
