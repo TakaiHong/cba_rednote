@@ -3,6 +3,7 @@ import { z } from "zod";
 import { generatePostBatch } from "../generation/batch.js";
 import { planContentCalendar } from "../generation/contentCalendar.js";
 import { generateUniqueMarketingPost } from "../generation/generator.js";
+import { resolvePublishedUrlEvidence } from "../publishing/publishedUrl.js";
 import { createXhsPublishPackage } from "../publishing/xhsPackage.js";
 import { postStore } from "../storage/postStore.js";
 import { runLogStore } from "../storage/runLogStore.js";
@@ -114,7 +115,20 @@ router.post("/generate-batch", async (req, res) => {
 
 router.patch("/:id", async (req, res) => {
   const input = updateSchema.parse(req.body);
-  const post = await postStore.update(req.params.id, input);
+  const existing = await postStore.get(req.params.id);
+  if (!existing) return res.status(404).json({ error: "Post not found" });
+
+  const publishedUrlEvidence = resolvePublishedUrlEvidence({
+    status: input.status,
+    publishedUrl: input.publishedUrl,
+    existingPublishedUrl: existing.publishedUrl
+  });
+  if (!publishedUrlEvidence.ok) {
+    return res.status(400).json({ error: publishedUrlEvidence.error });
+  }
+
+  const updateInput = input.publishedUrl === undefined ? input : { ...input, publishedUrl: publishedUrlEvidence.publishedUrl };
+  const post = await postStore.update(req.params.id, updateInput);
   if (!post) return res.status(404).json({ error: "Post not found" });
   if (input.status === "published" || input.publishedUrl) {
     await runLogStore.append({

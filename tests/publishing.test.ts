@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { normalizePublishedUrl } from "../server/src/publishing/publishedUrl.js";
+import { normalizePublishedUrl, resolvePublishedUrlEvidence } from "../server/src/publishing/publishedUrl.js";
 import { createXhsPublishPackage, renderXhsMarkdownExport } from "../server/src/publishing/xhsPackage.js";
 import type { MarketingPost } from "../server/src/types.js";
 
@@ -89,5 +89,29 @@ describe("normalizePublishedUrl", () => {
     assert.equal(normalizePublishedUrl(""), undefined);
     assert.equal(normalizePublishedUrl("not a url"), undefined);
     assert.equal(normalizePublishedUrl("file:///tmp/note"), undefined);
+  });
+});
+
+describe("resolvePublishedUrlEvidence", () => {
+  it("requires URL evidence when marking a post published", () => {
+    assert.equal(resolvePublishedUrlEvidence({ status: "published" }).ok, false);
+    assert.equal(resolvePublishedUrlEvidence({ status: "published", publishedUrl: "not a url" }).ok, false);
+    assert.deepEqual(resolvePublishedUrlEvidence({ status: "published", publishedUrl: "https://xhs.example/note" }), {
+      ok: true,
+      publishedUrl: "https://xhs.example/note"
+    });
+  });
+
+  it("allows keeping existing URL evidence when status is already published", () => {
+    assert.deepEqual(
+      resolvePublishedUrlEvidence({
+        status: "published",
+        existingPublishedUrl: "https://www.xiaohongshu.com/explore/example"
+      }),
+      {
+        ok: true,
+        publishedUrl: undefined
+      }
+    );
   });
 });

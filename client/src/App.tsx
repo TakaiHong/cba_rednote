@@ -139,8 +139,23 @@ function App() {
 
   async function handlePatch(patch: Partial<MarketingPost>) {
     if (!selected) return;
-    const updated = await updatePost(selected.id, patch);
-    setPosts((current) => current.map((post) => (post.id === updated.id ? updated : post)));
+    setError("");
+    try {
+      const updated = await updatePost(selected.id, patch);
+      setPosts((current) => current.map((post) => (post.id === updated.id ? updated : post)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存失败");
+    }
+  }
+
+  function handleMarkPublished() {
+    if (!selected) return;
+    const normalizedUrl = selected.publishedUrl?.trim();
+    if (!normalizedUrl || !/^https?:\/\//i.test(normalizedUrl)) {
+      setError("标记已发布前，请先填写有效的小红书笔记链接。");
+      return;
+    }
+    void handlePatch({ status: "published", publishedUrl: normalizedUrl });
   }
 
   async function handleCopyPublishText() {
@@ -428,7 +443,7 @@ function App() {
 
             <div className="actions">
               <button onClick={() => handlePatch({ status: "approved" })}>设为待发布</button>
-              <button onClick={() => handlePatch({ status: "published" })}>标记已发布</button>
+              <button onClick={handleMarkPublished}>标记已发布</button>
               <button onClick={() => handlePatch({ status: "archived" })}>归档</button>
             </div>
           </section>

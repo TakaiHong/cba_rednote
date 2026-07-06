@@ -147,7 +147,10 @@ export async function updatePost(id: string, patch: Partial<MarketingPost>) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(patch)
   });
-  if (!response.ok) throw new Error("Failed to update post");
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to update post");
+  }
   return (await response.json()) as MarketingPost;
 }
 
