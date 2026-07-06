@@ -32,11 +32,13 @@ describe("generateHandoffPackage", () => {
       outDir: relative(process.cwd(), join(tempRoot, "handoff"))
     });
     const files = await readdir(result.outDir);
+    const imageAssetFiles = await readdir(join(result.outDir, "image-assets"));
     const readiness = JSON.parse(await readFile(join(result.outDir, "readiness-checks.json"), "utf8")) as Array<{
       name: string;
       ok: boolean;
     }>;
     const summary = await readFile(join(result.outDir, "handoff-summary.md"), "utf8");
+    const imageBrief = await readFile(join(result.outDir, "image-assets", "image-asset-brief.md"), "utf8");
     const runs = await runLogStore.list();
 
     assert.ok(files.includes("status.json"));
@@ -44,9 +46,16 @@ describe("generateHandoffPackage", () => {
     assert.ok(files.includes("content-calendar.md"));
     assert.ok(files.includes("batch-generation-dry-run.json"));
     assert.ok(files.includes("handoff-summary.md"));
+    assert.ok(files.includes("image-assets"));
+    assert.ok(imageAssetFiles.includes("image-asset-brief.md"));
+    assert.ok(imageAssetFiles.includes("image-prompt.txt"));
+    assert.ok(imageAssetFiles.includes("image-asset-brief.json"));
     assert.ok(files.some((file) => file.endsWith(".md") && file.includes("交接测试草稿")));
     assert.ok(readiness.some((check) => check.name === "preflight evidence" && check.ok === false));
     assert.match(summary, /Readiness Checks/);
+    assert.match(summary, /Image asset brief/);
+    assert.match(imageBrief, /AI 出图 Prompt/);
     assert.equal(runs[0].action, "handoff");
+    assert.equal(runs[0].metadata?.hasImageAssetBrief, true);
   });
 });

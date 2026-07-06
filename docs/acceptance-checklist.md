@@ -36,7 +36,7 @@ Run:
 npm.cmd run verify
 ```
 
-This runs the tracked-file secret scan, type checks, unit tests, production build, status output, readiness, publish dry-run, export smoke test, backup dry-run, and scheduler dry-run.
+This runs the tracked-file secret scan, type checks, unit tests, production build, status output, readiness, publish dry-run, export smoke test, image brief export, handoff export, backup dry-run, and scheduler dry-run.
 
 ## DeepSeek
 
@@ -111,7 +111,7 @@ Capture these before considering the first version ready:
 - `npm.cmd run readiness` output with no required failures
 - one 7-day content calendar from `npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md`
 - one batch-generation dry-run from `npm.cmd run generate:batch -- --count 7 --dry-run`
-- one handoff package from `npm.cmd run handoff -- --out .tmp/handoff`, including `readiness-checks.json`
+- one handoff package from `npm.cmd run handoff -- --out .tmp/handoff`, including `readiness-checks.json` and `image-assets/`
 - one image asset brief from `npm.cmd run image:brief -- --post latest --out .tmp/image-assets`
 - one exported Markdown handoff package from `npm.cmd run export -- --post latest`
 - one Xiaohongshu `publish:preflight` report from the real account, defaulting to `.tmp/xhs-preflight-report.json`

@@ -7,6 +7,7 @@ import { createXhsPublishPackage, renderXhsMarkdownExport } from "../server/src/
 import { getSystemStatus } from "../server/src/status.js";
 import { postStore } from "../server/src/storage/postStore.js";
 import { runLogStore } from "../server/src/storage/runLogStore.js";
+import { prepareImageAssetBrief } from "./prepare-image-assets.js";
 import { buildReadinessChecks } from "./readiness.js";
 
 export interface HandoffOptions {
@@ -28,6 +29,7 @@ function renderSummary(input: {
   status: Awaited<ReturnType<typeof getSystemStatus>>;
   readinessChecks: Awaited<ReturnType<typeof buildReadinessChecks>>;
   latestExportPath?: string;
+  imageAssetPaths?: string[];
   calendarPath: string;
   batchDryRunPath: string;
 }) {
@@ -69,6 +71,7 @@ function renderSummary(input: {
     `- Content calendar: ${input.calendarPath}`,
     `- Batch dry-run: ${input.batchDryRunPath}`,
     `- Latest publish package: ${input.latestExportPath ?? "not available"}`,
+    `- Image asset brief: ${input.imageAssetPaths?.join(", ") ?? "not available"}`,
     "",
     "## Remaining External Validation",
     "",
@@ -98,12 +101,19 @@ export async function generateHandoffPackage(options: HandoffOptions) {
   await writeFile(join(outDir, batchDryRunFile), `${JSON.stringify(batchPlan, null, 2)}\n`, "utf8");
 
   let latestExportPath: string | undefined;
+  let imageAssetPaths: string[] | undefined;
   const latest = await postStore.latestDraft();
   if (latest) {
     const publishPackage = createXhsPublishPackage(latest);
     const filename = `${latest.createdAt.slice(0, 10)}-${safeFilename(publishPackage.title) || latest.id}.md`;
     latestExportPath = filename;
     await writeFile(join(outDir, filename), renderXhsMarkdownExport(publishPackage), "utf8");
+
+    const imageAssets = await prepareImageAssetBrief({
+      post: latest.id,
+      outDir: join(options.outDir, "image-assets")
+    });
+    imageAssetPaths = Object.values(imageAssets.files).map((file) => `image-assets/${file}`);
   }
 
   await writeFile(
@@ -112,6 +122,7 @@ export async function generateHandoffPackage(options: HandoffOptions) {
       status,
       readinessChecks,
       latestExportPath,
+      imageAssetPaths,
       calendarPath: calendarFile,
       batchDryRunPath: batchDryRunFile
     }),
@@ -124,7 +135,8 @@ export async function generateHandoffPackage(options: HandoffOptions) {
     message: "Generated handoff package",
     metadata: {
       outDir: options.outDir,
-      hasLatestExport: Boolean(latestExportPath)
+      hasLatestExport: Boolean(latestExportPath),
+      hasImageAssetBrief: Boolean(imageAssetPaths)
     }
   });
 
@@ -136,7 +148,8 @@ export async function generateHandoffPackage(options: HandoffOptions) {
       calendar: calendarFile,
       batchDryRun: batchDryRunFile,
       summary: "handoff-summary.md",
-      latestExport: latestExportPath
+      latestExport: latestExportPath,
+      imageAssets: imageAssetPaths
     }
   };
 }

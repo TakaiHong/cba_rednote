@@ -64,7 +64,7 @@ npm.cmd run export -- --post latest
 npm.cmd run handoff -- --out .tmp/handoff
 ```
 
-handoff 包会包含 `status.json`、`readiness-checks.json`、7 天内容日历、批量生成 dry-run 和最新发布包。`readiness-checks.json` 会把真实账号 preflight 和已发布链接回填证据一起列出来。
+handoff 包会包含 `status.json`、`readiness-checks.json`、7 天内容日历、批量生成 dry-run、最新发布包和 `image-assets/` 图片素材包。`readiness-checks.json` 会把真实账号 preflight 和已发布链接回填证据一起列出来。
 
 5. 校验发布包。
 
@@ -112,7 +112,7 @@ npm.cmd run verify
 
 - `status` 展示内容数量、最新草稿、模型配置、成本汇总、常用命令、最近运行记录和内容策略建议。
 - `readiness` 检查交付必备项，把 required failure 和 warning 分开。
-- `verify` 运行类型检查、测试、生产构建、状态输出、readiness、批量生成 dry-run、发布 dry-run、导出、handoff、备份 dry-run 和定时任务 dry-run。
+- `verify` 运行密钥扫描、类型检查、测试、生产构建、状态输出、readiness、批量生成 dry-run、发布 dry-run、导出、图片素材包导出、handoff、备份 dry-run 和定时任务 dry-run。
 
 用 `npm.cmd run health` 检查前端、后端端口和 `/api/health`、`/api/status` 是否正常。
 
