@@ -20,6 +20,7 @@
     "readiness": "tsx scripts/readiness.ts",
     "calendar": "tsx scripts/plan-calendar.ts",
     "handoff": "tsx scripts/handoff-package.ts",
+    "image:brief": "tsx scripts/prepare-image-assets.ts",
     "export": "tsx scripts/export-xhs.ts",
     "publish": "tsx scripts/publish-xhs.ts",
     "publish:preflight": "tsx scripts/publish-xhs.ts --post latest --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json",
@@ -29,7 +30,7 @@
     "secrets:scan": "tsx scripts/check-secrets.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "verify": "npm run secrets:scan && npm run lint && npm run test && npm run build && npm run status && npm run readiness && npm run generate:batch -- --count 7 --dry-run && npm run publish -- --post latest --dry-run && npm run export -- --post latest --out .tmp/verify-exports && npm run handoff -- --out .tmp/verify-handoff && npm run backup:dry-run && npm run schedule:dry-run"
+    "verify": "npm run secrets:scan && npm run lint && npm run test && npm run build && npm run status && npm run readiness && npm run generate:batch -- --count 7 --dry-run && npm run publish -- --post latest --dry-run && npm run export -- --post latest --out .tmp/verify-exports && npm run image:brief -- --post latest --out .tmp/verify-image-assets && npm run handoff -- --out .tmp/verify-handoff && npm run backup:dry-run && npm run schedule:dry-run"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

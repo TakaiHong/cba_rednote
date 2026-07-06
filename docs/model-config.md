@@ -47,6 +47,14 @@ npm.cmd run publish -- --post latest --images-dir .\assets\xhs
 
 Recommended low-cost first step: use the generated `visualBrief` and `imagePrompt` with a dedicated image tool, then upload the resulting local images through the existing publish script.
 
+To export a ready-to-share image brief for the latest approved draft:
+
+```powershell
+npm.cmd run image:brief -- --post latest --out .tmp/image-assets
+```
+
+The command writes Markdown, plain prompt text, and JSON files for design, AI image generation, or real-photo shooting handoff.
+
 ## Safety
 
 - Never commit `.env` or real API keys.

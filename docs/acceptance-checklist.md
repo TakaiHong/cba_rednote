@@ -20,6 +20,7 @@ The command checks:
 - final publish double opt-in
 - model budget guard
 - tracked-file secret scan command
+- image asset brief export command
 - required docs
 - current content pool status
 - model provider status
@@ -67,6 +68,12 @@ The platform currently generates image ideas, cover text, `visualBrief`, `imageP
 Use those prompts with a dedicated image tool or real photos, save the final images locally, then pass them to the publishing script / 发布脚本:
 
 ```powershell
+npm.cmd run image:brief -- --post latest --out .tmp/image-assets
+```
+
+This exports `image-asset-brief.md`, `image-prompt.txt`, and `image-asset-brief.json` for the selected post.
+
+```powershell
 npm.cmd run publish -- --post latest --images-dir .\assets\xhs
 ```
 
@@ -105,6 +112,7 @@ Capture these before considering the first version ready:
 - one 7-day content calendar from `npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md`
 - one batch-generation dry-run from `npm.cmd run generate:batch -- --count 7 --dry-run`
 - one handoff package from `npm.cmd run handoff -- --out .tmp/handoff`, including `readiness-checks.json`
+- one image asset brief from `npm.cmd run image:brief -- --post latest --out .tmp/image-assets`
 - one exported Markdown handoff package from `npm.cmd run export -- --post latest`
 - one Xiaohongshu `publish:preflight` report from the real account, defaulting to `.tmp/xhs-preflight-report.json`
 - at least one manually reviewed published URL, then recorded through the dashboard or `--mark-published`
