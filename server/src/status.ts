@@ -1,9 +1,11 @@
 import { summarizeContentStrategy } from "./analytics/contentStrategy.js";
 import { config } from "./config.js";
 import { postStore } from "./storage/postStore.js";
+import { runLogStore } from "./storage/runLogStore.js";
 
 export async function getSystemStatus() {
   const posts = await postStore.list();
+  const recentRuns = await runLogStore.list(5);
   const counts = posts.reduce(
     (acc, post) => {
       acc.total += 1;
@@ -47,6 +49,7 @@ export async function getSystemStatus() {
       paidModelPosts,
       withinPerPostBudget: posts.every((post) => post.estimatedCostCny <= config.maxCostCnyPerPost)
     },
+    recentRuns,
     strategy,
     commands: {
       generate: "npm.cmd run generate",

@@ -93,6 +93,14 @@ export interface SystemStatus {
     paidModelPosts: number;
     withinPerPostBudget: boolean;
   };
+  recentRuns: Array<{
+    id: string;
+    action: string;
+    status: "ok" | "error";
+    message: string;
+    createdAt: string;
+    metadata?: Record<string, string | number | boolean | undefined>;
+  }>;
 }
 
 export interface BatchGenerationResult {

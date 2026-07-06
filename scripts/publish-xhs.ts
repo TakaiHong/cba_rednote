@@ -7,6 +7,7 @@ import { finalPublishGuardMessage, shouldAttemptFinalPublish } from "../server/s
 import { loadXhsSelectorConfig } from "../server/src/publishing/selectorConfig.js";
 import { createXhsPublishPackage } from "../server/src/publishing/xhsPackage.js";
 import { postStore } from "../server/src/storage/postStore.js";
+import { runLogStore } from "../server/src/storage/runLogStore.js";
 
 type PublishMode = "clipboard" | "assist";
 
@@ -187,6 +188,15 @@ if (options.markPublished) {
   await postStore.update(post.id, {
     status: "published",
     publishedUrl: options.publishedUrl
+  });
+  await runLogStore.append({
+    action: "mark-published",
+    status: "ok",
+    message: `Marked post ${post.id} as published`,
+    metadata: {
+      postId: post.id,
+      hasPublishedUrl: Boolean(options.publishedUrl)
+    }
   });
   console.log(`Marked post as published: ${post.id}`);
   process.exit(0);

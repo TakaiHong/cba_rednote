@@ -83,3 +83,12 @@ export interface UpdatePostInput {
   publishedUrl?: string;
   metrics?: Partial<PostMetrics>;
 }
+
+export interface RunLogEntry {
+  id: string;
+  action: string;
+  status: "ok" | "error";
+  message: string;
+  metadata?: Record<string, string | number | boolean | undefined>;
+  createdAt: string;
+}

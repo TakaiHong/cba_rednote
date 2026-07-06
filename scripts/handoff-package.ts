@@ -5,6 +5,7 @@ import { planContentCalendar, renderCalendarMarkdown } from "../server/src/gener
 import { createXhsPublishPackage, renderXhsMarkdownExport } from "../server/src/publishing/xhsPackage.js";
 import { getSystemStatus } from "../server/src/status.js";
 import { postStore } from "../server/src/storage/postStore.js";
+import { runLogStore } from "../server/src/storage/runLogStore.js";
 
 interface Options {
   outDir: string;
@@ -47,6 +48,12 @@ function renderSummary(input: {
     "## Strategy",
     "",
     input.status.strategy.recommendation,
+    "",
+    "## Recent Runs",
+    "",
+    ...(input.status.recentRuns.length
+      ? input.status.recentRuns.map((run) => `- ${run.createdAt} [${run.status}] ${run.action}: ${run.message}`)
+      : ["- No recent run records yet."]),
     "",
     "## Files",
     "",
@@ -98,5 +105,15 @@ await writeFile(
   }),
   "utf8"
 );
+
+await runLogStore.append({
+  action: "handoff",
+  status: "ok",
+  message: "Generated handoff package",
+  metadata: {
+    outDir: options.outDir,
+    hasLatestExport: Boolean(latestExportPath)
+  }
+});
 
 console.log(outDir);

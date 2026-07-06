@@ -8,6 +8,7 @@ const tempRoot = await mkdtemp(join(tmpdir(), "xhs-status-"));
 process.env.DATA_DIR = relative(process.cwd(), join(tempRoot, "data"));
 
 const { postStore } = await import("../server/src/storage/postStore.js");
+const { runLogStore } = await import("../server/src/storage/runLogStore.js");
 const { getSystemStatus } = await import("../server/src/status.js");
 
 after(async () => {
@@ -24,6 +25,7 @@ describe("getSystemStatus", () => {
       callToAction: "cta",
       status: "approved"
     });
+    await runLogStore.append({ action: "status-test", status: "ok", message: "status test run" });
 
     const status = await getSystemStatus();
 
@@ -34,6 +36,7 @@ describe("getSystemStatus", () => {
     assert.equal(typeof status.config.modelProvider, "string");
     assert.equal(status.cost.totalEstimatedCostCny, 0);
     assert.equal(status.cost.withinPerPostBudget, true);
+    assert.equal(status.recentRuns[0].action, "status-test");
     assert.equal(status.commands.calendar, "npm.cmd run calendar -- --days 7");
     assert.equal(status.commands.verify, "npm.cmd run verify");
     assert.ok(status.strategy.recommendation);

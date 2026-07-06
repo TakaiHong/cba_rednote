@@ -42,6 +42,7 @@ function App() {
   const [visualBrief, setVisualBrief] = useState("");
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
   const [cost, setCost] = useState<SystemStatus["cost"]>();
+  const [recentRuns, setRecentRuns] = useState<SystemStatus["recentRuns"]>([]);
   const [calendar, setCalendar] = useState<CalendarItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -96,6 +97,7 @@ function App() {
       setPosts(nextPosts);
       setStrategy(status.strategy);
       setCost(status.cost);
+      setRecentRuns(status.recentRuns ?? []);
       setCalendar(nextCalendar);
       if (!selectedId && nextPosts[0]) setSelectedId(nextPosts[0].id);
     } catch (err) {
@@ -289,6 +291,20 @@ function App() {
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="run-log-panel">
+        <div className="panel-title">最近运行</div>
+        {recentRuns.length === 0 && <p className="empty">暂无运行记录。</p>}
+        {recentRuns.map((run) => (
+          <div className="run-log-item" key={run.id}>
+            <strong>{run.action}</strong>
+            <span>{run.message}</span>
+            <small>
+              {run.status} / {new Date(run.createdAt).toLocaleString()}
+            </small>
+          </div>
+        ))}
       </section>
 
       <section className="workspace">

@@ -1,5 +1,6 @@
 import { generatePostBatch, planBatchGeneration } from "../server/src/generation/batch.js";
 import { postStore } from "../server/src/storage/postStore.js";
+import { runLogStore } from "../server/src/storage/runLogStore.js";
 
 interface Options {
   count: number;
@@ -34,6 +35,17 @@ const saved = [];
 for (const post of result.posts) {
   saved.push(await postStore.createGenerated(post));
 }
+
+await runLogStore.append({
+  action: "generate-batch",
+  status: "ok",
+  message: `Generated ${saved.length} posts`,
+  metadata: {
+    count: saved.length,
+    maxModelPosts: result.plan.maxModelPosts,
+    estimatedMaxCostCny: result.plan.estimatedMaxCostCny
+  }
+});
 
 console.log(
   JSON.stringify(

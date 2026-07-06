@@ -234,6 +234,37 @@ h1 {
   line-height: 1.45;
 }
 
+.run-log-panel {
+  background: #ffffff;
+  border: 1px solid #dfe5da;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 14px;
+}
+
+.run-log-item {
+  align-items: center;
+  border-top: 1px solid #eef2ea;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 140px 1fr minmax(180px, auto);
+  padding-top: 8px;
+}
+
+.run-log-item strong {
+  color: #1e5f4a;
+  font-size: 13px;
+}
+
+.run-log-item span,
+.run-log-item small {
+  color: #4d574b;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .scoreboard div {
   background: #ffffff;
   border: 1px solid #dfe5da;
@@ -563,5 +594,9 @@ dd {
   .calendar-header {
     align-items: stretch;
     display: grid;
+  }
+
+  .run-log-item {
+    grid-template-columns: 1fr;
   }
 }
