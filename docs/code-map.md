@@ -83,4 +83,4 @@
 - `npm.cmd run secrets:scan`：扫描 Git 跟踪文件，确认没有提交真实模型 API key。
 - `npm.cmd run export -- --post latest`：导出最新待发布内容的 Markdown 交接包。
 - `npm.cmd run schedule:dry-run`：检查 Windows 每日生成任务安装计划。
-- `npm.cmd run verify`：完整本地验收，包括发布包 dry-run 和定时任务 dry-run。
+- `npm.cmd run verify`：完整本地验收，包括密钥扫描、测试、构建、发布包 dry-run、图片素材导出、handoff、备份 dry-run 和定时任务 dry-run。

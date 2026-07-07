@@ -38,6 +38,9 @@ describe("getSystemStatus", () => {
     assert.equal(status.cost.withinPerPostBudget, true);
     assert.equal(status.recentRuns[0].action, "status-test");
     assert.equal(status.commands.calendar, "npm.cmd run calendar -- --days 7");
+    assert.equal(status.commands.imageBrief, "npm.cmd run image:brief -- --post latest --out .tmp/image-assets");
+    assert.equal(status.commands.handoff, "npm.cmd run handoff -- --out .tmp/handoff");
+    assert.equal(status.commands.backup, "npm.cmd run backup");
     assert.equal(status.commands.verify, "npm.cmd run verify");
     assert.ok(status.strategy.recommendation);
   });

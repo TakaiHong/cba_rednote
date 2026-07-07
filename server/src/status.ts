@@ -56,8 +56,11 @@ export async function getSystemStatus() {
       generateBatch: "npm.cmd run generate:batch -- --count 7 --max-model-posts 1",
       calendar: "npm.cmd run calendar -- --days 7",
       export: "npm.cmd run export -- --post latest",
+      imageBrief: "npm.cmd run image:brief -- --post latest --out .tmp/image-assets",
+      handoff: "npm.cmd run handoff -- --out .tmp/handoff",
       publishDryRun: "npm.cmd run publish -- --post latest --dry-run",
       publishPreflight: "npm.cmd run publish:preflight",
+      backup: "npm.cmd run backup",
       scheduleInstall: "npm.cmd run schedule:install",
       verify: "npm.cmd run verify"
     }

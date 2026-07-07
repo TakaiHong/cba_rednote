@@ -42,7 +42,7 @@
 - 帖子记录内含 `metrics` 字段，用来保存人工回填的小红书曝光、互动和咨询数据。
 - `data/run-log.json`：定时任务和发布脚本记录。
 
-关键动作会追加 `data/run-log.json`，包括运营台/API 生成、批量生成、发布回写、CLI 生成、定时生成和 handoff 导出。`/api/status`、运营台和 handoff 包都会展示最近运行记录，方便确认每日任务是否执行。
+关键动作会追加 `data/run-log.json`，包括运营台/API 生成、批量生成、发布回写、CLI 生成、定时生成、图片 brief 导出和 handoff 导出。`/api/status`、运营台和 handoff 包都会展示最近运行记录，方便确认每日任务是否执行。
 
 后续可替换为 SQLite、Postgres 或 Supabase，不影响 API 形状。
 

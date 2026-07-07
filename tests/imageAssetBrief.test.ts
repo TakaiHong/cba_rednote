@@ -9,6 +9,7 @@ process.env.DATA_DIR = relative(process.cwd(), join(tempRoot, "data"));
 
 const { prepareImageAssetBrief } = await import("../scripts/prepare-image-assets.js");
 const { postStore } = await import("../server/src/storage/postStore.js");
+const { runLogStore } = await import("../server/src/storage/runLogStore.js");
 
 after(async () => {
   await rm(tempRoot, { force: true, recursive: true });
@@ -32,6 +33,7 @@ describe("prepareImageAssetBrief", () => {
 
     const markdown = await readFile(join(result.outDir, result.files.markdown), "utf8");
     const prompt = await readFile(join(result.outDir, result.files.prompt), "utf8");
+    const runs = await runLogStore.list();
     const json = JSON.parse(await readFile(join(result.outDir, result.files.json), "utf8")) as {
       coverText: string;
       imagePrompt: string;
@@ -45,5 +47,7 @@ describe("prepareImageAssetBrief", () => {
     assert.equal(json.coverText, "回国两个月，行李先放哪里");
     assert.equal(json.imagePrompt, prompt.trim());
     assert.match(json.uploadCommand, /--images-dir/);
+    assert.equal(runs[0].action, "image-brief");
+    assert.equal(runs[0].metadata?.json, result.files.json);
   });
 });

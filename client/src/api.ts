@@ -101,6 +101,7 @@ export interface SystemStatus {
     createdAt: string;
     metadata?: Record<string, string | number | boolean | undefined>;
   }>;
+  commands: Record<string, string>;
 }
 
 export interface BatchGenerationResult {

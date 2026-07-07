@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createXhsPublishPackage } from "../server/src/publishing/xhsPackage.js";
 import { postStore } from "../server/src/storage/postStore.js";
+import { runLogStore } from "../server/src/storage/runLogStore.js";
 
 export interface ImageAssetBriefOptions {
   post: string;
@@ -97,6 +98,19 @@ export async function prepareImageAssetBrief(options: ImageAssetBriefOptions): P
     )}\n`,
     "utf8"
   );
+
+  await runLogStore.append({
+    action: "image-brief",
+    status: "ok",
+    message: "Generated image asset brief",
+    metadata: {
+      postId: publishPackage.postId,
+      outDir: options.outDir,
+      markdown: markdownFile,
+      prompt: promptFile,
+      json: jsonFile
+    }
+  });
 
   return {
     outDir,

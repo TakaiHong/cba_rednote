@@ -40,6 +40,7 @@ describe("generateHandoffPackage", () => {
     const summary = await readFile(join(result.outDir, "handoff-summary.md"), "utf8");
     const imageBrief = await readFile(join(result.outDir, "image-assets", "image-asset-brief.md"), "utf8");
     const runs = await runLogStore.list();
+    const handoffRun = runs.find((run) => run.action === "handoff");
 
     assert.ok(files.includes("status.json"));
     assert.ok(files.includes("readiness-checks.json"));
@@ -55,7 +56,7 @@ describe("generateHandoffPackage", () => {
     assert.match(summary, /Readiness Checks/);
     assert.match(summary, /Image asset brief/);
     assert.match(imageBrief, /AI 出图 Prompt/);
-    assert.equal(runs[0].action, "handoff");
-    assert.equal(runs[0].metadata?.hasImageAssetBrief, true);
+    assert.ok(handoffRun);
+    assert.equal(handoffRun.metadata?.hasImageAssetBrief, true);
   });
 });
