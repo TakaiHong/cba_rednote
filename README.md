@@ -10,7 +10,16 @@ Copy-Item .env.example .env
 npm.cmd run dev
 ```
 
-前端默认运行在 `http://127.0.0.1:5173`，后端默认运行在 `http://127.0.0.1:8787`。
+打开运营台：`http://127.0.0.1:5173`
+
+后端 API：`http://127.0.0.1:8787`
+
+也可以后台启动并检查端口：
+
+```powershell
+npm.cmd run local:start
+npm.cmd run health
+```
 
 ## 常用命令
 

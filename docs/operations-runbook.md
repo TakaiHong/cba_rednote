@@ -9,6 +9,10 @@ npm.cmd run local:start
 npm.cmd run health
 ```
 
+打开运营台：`http://127.0.0.1:5173`
+
+后端 API：`http://127.0.0.1:8787`
+
 停止本地后台服务：
 
 ```powershell
