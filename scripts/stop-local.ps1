@@ -5,15 +5,25 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-foreach ($port in $Ports) {
-  $connections = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+function Get-ListeningProcessIds {
+  param([int]$Port)
 
-  if (-not $connections) {
+  $connections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+  if ($connections) {
+    return @($connections | Select-Object -ExpandProperty OwningProcess -Unique)
+  }
+
+  $matches = netstat -ano | Select-String -Pattern "^\s*TCP\s+\S+:$Port\s+\S+\s+LISTENING\s+(\d+)\s*$"
+  return @($matches | ForEach-Object { [int]$_.Matches[0].Groups[1].Value } | Select-Object -Unique)
+}
+
+foreach ($port in $Ports) {
+  $processIds = Get-ListeningProcessIds -Port $port
+  if (-not $processIds) {
     Write-Output "No listener on port $port."
     continue
   }
 
-  $processIds = $connections | Select-Object -ExpandProperty OwningProcess -Unique
   foreach ($processId in $processIds) {
     $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
     if (-not $process) {

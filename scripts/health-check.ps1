@@ -12,7 +12,12 @@ function Assert-PortListening {
   )
 
   $connection = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+  $netstatMatch = $false
   if (-not $connection) {
+    $netstatMatch = [bool]((netstat -ano | Select-String -Pattern ":$Port\s+.*LISTENING") -ne $null)
+  }
+
+  if (-not $connection -and -not $netstatMatch) {
     throw "$Name is not listening on port $Port."
   }
 

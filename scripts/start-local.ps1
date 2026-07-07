@@ -7,13 +7,20 @@ $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $logDir = Join-Path $projectRoot ".tmp"
-$npm = (Get-Command npm.cmd -ErrorAction Stop).Source
+$node = (Get-Command node.exe -ErrorAction Stop).Source
+$tsxCli = Join-Path $projectRoot "node_modules\tsx\dist\cli.mjs"
+$viteCli = Join-Path $projectRoot "node_modules\vite\bin\vite.js"
 
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
 function Test-PortListening {
   param([int]$Port)
-  return [bool](Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+  $connection = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+  if ($connection) {
+    return $true
+  }
+
+  return [bool]((netstat -ano | Select-String -Pattern ":$Port\s+.*LISTENING") -ne $null)
 }
 
 function Start-NpmScript {
@@ -23,13 +30,29 @@ function Start-NpmScript {
     [string]$ErrLog
   )
 
-  Start-Process `
-    -FilePath $npm `
-    -ArgumentList @("run", $ScriptName) `
-    -WorkingDirectory $projectRoot `
-    -WindowStyle Hidden `
-    -RedirectStandardOutput $OutLog `
-    -RedirectStandardError $ErrLog | Out-Null
+  if ($ScriptName -eq "dev:server") {
+    $fileName = $node
+    $arguments = "`"$tsxCli`" watch server/src/index.ts"
+  } elseif ($ScriptName -eq "dev:client") {
+    $fileName = $node
+    $arguments = "`"$viteCli`" --host 127.0.0.1 --port 5173 client"
+  } else {
+    throw "Unsupported local script: $ScriptName"
+  }
+
+  $processInfo = New-Object System.Diagnostics.ProcessStartInfo
+  $processInfo.FileName = $fileName
+  $processInfo.Arguments = $arguments
+  $processInfo.WorkingDirectory = $projectRoot
+  $processInfo.UseShellExecute = $true
+  $processInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
+  try {
+    Set-Content -Path $OutLog -Value "Started $ScriptName via System.Diagnostics.ProcessStartInfo." -Encoding utf8
+    Set-Content -Path $ErrLog -Value "" -Encoding utf8
+  } catch {
+    Write-Output "Could not initialize log files for $ScriptName; continuing startup."
+  }
+  [System.Diagnostics.Process]::Start($processInfo) | Out-Null
 }
 
 if (-not (Test-PortListening -Port $ServerPort)) {
