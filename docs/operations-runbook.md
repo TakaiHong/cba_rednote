@@ -9,6 +9,12 @@ npm.cmd run local:start
 npm.cmd run health
 ```
 
+如果后台启动没有保持在线，直接保留一个 PowerShell 窗口运行：
+
+```powershell
+npm.cmd run dev
+```
+
 打开运营台：`http://127.0.0.1:5173`
 
 后端 API：`http://127.0.0.1:8787`
@@ -39,10 +45,6 @@ npm.cmd run generate:batch -- --count 7 --max-model-posts 1
 如果生成内容被标记为 `draft`，并且审核备注里出现相似度提示，需要人工确认是否与历史内容过近，再改成待发布状态。
 
 2. 在运营台审核和编辑。
-
-```powershell
-npm.cmd run dev
-```
 
 用内容池搜索框和状态筛选查看草稿、待发布、已发布或归档内容。审核时重点看标题是否像真人写的、正文是否自然、标签是否贴合新加坡场景、CTA 是否过硬。
 

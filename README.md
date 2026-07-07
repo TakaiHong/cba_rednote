@@ -21,6 +21,8 @@ npm.cmd run local:start
 npm.cmd run health
 ```
 
+如果后台启动被本机权限或终端环境拦住，直接保留一个 PowerShell 窗口运行 `npm.cmd run dev`；这是最稳的前台启动方式。
+
 ## 常用命令
 
 ```powershell
