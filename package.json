@@ -12,6 +12,7 @@
     "local:start": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local.ps1",
     "local:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stop-local.ps1",
     "health": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/health-check.ps1",
+    "ui:smoke": "tsx scripts/ui-smoke.ts",
     "backup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-data.ps1",
     "backup:dry-run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-data.ps1 -DryRun",
     "generate": "tsx server/src/cli/generate.ts",

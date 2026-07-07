@@ -32,6 +32,7 @@ npm.cmd run generate:batch -- --count 7 --max-model-posts 1
 npm.cmd run local:start
 npm.cmd run local:stop
 npm.cmd run health
+npm.cmd run ui:smoke
 npm.cmd run backup
 npm.cmd run backup:dry-run
 npm.cmd run status
@@ -83,6 +84,7 @@ npm.cmd run build
 - `npm.cmd run image:brief -- --post latest --out .tmp/image-assets` 可导出封面文字、图片 brief、AI 出图 prompt 和素材清单。
 - `npm.cmd run handoff -- --out .tmp/handoff` 可集中导出交付状态、排期、批量生成 dry-run、最新发布包和 `image-assets/` 图片素材包。
 - `npm.cmd run go-live:check` 会把真实账号 preflight 和至少一条已发布 URL 当成正式上线硬门槛。
+- `npm.cmd run ui:smoke` 会用本机 Chrome 检查运营台标题、主界面、中文乱码和控制台错误。
 - `npm.cmd run backup` 可备份运行数据到 `backups/`。
 - `npm.cmd run readiness` 可输出交接前验收清单。
 

@@ -26,6 +26,14 @@ The command checks:
 - model provider status
 - handoff package command
 
+After the local app is running, run:
+
+```powershell
+npm.cmd run ui:smoke
+```
+
+This checks that the operator dashboard renders in Chrome, has the expected title, contains no mojibake-like text, and has no console errors.
+
 Required failures should be fixed before handoff. Warnings can be acceptable, but they need an explicit owner.
 
 ## Full Verification
@@ -119,6 +127,7 @@ Capture these before considering the first version ready:
 - `npm.cmd run go-live:check` output passing after real account validation
 - `npm.cmd run secrets:scan` output showing no tracked API secrets
 - `npm.cmd run health` output with backend and frontend online
+- `npm.cmd run ui:smoke` output with `ok: true`
 - `npm.cmd run readiness` output with no required failures
 - one 7-day content calendar from `npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md`
 - one batch-generation dry-run from `npm.cmd run generate:batch -- --count 7 --dry-run`

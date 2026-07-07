@@ -52,6 +52,7 @@
 - `scripts/start-local.ps1`：后台启动本地前后端服务。
 - `scripts/stop-local.ps1`：停止监听本地前后端端口的服务进程。
 - `scripts/health-check.ps1`：检查本地端口、健康接口和状态接口。
+- `scripts/ui-smoke.ts`：用本机 Chrome 检查运营台页面渲染、标题、乱码和控制台错误。
 - `scripts/backup-data.ps1`：备份运行时草稿数据。
 - `scripts/check-secrets.ts`：扫描 Git 跟踪文件中的 API key 形状文本，避免 DeepSeek 或 OpenAI-compatible key 被提交。
 - `scripts/readiness.ts`：交接前 readiness 检查，汇总前后端、生成、预算、发布和文档状态。
@@ -81,6 +82,7 @@
 - `npm.cmd run local:start`：后台启动前后端。
 - `npm.cmd run local:stop`：停止本地前后端。
 - `npm.cmd run health`：检查本地运行状态。
+- `npm.cmd run ui:smoke`：检查前端运营台页面是否正常渲染。
 - `npm.cmd run backup`：备份 `data/posts.json` 到 `backups/`。
 - `npm.cmd run secrets:scan`：扫描 Git 跟踪文件，确认没有提交真实模型 API key。
 - `npm.cmd run export -- --post latest`：导出最新待发布内容的 Markdown 交接包。
