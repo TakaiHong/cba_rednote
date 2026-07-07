@@ -18,6 +18,7 @@
     "generate:batch": "tsx scripts/generate-batch.ts",
     "status": "tsx server/src/cli/status.ts",
     "readiness": "tsx scripts/readiness.ts",
+    "go-live:check": "tsx scripts/go-live-check.ts",
     "calendar": "tsx scripts/plan-calendar.ts",
     "handoff": "tsx scripts/handoff-package.ts",
     "image:brief": "tsx scripts/prepare-image-assets.ts",

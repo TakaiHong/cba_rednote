@@ -38,6 +38,16 @@ npm.cmd run verify
 
 This runs the tracked-file secret scan, type checks, unit tests, production build, status output, readiness, publish dry-run, export smoke test, image brief export, handoff export, backup dry-run, and scheduler dry-run.
 
+## Go-Live Check
+
+Run this only when the real Xiaohongshu account validation is supposed to be complete:
+
+```powershell
+npm.cmd run go-live:check
+```
+
+Unlike `readiness`, this treats the real-account preflight report and at least one recorded published Xiaohongshu URL as required. It should fail until `publish:preflight` has produced a usable report and one reviewed note has been marked published with its Xiaohongshu URL.
+
 ## DeepSeek
 
 Do not commit real API keys. Keep keys in `.env` or the current shell only.
@@ -106,6 +116,7 @@ npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 Capture these before considering the first version ready:
 
 - `npm.cmd run verify` output with all checks passing
+- `npm.cmd run go-live:check` output passing after real account validation
 - `npm.cmd run secrets:scan` output showing no tracked API secrets
 - `npm.cmd run health` output with backend and frontend online
 - `npm.cmd run readiness` output with no required failures

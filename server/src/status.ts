@@ -58,6 +58,7 @@ export async function getSystemStatus() {
       export: "npm.cmd run export -- --post latest",
       imageBrief: "npm.cmd run image:brief -- --post latest --out .tmp/image-assets",
       handoff: "npm.cmd run handoff -- --out .tmp/handoff",
+      goLiveCheck: "npm.cmd run go-live:check",
       publishDryRun: "npm.cmd run publish -- --post latest --dry-run",
       publishPreflight: "npm.cmd run publish:preflight",
       backup: "npm.cmd run backup",

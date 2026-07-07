@@ -53,13 +53,14 @@
 ## 文档与工程要求
 
 - 文档需要包含需求说明、架构说明、代码地图、发布流程和运营手册。
-- 项目需要提供本地启动、健康检查、完整验证、备份、定时任务安装和 handoff 交接命令。
+- 项目需要提供本地启动、健康检查、完整验证、正式上线检查、备份、定时任务安装和 handoff 交接命令。
 - 项目需要由本地 Git 管理，每次可交付改动都应提交。
 - 不能把真实 API key 提交到仓库；DeepSeek key 只能放在 `.env` 或当前 shell 环境变量中。
 
 ## 验收标准
 
 - `npm.cmd run verify` 通过。
+- `npm.cmd run go-live:check` 在真实账号 preflight 和已发布 URL 都补齐后通过。
 - `npm.cmd run health` 能确认前端和后端在线。
 - `npm.cmd run readiness` 没有 required failure。
 - 可以生成单条草稿和 7 天批量草稿 dry-run。
