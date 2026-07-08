@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   generatePost,
   generatePostBatch,
+  generateCoverImage,
   getContentCalendar,
   getStatus,
   getPublishPackage,
@@ -47,6 +48,7 @@ function App() {
   const [batchHint, setBatchHint] = useState("");
   const [publishHint, setPublishHint] = useState("");
   const [visualBrief, setVisualBrief] = useState("");
+  const [coverLoading, setCoverLoading] = useState(false);
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
   const [cost, setCost] = useState<SystemStatus["cost"]>();
   const [recentRuns, setRecentRuns] = useState<SystemStatus["recentRuns"]>([]);
@@ -193,6 +195,25 @@ function App() {
     await navigator.clipboard.writeText(brief);
     setVisualBrief(publishPackage.visualBrief);
     setPublishHint("已复制图片 brief，可以发给拍摄/设计/AI 出图。");
+  }
+
+  async function handleGenerateCoverImage() {
+    if (!selected) return;
+    setCoverLoading(true);
+    setError("");
+    try {
+      const result = await generateCoverImage(selected.id);
+      if (result.post) {
+        setPosts((current) => current.map((post) => (post.id === result.post?.id ? result.post : post)));
+      } else {
+        await refresh();
+      }
+      setPublishHint(`已生成并绑定模板封面：${result.outputPath}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "生成封面失败");
+    } finally {
+      setCoverLoading(false);
+    }
   }
 
   function updateMetric(name: keyof MarketingPost["metrics"], value: string) {
@@ -495,6 +516,9 @@ function App() {
               <strong>发布助手</strong>
               <button onClick={handleCopyPublishText}>复制发布文本</button>
               <button onClick={handleCopyVisualBrief}>复制图片 brief</button>
+              <button onClick={handleGenerateCoverImage} disabled={coverLoading}>
+                {coverLoading ? "生成封面中..." : "生成模板封面"}
+              </button>
               <span>{selected.imageAssets?.length ?? 0} 张图片素材已绑定</span>
               <code>npm.cmd run publish -- --post {selected.id}</code>
               {selected.publishedUrl && (

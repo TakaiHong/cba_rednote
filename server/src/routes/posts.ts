@@ -7,6 +7,7 @@ import { resolvePublishedUrlEvidence } from "../publishing/publishedUrl.js";
 import { createXhsPublishPackage } from "../publishing/xhsPackage.js";
 import { postStore } from "../storage/postStore.js";
 import { runLogStore } from "../storage/runLogStore.js";
+import { generateCoverImage } from "../../../scripts/generate-cover-image.js";
 
 const router = Router();
 
@@ -58,6 +59,23 @@ router.get("/:id/publish-package", async (req, res) => {
   const post = await postStore.get(req.params.id);
   if (!post) return res.status(404).json({ error: "Post not found" });
   res.json(createXhsPublishPackage(post));
+});
+
+router.post("/:id/cover-image", async (req, res) => {
+  const post = await postStore.get(req.params.id);
+  if (!post) return res.status(404).json({ error: "Post not found" });
+
+  try {
+    const result = await generateCoverImage({
+      post: post.id,
+      outDir: req.body?.outDir ?? ".tmp/generated-covers",
+      attach: true
+    });
+    const updated = await postStore.get(post.id);
+    res.status(201).json({ ...result, post: updated });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+  }
 });
 
 router.post("/", async (req, res) => {
