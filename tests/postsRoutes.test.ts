@@ -16,7 +16,24 @@ let server: Server;
 let baseUrl: string;
 
 before(async () => {
-  server = createApp().listen(0);
+  server = createApp({
+    posts: {
+      coverImageGenerator: async (options) => {
+        const outputPath = join(tempRoot, "generated-cover.png");
+        if (options.attach) {
+          const post = await postStore.get(options.post);
+          await postStore.update(options.post, {
+            imageAssets: [...(post?.imageAssets ?? []), outputPath]
+          });
+        }
+        return {
+          postId: options.post,
+          outputPath,
+          attached: options.attach
+        };
+      }
+    }
+  }).listen(0);
   await new Promise<void>((resolve) => server.once("listening", resolve));
   const address = server.address() as AddressInfo;
   baseUrl = `http://127.0.0.1:${address.port}`;
@@ -75,5 +92,35 @@ describe("posts routes", () => {
     assert.equal(response.status, 200);
     assert.equal(payload.status, "published");
     assert.equal(payload.publishedUrl, "https://www.xiaohongshu.com/explore/example");
+  });
+
+  it("generates and attaches a template cover image for a post", async () => {
+    const post = await postStore.createManual({
+      title: "cover route post",
+      body: "body",
+      tags: ["tag"],
+      imageIdeas: ["image"],
+      callToAction: "cta",
+      status: "approved"
+    });
+
+    const response = await fetch(`${baseUrl}/api/posts/${post.id}/cover-image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+    const payload = (await response.json()) as {
+      postId: string;
+      outputPath: string;
+      attached: boolean;
+      post: { imageAssets: string[] };
+    };
+
+    assert.equal(response.status, 201);
+    assert.equal(payload.postId, post.id);
+    assert.equal(payload.attached, true);
+    assert.match(payload.outputPath, /generated-cover\.png$/);
+    assert.deepEqual(payload.post.imageAssets, [payload.outputPath]);
+    assert.deepEqual((await postStore.get(post.id))?.imageAssets, [payload.outputPath]);
   });
 });

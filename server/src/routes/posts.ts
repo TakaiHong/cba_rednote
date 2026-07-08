@@ -9,7 +9,11 @@ import { postStore } from "../storage/postStore.js";
 import { runLogStore } from "../storage/runLogStore.js";
 import { generateCoverImage } from "../../../scripts/generate-cover-image.js";
 
-const router = Router();
+type CoverImageGenerator = typeof generateCoverImage;
+
+export interface PostsRouterDependencies {
+  coverImageGenerator?: CoverImageGenerator;
+}
 
 const postInputSchema = z.object({
   title: z.string().min(1),
@@ -40,6 +44,10 @@ const batchGenerateSchema = z.object({
   maxModelPosts: z.number().int().min(0).max(14).default(1)
 });
 
+export function createPostsRouter(dependencies: PostsRouterDependencies = {}) {
+  const router = Router();
+  const coverImageGenerator = dependencies.coverImageGenerator ?? generateCoverImage;
+
 router.get("/", async (_req, res) => {
   res.json(await postStore.list());
 });
@@ -66,7 +74,7 @@ router.post("/:id/cover-image", async (req, res) => {
   if (!post) return res.status(404).json({ error: "Post not found" });
 
   try {
-    const result = await generateCoverImage({
+    const result = await coverImageGenerator({
       post: post.id,
       outDir: req.body?.outDir ?? ".tmp/generated-covers",
       attach: true
@@ -164,4 +172,7 @@ router.patch("/:id", async (req, res) => {
   res.json(post);
 });
 
-export default router;
+  return router;
+}
+
+export default createPostsRouter();

@@ -1,9 +1,13 @@
 import cors from "cors";
 import express from "express";
-import postsRouter from "./routes/posts.js";
+import postsRouter, { createPostsRouter, type PostsRouterDependencies } from "./routes/posts.js";
 import { getSystemStatus } from "./status.js";
 
-export function createApp() {
+export interface AppDependencies {
+  posts?: PostsRouterDependencies;
+}
+
+export function createApp(dependencies: AppDependencies = {}) {
   const app = express();
 
   app.use(cors());
@@ -17,7 +21,7 @@ export function createApp() {
     res.json(await getSystemStatus());
   });
 
-  app.use("/api/posts", postsRouter);
+  app.use("/api/posts", dependencies.posts ? createPostsRouter(dependencies.posts) : postsRouter);
 
   return app;
 }
