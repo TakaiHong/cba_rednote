@@ -9,7 +9,7 @@ process.env.DATA_DIR = relative(process.cwd(), join(tempRoot, "data"));
 process.env.XHS_PREFLIGHT_REPORT = relative(process.cwd(), join(tempRoot, "preflight.json"));
 
 const { postStore } = await import("../server/src/storage/postStore.js");
-const { readPreflightEvidence, readPublishedUrlEvidence } = await import("../scripts/readiness.js");
+const { buildReadinessChecks, readPreflightEvidence, readPublishedUrlEvidence } = await import("../scripts/readiness.js");
 
 after(async () => {
   delete process.env.XHS_PREFLIGHT_REPORT;
@@ -58,5 +58,15 @@ describe("readiness evidence", () => {
 
     assert.equal(evidence.ok, true);
     assert.match(evidence.detail, /published post/);
+  });
+
+  it("requires both image asset handoff and cover generation commands", async () => {
+    const checks = await buildReadinessChecks();
+    const imageCheck = checks.find((check) => check.name === "image asset commands");
+
+    assert.ok(imageCheck);
+    assert.equal(imageCheck.severity, "required");
+    assert.equal(imageCheck.ok, true);
+    assert.match(imageCheck.detail, /template cover generation/);
   });
 });

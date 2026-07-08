@@ -137,10 +137,10 @@ export async function buildReadinessChecks(): Promise<CheckResult[]> {
       detail: "Tracked-file API key scan is available and runs during verify."
     },
     {
-      name: "image asset brief command",
-      ok: await packageScriptExists("image:brief"),
+      name: "image asset commands",
+      ok: (await packageScriptExists("image:brief")) && (await packageScriptExists("image:cover")),
       severity: "required",
-      detail: "Image brief export is available for cover text, visual brief, AI prompt, and asset checklist handoff."
+      detail: "Image brief export and template cover generation commands are available."
     },
     {
       name: "content pool",

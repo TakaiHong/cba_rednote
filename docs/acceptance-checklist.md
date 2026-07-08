@@ -20,7 +20,7 @@ The command checks:
 - final publish double opt-in
 - model budget guard
 - tracked-file secret scan command
-- image asset brief export command
+- image asset brief export and template cover generation commands
 - required docs
 - current content pool status
 - model provider status
@@ -141,6 +141,7 @@ Capture these before considering the first version ready:
 - one batch-generation dry-run from `npm.cmd run generate:batch -- --count 7 --dry-run`
 - one handoff package from `npm.cmd run handoff -- --out .tmp/handoff`, including `readiness-checks.json` and `image-assets/`
 - one image asset brief from `npm.cmd run image:brief -- --post latest --out .tmp/image-assets`
+- one template cover PNG generated from `npm.cmd run image:cover -- --post latest --attach`
 - one exported Markdown handoff package from `npm.cmd run export -- --post latest`
 - one Xiaohongshu `publish:preflight` report from the real account, defaulting to `.tmp/xhs-preflight-report.json`
 - at least one manually reviewed published URL, then recorded through the dashboard or `--mark-published`

@@ -63,7 +63,7 @@ describe("project docs", () => {
       assert.match(modelConfig, new RegExp(keyword));
     }
 
-    for (const keyword of ["secrets:scan", "图片", "发布脚本"]) {
+    for (const keyword of ["secrets:scan", "图片", "发布脚本", "image:cover"]) {
       assert.match(acceptance, new RegExp(keyword));
     }
   });
