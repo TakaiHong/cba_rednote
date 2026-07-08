@@ -31,6 +31,7 @@ export interface GeneratedPost {
   body: string;
   tags: string[];
   imageIdeas: string[];
+  imageAssets?: string[];
   callToAction: string;
 }
 
@@ -68,6 +69,7 @@ export interface CreatePostInput {
   body: string;
   tags: string[];
   imageIdeas: string[];
+  imageAssets?: string[];
   callToAction: string;
   status?: PostStatus;
   metrics?: Partial<PostMetrics>;
@@ -78,6 +80,7 @@ export interface UpdatePostInput {
   body?: string;
   tags?: string[];
   imageIdeas?: string[];
+  imageAssets?: string[];
   callToAction?: string;
   status?: PostStatus;
   publishedUrl?: string;

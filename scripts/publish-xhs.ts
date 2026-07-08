@@ -219,7 +219,7 @@ if (options.markPublished) {
 const publishPackage = createXhsPublishPackage(post);
 const selectorConfig = await loadXhsSelectorConfig();
 const imagePaths = await resolveImageInputs({
-  imagePaths: options.imagePaths.filter(Boolean),
+  imagePaths: [...(post.imageAssets ?? []), ...options.imagePaths].filter(Boolean),
   imagesDir: options.imagesDir
 });
 

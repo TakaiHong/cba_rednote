@@ -32,6 +32,13 @@ const metricLabels: Array<[keyof MarketingPost["metrics"], string]> = [
   ["inquiries", "咨询"]
 ];
 
+function splitLines(value: string) {
+  return value
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function App() {
   const [posts, setPosts] = useState<MarketingPost[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
@@ -174,6 +181,11 @@ function App() {
       "",
       "AI 出图 prompt:",
       publishPackage.imagePrompt,
+      "",
+      "已绑定图片素材:",
+      ...(publishPackage.imageAssets.length > 0
+        ? publishPackage.imageAssets.map((item) => `- ${item}`)
+        : ["- 暂无"]),
       "",
       "素材清单:",
       ...publishPackage.assetChecklist.map((item) => `- ${item}`)
@@ -402,7 +414,19 @@ function App() {
                 value={selected.imageIdeas.join("\n")}
                 rows={4}
                 onChange={(event) =>
-                  handlePatch({ imageIdeas: event.target.value.split("\n").filter(Boolean) })
+                  handlePatch({ imageIdeas: splitLines(event.target.value) })
+                }
+              />
+            </label>
+
+            <label>
+              图片素材路径
+              <textarea
+                placeholder="每行一个本地图片路径，例如 C:\\assets\\cover.png"
+                value={(selected.imageAssets ?? []).join("\n")}
+                rows={3}
+                onChange={(event) =>
+                  handlePatch({ imageAssets: splitLines(event.target.value) })
                 }
               />
             </label>
@@ -471,6 +495,7 @@ function App() {
               <strong>发布助手</strong>
               <button onClick={handleCopyPublishText}>复制发布文本</button>
               <button onClick={handleCopyVisualBrief}>复制图片 brief</button>
+              <span>{selected.imageAssets?.length ?? 0} 张图片素材已绑定</span>
               <code>npm.cmd run publish -- --post {selected.id}</code>
               {selected.publishedUrl && (
                 <a href={selected.publishedUrl} rel="noreferrer" target="_blank">

@@ -20,10 +20,12 @@ describe("postStore", () => {
       body: "body",
       tags: ["tag"],
       imageIdeas: ["image"],
+      imageAssets: ["C:\\assets\\cover.png"],
       callToAction: "cta",
       metrics: { views: 10, inquiries: 2 }
     });
 
+    assert.deepEqual(post.imageAssets, ["C:\\assets\\cover.png"]);
     assert.equal(post.metrics.views, 10);
     assert.equal(post.metrics.inquiries, 2);
     assert.equal(post.metrics.likes, 0);
@@ -31,6 +33,7 @@ describe("postStore", () => {
     const updated = await postStore.update(post.id, { metrics: { likes: 3 }, status: "published" });
     assert.equal(updated?.metrics.views, 10);
     assert.equal(updated?.metrics.likes, 3);
+    assert.deepEqual(updated?.imageAssets, ["C:\\assets\\cover.png"]);
     assert.equal(updated?.status, "published");
     assert.ok(updated?.publishedAt);
   });

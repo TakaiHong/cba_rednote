@@ -44,7 +44,7 @@ npm.cmd run publish -- --post latest --image .\assets\cover.png --image .\assets
 npm.cmd run publish -- --post latest --images-dir .\assets\xhs
 ```
 
-`--image` 可以重复传入。`--images-dir` 会读取 `.jpg`、`.jpeg`、`.png`、`.webp` 文件。
+`--image` 可以重复传入。`--images-dir` 会读取 `.jpg`、`.jpeg`、`.png`、`.webp` 文件。运营台里“图片素材路径”字段保存的本地图片也会自动并入上传队列，适合把 AI 出图或实拍图固定到某一条草稿上。
 
 导出运营交接包：
 

@@ -28,6 +28,7 @@ function postFixture(): MarketingPost {
     body: "旧房到期，新房还没好。\n\n行李和小家具可以先短租存放，不用急着丢。",
     tags: ["新加坡生活", "#迷你仓", "租房断档"],
     imageIdeas: ["行李箱和纸箱放进干净迷你仓"],
+    imageAssets: ["C:\\assets\\cover.png", "C:\\assets\\detail.webp"],
     callToAction: "私信物品清单，帮你估算需要多大空间。",
     status: "approved",
     topic: {
@@ -58,6 +59,7 @@ describe("createXhsPublishPackage", () => {
     assert.ok(pkg.visualBrief.includes("封面文字"));
     assert.ok(pkg.visualBrief.includes("构图：竖版 3:4"));
     assert.ok(pkg.imagePrompt.includes("Singapore mini storage"));
+    assert.deepEqual(pkg.imageAssets, ["C:\\assets\\cover.png", "C:\\assets\\detail.webp"]);
     assert.equal(pkg.assetChecklist.length >= 3, true);
     assert.ok(pkg.fullText.includes("旧房到期"));
     assert.ok(pkg.fullText.includes("私信物品清单"));
@@ -70,6 +72,7 @@ describe("createXhsPublishPackage", () => {
     assert.ok(markdown.includes("# 新加坡租房断档，东西可以这样先过渡"));
     assert.ok(markdown.includes("## 发布正文"));
     assert.ok(markdown.includes("## 图片 Brief"));
+    assert.ok(markdown.includes("C:\\assets\\cover.png"));
     assert.ok(markdown.includes("## 素材清单"));
     assert.doesNotMatch(markdown, mojibakePattern);
   });

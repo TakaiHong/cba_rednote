@@ -51,6 +51,10 @@ function renderImageAssetMarkdown(input: ReturnType<typeof createXhsPublishPacka
     "",
     ...input.imageIdeas.map((idea) => `- ${idea}`),
     "",
+    "## 已绑定图片素材",
+    "",
+    ...(input.imageAssets.length > 0 ? input.imageAssets.map((asset) => `- ${asset}`) : ["暂无已绑定图片素材"]),
+    "",
     "## 素材清单",
     "",
     ...input.assetChecklist.map((item) => `- ${item}`),
@@ -90,6 +94,7 @@ export async function prepareImageAssetBrief(options: ImageAssetBriefOptions): P
         visualBrief: publishPackage.visualBrief,
         imagePrompt: publishPackage.imagePrompt,
         imageIdeas: publishPackage.imageIdeas,
+        imageAssets: publishPackage.imageAssets,
         assetChecklist: publishPackage.assetChecklist,
         uploadCommand: "npm.cmd run publish -- --post latest --images-dir .\\assets\\xhs"
       },

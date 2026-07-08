@@ -15,6 +15,7 @@ const postInputSchema = z.object({
   body: z.string().min(1),
   tags: z.array(z.string()).default([]),
   imageIdeas: z.array(z.string()).default([]),
+  imageAssets: z.array(z.string().min(1)).default([]),
   callToAction: z.string().default(""),
   status: z.enum(["draft", "approved", "published", "archived"]).optional(),
   metrics: z

@@ -37,7 +37,7 @@ Explicit `OPENAI_*` settings take priority over `DEEPSEEK_*` aliases. This makes
 
 ## Image Generation
 
-The current platform generates image ideas, cover text, visual briefs, AI image prompts, and asset checklists for every post. These are included in dry-runs, Markdown exports, and handoff packages.
+The current platform generates image ideas, cover text, visual briefs, AI image prompts, and asset checklists for every post. These are included in dry-runs, Markdown exports, and handoff packages. Operators can also attach local image asset paths to a post in the dashboard; the publish script will include those paths automatically.
 
 It does not generate image files by itself yet. DeepSeek is used here as a low-cost text model and should not be treated as the image-generation provider. To generate images inside the platform, add a separate image model provider and save generated assets under an ignored local folder such as `assets/` or `exports/`, then pass that folder to:
 

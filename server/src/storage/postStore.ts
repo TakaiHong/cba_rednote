@@ -48,6 +48,7 @@ const emptyMetrics = { views: 0, likes: 0, saves: 0, comments: 0, follows: 0, in
 function withDefaults(post: MarketingPost): MarketingPost {
   return {
     ...post,
+    imageAssets: post.imageAssets ?? [],
     metrics: {
       ...emptyMetrics,
       ...(post.metrics ?? {})
@@ -86,6 +87,7 @@ export const postStore = {
       body: input.body,
       tags: input.tags,
       imageIdeas: input.imageIdeas,
+      imageAssets: input.imageAssets ?? [],
       callToAction: input.callToAction,
       status: input.status ?? "draft",
       topic: manualTopic,

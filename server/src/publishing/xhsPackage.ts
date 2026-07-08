@@ -6,6 +6,7 @@ export interface XhsPublishPackage {
   body: string;
   tagsLine: string;
   imageIdeas: string[];
+  imageAssets: string[];
   coverText: string;
   visualBrief: string;
   imagePrompt: string;
@@ -46,6 +47,7 @@ export function createXhsPublishPackage(post: MarketingPost): XhsPublishPackage 
     body: post.body,
     tagsLine,
     imageIdeas: post.imageIdeas,
+    imageAssets: post.imageAssets ?? [],
     coverText,
     visualBrief,
     imagePrompt,
@@ -71,6 +73,10 @@ export function renderXhsMarkdownExport(pkg: XhsPublishPackage): string {
     "## 图片建议",
     "",
     ...pkg.imageIdeas.map((idea) => `- ${idea}`),
+    "",
+    "## 图片素材",
+    "",
+    ...(pkg.imageAssets.length > 0 ? pkg.imageAssets.map((asset) => `- ${asset}`) : ["暂无已绑定图片素材"]),
     "",
     "## 封面文字",
     "",

@@ -6,6 +6,7 @@ export interface MarketingPost {
   body: string;
   tags: string[];
   imageIdeas: string[];
+  imageAssets?: string[];
   callToAction: string;
   status: PostStatus;
   topic: {
@@ -42,6 +43,7 @@ export interface XhsPublishPackage {
   body: string;
   tagsLine: string;
   imageIdeas: string[];
+  imageAssets: string[];
   coverText: string;
   visualBrief: string;
   imagePrompt: string;

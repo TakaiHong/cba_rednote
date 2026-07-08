@@ -22,6 +22,7 @@ describe("prepareImageAssetBrief", () => {
       body: "短期回国不想退租后到处借地方，迷你仓可以先过渡。",
       tags: ["新加坡留学", "迷你仓"],
       imageIdeas: ["两个行李箱和纸箱放在干净迷你仓门口"],
+      imageAssets: ["C:\\assets\\xhs\\cover.png"],
       callToAction: "私信物品清单，帮你估算仓型。",
       status: "approved"
     });
@@ -37,6 +38,7 @@ describe("prepareImageAssetBrief", () => {
     const json = JSON.parse(await readFile(join(result.outDir, result.files.json), "utf8")) as {
       coverText: string;
       imagePrompt: string;
+      imageAssets: string[];
       uploadCommand: string;
     };
 
@@ -46,6 +48,7 @@ describe("prepareImageAssetBrief", () => {
     assert.match(prompt, /Singapore mini storage/);
     assert.equal(json.coverText, "回国两个月，行李先放哪里");
     assert.equal(json.imagePrompt, prompt.trim());
+    assert.deepEqual(json.imageAssets, ["C:\\assets\\xhs\\cover.png"]);
     assert.match(json.uploadCommand, /--images-dir/);
     assert.equal(runs[0].action, "image-brief");
     assert.equal(runs[0].metadata?.json, result.files.json);
