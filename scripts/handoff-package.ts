@@ -7,6 +7,7 @@ import { createXhsPublishPackage, renderXhsMarkdownExport } from "../server/src/
 import { getSystemStatus } from "../server/src/status.js";
 import { postStore } from "../server/src/storage/postStore.js";
 import { runLogStore } from "../server/src/storage/runLogStore.js";
+import { evaluateGoLiveReadiness } from "./go-live-check.js";
 import { prepareImageAssetBrief } from "./prepare-image-assets.js";
 import { buildReadinessChecks } from "./readiness.js";
 
@@ -28,6 +29,7 @@ function safeFilename(value: string) {
 function renderSummary(input: {
   status: Awaited<ReturnType<typeof getSystemStatus>>;
   readinessChecks: Awaited<ReturnType<typeof buildReadinessChecks>>;
+  goLiveCheck: ReturnType<typeof evaluateGoLiveReadiness>;
   latestExportPath?: string;
   imageAssetPaths?: string[];
   calendarPath: string;
@@ -64,20 +66,25 @@ function renderSummary(input: {
     "",
     ...input.readinessChecks.map((check) => `- ${check.ok ? "OK" : check.severity.toUpperCase()} ${check.name}: ${check.detail}`),
     "",
+    "## Go-Live Check",
+    "",
+    `- Ready for go-live: ${input.goLiveCheck.ok}`,
+    `- Missing external evidence: ${input.goLiveCheck.missingExternalEvidence.join(", ") || "none"}`,
+    `- Required failures: ${input.goLiveCheck.requiredFailures.join(", ") || "none"}`,
+    "",
+    "### Next Steps",
+    "",
+    ...(input.goLiveCheck.nextSteps.length ? input.goLiveCheck.nextSteps.map((step) => `- ${step}`) : ["- No go-live blockers found."]),
+    "",
     "## Files",
     "",
     `- Status JSON: status.json`,
     `- Readiness JSON: readiness-checks.json`,
+    `- Go-live JSON: go-live-check.json`,
     `- Content calendar: ${input.calendarPath}`,
     `- Batch dry-run: ${input.batchDryRunPath}`,
     `- Latest publish package: ${input.latestExportPath ?? "not available"}`,
     `- Image asset brief: ${input.imageAssetPaths?.join(", ") ?? "not available"}`,
-    "",
-    "## Remaining External Validation",
-    "",
-    "- Run `npm.cmd run publish:preflight` in a real logged-in Xiaohongshu creator session.",
-    "- Review `.tmp/xhs-preflight-report.json` and confirm title/body/upload/publishButton selectors.",
-    "- After the first manual publish, record the note URL in the dashboard or with `--mark-published`.",
     ""
   ].join("\n");
 }
@@ -91,6 +98,8 @@ export async function generateHandoffPackage(options: HandoffOptions) {
 
   const readinessChecks = await buildReadinessChecks();
   await writeFile(join(outDir, "readiness-checks.json"), `${JSON.stringify(readinessChecks, null, 2)}\n`, "utf8");
+  const goLiveCheck = evaluateGoLiveReadiness(readinessChecks);
+  await writeFile(join(outDir, "go-live-check.json"), `${JSON.stringify(goLiveCheck, null, 2)}\n`, "utf8");
 
   const calendar = planContentCalendar(7);
   const calendarFile = "content-calendar.md";
@@ -121,6 +130,7 @@ export async function generateHandoffPackage(options: HandoffOptions) {
     renderSummary({
       status,
       readinessChecks,
+      goLiveCheck,
       latestExportPath,
       imageAssetPaths,
       calendarPath: calendarFile,
@@ -136,7 +146,8 @@ export async function generateHandoffPackage(options: HandoffOptions) {
     metadata: {
       outDir: options.outDir,
       hasLatestExport: Boolean(latestExportPath),
-      hasImageAssetBrief: Boolean(imageAssetPaths)
+      hasImageAssetBrief: Boolean(imageAssetPaths),
+      goLiveReady: goLiveCheck.ok
     }
   });
 
@@ -145,6 +156,7 @@ export async function generateHandoffPackage(options: HandoffOptions) {
     files: {
       status: "status.json",
       readiness: "readiness-checks.json",
+      goLive: "go-live-check.json",
       calendar: calendarFile,
       batchDryRun: batchDryRunFile,
       summary: "handoff-summary.md",

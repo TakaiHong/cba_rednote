@@ -37,6 +37,11 @@ describe("generateHandoffPackage", () => {
       name: string;
       ok: boolean;
     }>;
+    const goLive = JSON.parse(await readFile(join(result.outDir, "go-live-check.json"), "utf8")) as {
+      ok: boolean;
+      missingExternalEvidence: string[];
+      nextSteps: string[];
+    };
     const summary = await readFile(join(result.outDir, "handoff-summary.md"), "utf8");
     const imageBrief = await readFile(join(result.outDir, "image-assets", "image-asset-brief.md"), "utf8");
     const runs = await runLogStore.list();
@@ -44,6 +49,7 @@ describe("generateHandoffPackage", () => {
 
     assert.ok(files.includes("status.json"));
     assert.ok(files.includes("readiness-checks.json"));
+    assert.ok(files.includes("go-live-check.json"));
     assert.ok(files.includes("content-calendar.md"));
     assert.ok(files.includes("batch-generation-dry-run.json"));
     assert.ok(files.includes("handoff-summary.md"));
@@ -53,10 +59,16 @@ describe("generateHandoffPackage", () => {
     assert.ok(imageAssetFiles.includes("image-asset-brief.json"));
     assert.ok(files.some((file) => file.endsWith(".md") && file.includes("交接测试草稿")));
     assert.ok(readiness.some((check) => check.name === "preflight evidence" && check.ok === false));
+    assert.equal(goLive.ok, false);
+    assert.ok(goLive.missingExternalEvidence.includes("preflight evidence"));
+    assert.ok(goLive.nextSteps.some((step) => step.includes("publish:preflight")));
     assert.match(summary, /Readiness Checks/);
+    assert.match(summary, /Go-Live Check/);
+    assert.match(summary, /Next Steps/);
     assert.match(summary, /Image asset brief/);
     assert.match(imageBrief, /AI 出图 Prompt/);
     assert.ok(handoffRun);
     assert.equal(handoffRun.metadata?.hasImageAssetBrief, true);
+    assert.equal(handoffRun.metadata?.goLiveReady, false);
   });
 });

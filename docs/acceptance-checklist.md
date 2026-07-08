@@ -141,7 +141,7 @@ Capture these before considering the first version ready:
 - `npm.cmd run readiness` output with no required failures
 - one 7-day content calendar from `npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md`
 - one batch-generation dry-run from `npm.cmd run generate:batch -- --count 7 --dry-run`
-- one handoff package from `npm.cmd run handoff -- --out .tmp/handoff`, including `readiness-checks.json` and `image-assets/`
+- one handoff package from `npm.cmd run handoff -- --out .tmp/handoff`, including `readiness-checks.json`, `go-live-check.json`, and `image-assets/`
 - one image asset brief from `npm.cmd run image:brief -- --post latest --out .tmp/image-assets`
 - one template cover PNG generated from `npm.cmd run image:cover -- --post latest --attach`
 - one exported Markdown handoff package from `npm.cmd run export -- --post latest`
