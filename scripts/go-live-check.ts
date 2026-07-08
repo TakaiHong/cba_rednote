@@ -8,7 +8,24 @@ export interface GoLiveCheckResult {
   generatedAt: string;
   requiredFailures: string[];
   missingExternalEvidence: string[];
+  nextSteps: string[];
   checks: Awaited<ReturnType<typeof buildReadinessChecks>>;
+}
+
+function buildNextSteps(input: { requiredFailures: string[]; missingExternalEvidence: string[] }) {
+  const steps: string[] = [];
+
+  if (input.requiredFailures.length > 0) {
+    steps.push("Run npm.cmd run readiness and fix required failures before real account validation.");
+  }
+  if (input.missingExternalEvidence.includes("preflight evidence")) {
+    steps.push("Run npm.cmd run publish:preflight in a logged-in Xiaohongshu creator session.");
+  }
+  if (input.missingExternalEvidence.includes("published URL evidence")) {
+    steps.push("After one reviewed manual publish, record the note URL in the dashboard or run npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>.");
+  }
+
+  return steps;
 }
 
 export function evaluateGoLiveReadiness(checks: Awaited<ReturnType<typeof buildReadinessChecks>>): GoLiveCheckResult {
@@ -24,6 +41,7 @@ export function evaluateGoLiveReadiness(checks: Awaited<ReturnType<typeof buildR
     generatedAt: new Date().toISOString(),
     requiredFailures,
     missingExternalEvidence,
+    nextSteps: buildNextSteps({ requiredFailures, missingExternalEvidence }),
     checks
   };
 }
@@ -53,6 +71,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         ok: result.ok,
         requiredFailures: result.requiredFailures,
         missingExternalEvidence: result.missingExternalEvidence,
+        nextSteps: result.nextSteps,
         generatedAt: result.generatedAt
       },
       null,

@@ -56,6 +56,8 @@ npm.cmd run go-live:check
 
 Unlike `readiness`, this treats the real-account preflight report and at least one recorded published Xiaohongshu URL as required. It should fail until `publish:preflight` has produced a usable report and one reviewed note has been marked published with its Xiaohongshu URL.
 
+When it fails, the JSON output includes `nextSteps` with the exact follow-up commands for missing real-account evidence.
+
 ## DeepSeek
 
 Do not commit real API keys. Keep keys in `.env` or the current shell only.

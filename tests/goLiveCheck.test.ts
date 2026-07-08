@@ -35,6 +35,9 @@ describe("evaluateGoLiveReadiness", () => {
     assert.equal(result.ok, false);
     assert.deepEqual(result.requiredFailures, []);
     assert.deepEqual(result.missingExternalEvidence, ["preflight evidence", "published URL evidence"]);
+    assert.equal(result.nextSteps.length, 2);
+    assert.match(result.nextSteps[0], /publish:preflight/);
+    assert.match(result.nextSteps[1], /--mark-published/);
   });
 
   it("passes when required checks and external evidence are present", () => {
@@ -43,5 +46,6 @@ describe("evaluateGoLiveReadiness", () => {
     assert.equal(result.ok, true);
     assert.deepEqual(result.requiredFailures, []);
     assert.deepEqual(result.missingExternalEvidence, []);
+    assert.deepEqual(result.nextSteps, []);
   });
 });
