@@ -36,7 +36,7 @@
 
 - `client/index.html`：Vite HTML 入口。
 - `client/src/main.tsx`：React 入口。
-- `client/src/App.tsx`：运营台主界面，含草稿编辑、图片素材路径维护、单条/批量生成、内容排期、每日自动化状态、go-live 状态、发布助手和效果指标录入。
+- `client/src/App.tsx`：运营台主界面，含草稿编辑、图片素材路径维护、单条/批量生成、内容排期、每日自动化状态、go-live 状态、交接命令复制区、发布助手和效果指标录入。
 - `client/src/api.ts`：前端 API 客户端。
 - `client/src/styles.css`：界面样式。
 

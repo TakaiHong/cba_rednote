@@ -97,4 +97,12 @@ describe("project docs", () => {
     assert.match(readme, /每日自动化状态/);
     assert.match(codeMap, /每日自动化状态/);
   });
+
+  it("documents dashboard handoff command shortcuts", async () => {
+    const readme = await readFile("README.md", "utf8");
+    const codeMap = await readFile("docs/code-map.md", "utf8");
+
+    assert.match(readme, /交接命令/);
+    assert.match(codeMap, /交接命令复制区/);
+  });
 });

@@ -208,6 +208,14 @@ h1 {
   padding: 14px;
 }
 
+.handoff-command-panel {
+  background: #ffffff;
+  border: 1px solid #dfe5da;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  padding: 14px;
+}
+
 .calendar-header {
   align-items: center;
   display: flex;
@@ -288,6 +296,45 @@ h1 {
   font-size: 12px;
   font-style: normal;
   line-height: 1.45;
+}
+
+.command-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  overflow-x: auto;
+}
+
+.command-grid button {
+  background: #f8faf6;
+  border: 1px solid #dfe5da;
+  border-radius: 8px;
+  color: #18201b;
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  min-height: 88px;
+  min-width: 150px;
+  padding: 10px;
+  text-align: left;
+}
+
+.command-grid button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.command-grid span {
+  color: #1e5f4a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.command-grid code {
+  color: #3d4a3b;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .run-log-panel {

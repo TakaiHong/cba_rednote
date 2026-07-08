@@ -37,6 +37,14 @@ const metricLabels: Array<[keyof MarketingPost["metrics"], string]> = [
   ["inquiries", "咨询"]
 ];
 
+const handoffCommandKeys = [
+  ["verify", "完整验证"],
+  ["handoff", "导出交接包"],
+  ["publishPreflight", "账号预检"],
+  ["scheduleStatus", "定时状态"],
+  ["scheduleInstall", "安装定时任务"]
+] as const;
+
 function splitLines(value: string) {
   return value
     .split("\n")
@@ -57,6 +65,7 @@ function App() {
   const [goLive, setGoLive] = useState<GoLiveCheckResult>();
   const [dailyTask, setDailyTask] = useState<DailyTaskStatus>();
   const [cost, setCost] = useState<SystemStatus["cost"]>();
+  const [commands, setCommands] = useState<SystemStatus["commands"]>({});
   const [recentRuns, setRecentRuns] = useState<SystemStatus["recentRuns"]>([]);
   const [calendar, setCalendar] = useState<CalendarItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -114,6 +123,7 @@ function App() {
       setStrategy(status.strategy);
       setGoLive(nextGoLive);
       setCost(status.cost);
+      setCommands(status.commands ?? {});
       setRecentRuns(status.recentRuns ?? []);
       setCalendar(nextCalendar);
       if (!selectedId && nextPosts[0]) setSelectedId(nextPosts[0].id);
@@ -219,6 +229,11 @@ function App() {
     await navigator.clipboard.writeText(brief);
     setVisualBrief(publishPackage.visualBrief);
     setPublishHint("已复制图片 brief，可以发给拍摄/设计/AI 出图。");
+  }
+
+  async function handleCopyCommand(command: string) {
+    await navigator.clipboard.writeText(command);
+    setPublishHint(`已复制命令：${command}`);
   }
 
   async function handleGenerateCoverImage() {
@@ -403,6 +418,27 @@ function App() {
             <code>npm.cmd run schedule:status</code>
           </>
         )}
+      </section>
+
+      <section className="handoff-command-panel">
+        <div className="calendar-header">
+          <div>
+            <span>交接命令</span>
+            <strong>复制后在 PowerShell 里执行</strong>
+          </div>
+          <code>README / docs/operations-runbook.md</code>
+        </div>
+        <div className="command-grid">
+          {handoffCommandKeys.map(([key, label]) => {
+            const command = commands[key];
+            return (
+              <button disabled={!command} key={key} onClick={() => command && void handleCopyCommand(command)}>
+                <span>{label}</span>
+                <code>{command ?? "加载中"}</code>
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       <section className="calendar-panel">
