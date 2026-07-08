@@ -106,6 +106,20 @@ export interface SystemStatus {
   commands: Record<string, string>;
 }
 
+export interface GoLiveCheckResult {
+  ok: boolean;
+  generatedAt: string;
+  requiredFailures: string[];
+  missingExternalEvidence: string[];
+  nextSteps: string[];
+  checks: Array<{
+    name: string;
+    ok: boolean;
+    severity: "required" | "warning";
+    detail: string;
+  }>;
+}
+
 export interface BatchGenerationResult {
   plan: {
     count: number;
@@ -187,6 +201,12 @@ export async function getStatus() {
   const response = await fetch(`${apiBase}/status`);
   if (!response.ok) throw new Error("Failed to load status");
   return (await response.json()) as SystemStatus;
+}
+
+export async function getGoLiveStatus() {
+  const response = await fetch(`${apiBase}/go-live`);
+  if (!response.ok) throw new Error("Failed to load go-live status");
+  return (await response.json()) as GoLiveCheckResult;
 }
 
 export async function getContentCalendar(days = 7) {

@@ -8,6 +8,7 @@ import { after, before, describe, it } from "node:test";
 
 const tempRoot = await mkdtemp(join(tmpdir(), "xhs-routes-"));
 process.env.DATA_DIR = relative(process.cwd(), join(tempRoot, "data"));
+process.env.XHS_PREFLIGHT_REPORT = relative(process.cwd(), join(tempRoot, "missing-preflight.json"));
 
 const { createApp } = await import("../server/src/app.js");
 const { postStore } = await import("../server/src/storage/postStore.js");
@@ -122,5 +123,19 @@ describe("posts routes", () => {
     assert.match(payload.outputPath, /generated-cover\.png$/);
     assert.deepEqual(payload.post.imageAssets, [payload.outputPath]);
     assert.deepEqual((await postStore.get(post.id))?.imageAssets, [payload.outputPath]);
+  });
+
+  it("exposes go-live status for the dashboard", async () => {
+    const response = await fetch(`${baseUrl}/api/go-live`);
+    const payload = (await response.json()) as {
+      ok: boolean;
+      missingExternalEvidence: string[];
+      nextSteps: string[];
+    };
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.ok, false);
+    assert.ok(payload.missingExternalEvidence.includes("preflight evidence"));
+    assert.ok(payload.nextSteps.some((step) => step.includes("publish:preflight")));
   });
 });

@@ -144,6 +144,55 @@ h1 {
   line-height: 1.45;
 }
 
+.go-live-panel {
+  background: #ffffff;
+  border: 1px solid #dfe5da;
+  border-left: 6px solid #2f4e88;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(160px, 0.8fr) minmax(220px, 1fr) minmax(260px, 1.5fr) minmax(220px, auto);
+  margin-bottom: 18px;
+  padding: 14px;
+}
+
+.go-live-panel.ready {
+  border-left-color: #1e5f4a;
+}
+
+.go-live-panel.blocked {
+  border-left-color: #a85332;
+}
+
+.go-live-panel div {
+  display: grid;
+  gap: 6px;
+}
+
+.go-live-panel span {
+  color: #66715f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.go-live-panel strong {
+  color: #18201b;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.go-live-panel code {
+  align-self: center;
+  background: #f0f3ed;
+  border: 1px solid #d8ded2;
+  border-radius: 6px;
+  color: #263228;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  padding: 8px;
+}
+
 .calendar-panel {
   background: #ffffff;
   border: 1px solid #dfe5da;
@@ -587,6 +636,7 @@ dd {
 
   .scoreboard,
   .strategy-panel,
+  .go-live-panel,
   .metric-grid {
     grid-template-columns: 1fr 1fr;
   }

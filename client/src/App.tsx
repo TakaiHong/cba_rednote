@@ -4,11 +4,13 @@ import {
   generatePostBatch,
   generateCoverImage,
   getContentCalendar,
+  getGoLiveStatus,
   getStatus,
   getPublishPackage,
   listPosts,
   type CalendarItem,
   type ContentStrategySummary,
+  type GoLiveCheckResult,
   type MarketingPost,
   type SystemStatus,
   updatePost
@@ -50,6 +52,7 @@ function App() {
   const [visualBrief, setVisualBrief] = useState("");
   const [coverLoading, setCoverLoading] = useState(false);
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
+  const [goLive, setGoLive] = useState<GoLiveCheckResult>();
   const [cost, setCost] = useState<SystemStatus["cost"]>();
   const [recentRuns, setRecentRuns] = useState<SystemStatus["recentRuns"]>([]);
   const [calendar, setCalendar] = useState<CalendarItem[]>([]);
@@ -102,9 +105,11 @@ function App() {
     try {
       const nextPosts = await listPosts();
       const status = await getStatus();
+      const nextGoLive = await getGoLiveStatus();
       const nextCalendar = await getContentCalendar(7);
       setPosts(nextPosts);
       setStrategy(status.strategy);
+      setGoLive(nextGoLive);
       setCost(status.cost);
       setRecentRuns(status.recentRuns ?? []);
       setCalendar(nextCalendar);
@@ -313,6 +318,28 @@ function App() {
             <span>最佳人群</span>
             <strong>{strategy.bestSegment?.key ?? "暂无"}</strong>
           </div>
+        </section>
+      )}
+
+      {goLive && (
+        <section className={`go-live-panel ${goLive.ok ? "ready" : "blocked"}`}>
+          <div>
+            <span>正式上线状态</span>
+            <strong>{goLive.ok ? "可上线" : "待补证据"}</strong>
+          </div>
+          <div>
+            <span>真实账号证据</span>
+            <strong>
+              {goLive.missingExternalEvidence.length === 0
+                ? "已齐全"
+                : goLive.missingExternalEvidence.join(" / ")}
+            </strong>
+          </div>
+          <div>
+            <span>下一步</span>
+            <strong>{goLive.nextSteps[0] ?? "无阻塞项"}</strong>
+          </div>
+          <code>npm.cmd run go-live:check</code>
         </section>
       )}
 

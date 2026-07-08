@@ -88,6 +88,7 @@ npm.cmd run build
 - 运营台的“图片素材路径”可绑定本地图片；`publish` dry-run、发布包和辅助发布会自动带上这些素材，仍可额外使用 `--image` 或 `--images-dir`。
 - `npm.cmd run handoff -- --out .tmp/handoff` 可集中导出交付状态、`go-live-check.json` go-live 状态、排期、批量生成 dry-run、最新发布包和 `image-assets/` 图片素材包。
 - `npm.cmd run go-live:check` 会把真实账号 preflight 和至少一条已发布 URL 当成正式上线硬门槛。
+- 运营台会展示正式上线状态，直接提示是否还缺真实账号 preflight 或已发布链接证据。
 - `npm.cmd run ui:smoke` 会用本机 Chrome 检查运营台标题、主界面、中文乱码和控制台错误。
 - `npm.cmd run backup` 可备份运行数据到 `backups/`。
 - `npm.cmd run readiness` 可输出交接前验收清单。
