@@ -9,6 +9,7 @@ import { loadXhsSelectorConfig } from "../server/src/publishing/selectorConfig.j
 import { createXhsPublishPackage } from "../server/src/publishing/xhsPackage.js";
 import { postStore } from "../server/src/storage/postStore.js";
 import { runLogStore } from "../server/src/storage/runLogStore.js";
+import { readPreflightEvidence } from "./readiness.js";
 
 type PublishMode = "clipboard" | "assist";
 
@@ -218,6 +219,7 @@ if (options.markPublished) {
 
 const publishPackage = createXhsPublishPackage(post);
 const selectorConfig = await loadXhsSelectorConfig();
+const preflightEvidence = await readPreflightEvidence();
 const imagePaths = await resolveImageInputs({
   imagePaths: [...(post.imageAssets ?? []), ...options.imagePaths].filter(Boolean),
   imagesDir: options.imagesDir
@@ -230,7 +232,9 @@ if (options.dryRun) {
         ...publishPackage,
         imageUploadPaths: imagePaths,
         finalPublishRequested: options.clickPublish,
-        finalPublishEnabled: shouldAttemptFinalPublish(options.clickPublish, process.env)
+        finalPublishEnabled: shouldAttemptFinalPublish(options.clickPublish, process.env, preflightEvidence.ok),
+        finalPublishPreflightReady: preflightEvidence.ok,
+        finalPublishPreflightDetail: preflightEvidence.detail
       },
       null,
       2
@@ -311,7 +315,7 @@ if (options.mode === "assist") {
   console.log(`Auto-fill title selector: ${result.titleSelector ?? "not found"}`);
   console.log(`Auto-fill body selector: ${result.bodySelector ?? "not found"}`);
 
-  if (shouldAttemptFinalPublish(options.clickPublish, process.env)) {
+  if (shouldAttemptFinalPublish(options.clickPublish, process.env, preflightEvidence.ok)) {
     if (!result.titleSelector || !result.bodySelector) {
       throw new Error("Final publish blocked because title/body auto-fill did not both succeed.");
     }
@@ -321,7 +325,7 @@ if (options.mode === "assist") {
     }
     console.log(`Final publish clicked with selector: ${publishSelector}`);
   } else {
-    console.log(finalPublishGuardMessage(options.clickPublish));
+    console.log(finalPublishGuardMessage(options.clickPublish, process.env, preflightEvidence.ok));
     console.log("Review the page before publishing. The script does not click the final publish button by default.");
   }
 }

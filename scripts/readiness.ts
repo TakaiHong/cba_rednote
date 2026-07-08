@@ -83,8 +83,8 @@ function formatStatus(ok: boolean, severity: CheckResult["severity"]) {
 export async function buildReadinessChecks(): Promise<CheckResult[]> {
   const status = await getSystemStatus();
   const selectors = await loadXhsSelectorConfig();
-  const finalPublishEnabled = shouldAttemptFinalPublish(true, process.env);
   const preflightEvidence = await readPreflightEvidence();
+  const finalPublishEnabled = shouldAttemptFinalPublish(true, process.env, preflightEvidence.ok);
   const publishedUrlEvidence = await readPublishedUrlEvidence();
 
   return [
@@ -122,7 +122,7 @@ export async function buildReadinessChecks(): Promise<CheckResult[]> {
       name: "final publish guard",
       ok: selectors.publishButton.length > 0,
       severity: "required",
-      detail: `Publish button selectors configured. ${finalPublishEnabled ? "Final click opt-in is enabled." : finalPublishGuardMessage(true)}`
+      detail: `Publish button selectors configured. ${finalPublishEnabled ? "Final click opt-in is enabled." : finalPublishGuardMessage(true, process.env, preflightEvidence.ok)}`
     },
     {
       name: "budget guard",

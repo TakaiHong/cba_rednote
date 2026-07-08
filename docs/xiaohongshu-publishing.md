@@ -35,7 +35,7 @@ npm.cmd run publish -- --post latest --mode clipboard
 npm.cmd run publish -- --post latest --dry-run
 ```
 
-dry-run 会输出标题、正文、标签、图片建议、封面文字、图片 brief、AI 出图 prompt、素材清单和计划上传的图片路径。
+dry-run 会输出标题、正文、标签、图片建议、封面文字、图片 brief、AI 出图 prompt、素材清单、计划上传的图片路径，以及最终点击发布是否已同时满足环境变量和 preflight 证据。
 
 带本地图片辅助上传：
 
