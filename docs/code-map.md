@@ -45,7 +45,7 @@
 - `scripts/plan-calendar.ts`：导出未来内容排期，支持 Markdown 或 JSON。
 - `scripts/generate-batch.ts`：批量生成草稿，支持 dry-run 和付费模型条数上限。
 - `scripts/go-live-check.ts`：正式上线检查，把真实账号 preflight 和已发布 URL 证据作为硬门槛。
-- `scripts/handoff-package.ts`：集中导出交付状态、内容排期、批量生成 dry-run、最新发布包和图片素材包。
+- `scripts/handoff-package.ts`：集中导出交付状态、go-live 状态、内容排期、批量生成 dry-run、最新发布包和图片素材包。
 - `scripts/prepare-image-assets.ts`：导出图片素材交接包，包含封面文字、图片 brief、AI 出图 prompt、素材清单和上传命令。
 - `scripts/generate-cover-image.ts`：用草稿内容生成低成本 3:4 PNG 模板封面，并可把图片路径绑定回草稿。
 - `scripts/publish-xhs.ts`：小红书半自动发布脚本，支持 dry-run、登录态复用、辅助填充和发布后状态回写。
@@ -78,7 +78,7 @@
 - `npm.cmd run go-live:check`：检查真实小红书账号 preflight 和已发布 URL 是否满足正式上线门槛。
 - `npm.cmd run calendar -- --days 7`：输出未来 7 天内容排期。
 - `npm.cmd run generate:batch -- --count 7 --dry-run`：预估批量生成数量和最高模型成本。
-- `npm.cmd run handoff -- --out .tmp/handoff`：导出交付包，包含最新发布包和 `image-assets/` 图片素材包。
+- `npm.cmd run handoff -- --out .tmp/handoff`：导出交付包，包含最新发布包、`go-live-check.json` 和 `image-assets/` 图片素材包。
 - `npm.cmd run image:brief -- --post latest --out .tmp/image-assets`：导出最新草稿的图片素材交接包。
 - `npm.cmd run image:cover -- --post latest --attach`：生成最新草稿的模板封面 PNG 并绑定到草稿图片素材。
 - `npm.cmd run local:start`：后台启动前后端。

@@ -69,12 +69,17 @@ describe("project docs", () => {
   });
 
   it("documents the go-live gate separately from local readiness", async () => {
+    const readme = await readFile("README.md", "utf8");
     const requirements = await readFile("docs/requirements.md", "utf8");
     const runbook = await readFile("docs/operations-runbook.md", "utf8");
+    const codeMap = await readFile("docs/code-map.md", "utf8");
     const acceptance = await readFile("docs/acceptance-checklist.md", "utf8");
 
     for (const content of [requirements, runbook, acceptance]) {
       assert.match(content, /go-live:check/);
+    }
+    for (const content of [readme, runbook, codeMap, acceptance]) {
+      assert.match(content, /go-live-check\.json/);
     }
     assert.match(acceptance, /real-account preflight report/);
     assert.match(acceptance, /published Xiaohongshu URL/);

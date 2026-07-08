@@ -86,7 +86,7 @@ npm.cmd run build
 - `npm.cmd run image:cover -- --post latest --attach` 可生成一张低成本 3:4 PNG 模板封面，并把图片路径绑定到最新草稿。
 - 也可以在运营台右侧“发布助手”里直接点击“生成模板封面”，系统会生成 PNG 并绑定到当前草稿。
 - 运营台的“图片素材路径”可绑定本地图片；`publish` dry-run、发布包和辅助发布会自动带上这些素材，仍可额外使用 `--image` 或 `--images-dir`。
-- `npm.cmd run handoff -- --out .tmp/handoff` 可集中导出交付状态、排期、批量生成 dry-run、最新发布包和 `image-assets/` 图片素材包。
+- `npm.cmd run handoff -- --out .tmp/handoff` 可集中导出交付状态、`go-live-check.json` go-live 状态、排期、批量生成 dry-run、最新发布包和 `image-assets/` 图片素材包。
 - `npm.cmd run go-live:check` 会把真实账号 preflight 和至少一条已发布 URL 当成正式上线硬门槛。
 - `npm.cmd run ui:smoke` 会用本机 Chrome 检查运营台标题、主界面、中文乱码和控制台错误。
 - `npm.cmd run backup` 可备份运行数据到 `backups/`。
