@@ -69,4 +69,14 @@ describe("readiness evidence", () => {
     assert.equal(imageCheck.ok, true);
     assert.match(imageCheck.detail, /template cover generation/);
   });
+
+  it("requires scheduler status and install commands", async () => {
+    const checks = await buildReadinessChecks();
+    const dailyCheck = checks.find((check) => check.name === "daily generation command");
+
+    assert.ok(dailyCheck);
+    assert.equal(dailyCheck.severity, "required");
+    assert.equal(dailyCheck.ok, true);
+    assert.match(dailyCheck.detail, /status\/install/);
+  });
 });

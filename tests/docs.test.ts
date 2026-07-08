@@ -84,4 +84,15 @@ describe("project docs", () => {
     assert.match(acceptance, /real-account preflight report/);
     assert.match(acceptance, /published Xiaohongshu URL/);
   });
+
+  it("documents scheduler status checks for handoff", async () => {
+    const readme = await readFile("README.md", "utf8");
+    const runbook = await readFile("docs/operations-runbook.md", "utf8");
+    const codeMap = await readFile("docs/code-map.md", "utf8");
+    const acceptance = await readFile("docs/acceptance-checklist.md", "utf8");
+
+    for (const content of [readme, runbook, codeMap, acceptance]) {
+      assert.match(content, /schedule:status/);
+    }
+  });
 });

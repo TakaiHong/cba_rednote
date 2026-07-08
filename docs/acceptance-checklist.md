@@ -13,7 +13,7 @@ npm.cmd run readiness
 The command checks:
 
 - frontend and backend npm scripts
-- daily generation command and Windows scheduler installer
+- daily generation command plus Windows scheduler status/install commands
 - batch draft generation with paid-model limit
 - content calendar planning command
 - publish script and selector configuration
@@ -44,7 +44,7 @@ Run:
 npm.cmd run verify
 ```
 
-This runs the tracked-file secret scan, type checks, unit tests, production build, status output, readiness, publish dry-run, export smoke test, image brief export, handoff export, backup dry-run, and scheduler dry-run.
+This runs the tracked-file secret scan, type checks, unit tests, production build, status output, readiness, publish dry-run, export smoke test, image brief export, handoff export, backup dry-run, scheduler dry-run, and scheduler status check.
 
 ## Go-Live Check
 
@@ -139,6 +139,7 @@ Capture these before considering the first version ready:
 - `npm.cmd run health` output with backend and frontend online
 - `npm.cmd run ui:smoke` output with `ok: true`
 - `npm.cmd run readiness` output with no required failures
+- `npm.cmd run schedule:status` output showing whether the daily draft task is installed
 - one 7-day content calendar from `npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md`
 - one batch-generation dry-run from `npm.cmd run generate:batch -- --count 7 --dry-run`
 - one handoff package from `npm.cmd run handoff -- --out .tmp/handoff`, including `readiness-checks.json`, `go-live-check.json`, and `image-assets/`

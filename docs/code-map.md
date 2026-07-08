@@ -50,6 +50,7 @@
 - `scripts/generate-cover-image.ts`：用草稿内容生成低成本 3:4 PNG 模板封面，并可把图片路径绑定回草稿。
 - `scripts/publish-xhs.ts`：小红书半自动发布脚本，支持 dry-run、登录态复用、辅助填充和发布后状态回写。
 - `scripts/install-daily-task.ps1`：Windows 任务计划程序安装器，用于每天自动生成小红书草稿。
+- `scripts/check-daily-task.ps1`：查询 Windows 每日生成任务是否已安装、上次运行结果和下次运行时间。
 - `scripts/start-local.ps1`：后台启动本地前后端服务。
 - `scripts/stop-local.ps1`：停止监听本地前后端端口的服务进程。
 - `scripts/health-check.ps1`：检查本地端口、健康接口和状态接口。
@@ -89,4 +90,5 @@
 - `npm.cmd run secrets:scan`：扫描 Git 跟踪文件，确认没有提交真实模型 API key。
 - `npm.cmd run export -- --post latest`：导出最新待发布内容的 Markdown 交接包。
 - `npm.cmd run schedule:dry-run`：检查 Windows 每日生成任务安装计划。
-- `npm.cmd run verify`：完整本地验收，包括密钥扫描、测试、构建、发布包 dry-run、图片素材导出、handoff、备份 dry-run 和定时任务 dry-run。
+- `npm.cmd run schedule:status`：检查 Windows 每日生成任务当前安装和运行状态。
+- `npm.cmd run verify`：完整本地验收，包括密钥扫描、测试、构建、发布包 dry-run、图片素材导出、handoff、备份 dry-run、定时任务 dry-run 和定时任务状态检查。

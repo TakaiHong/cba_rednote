@@ -122,7 +122,7 @@ npm.cmd run verify
 - `readiness` 检查交付必备项，把 required failure 和 warning 分开。
 - `go-live:check` 用正式上线口径检查真实账号 preflight 和至少一条已发布 URL；缺少任一项都会失败。
 - `ui:smoke` 用本机 Chrome 检查运营台是否能正常渲染、标题是否正确、中文是否无乱码、控制台是否无错误。
-- `verify` 运行密钥扫描、类型检查、测试、生产构建、状态输出、readiness、批量生成 dry-run、发布 dry-run、导出、图片素材包导出、handoff、备份 dry-run 和定时任务 dry-run。
+- `verify` 运行密钥扫描、类型检查、测试、生产构建、状态输出、readiness、批量生成 dry-run、发布 dry-run、导出、图片素材包导出、handoff、备份 dry-run、定时任务 dry-run 和定时任务状态检查。
 
 用 `npm.cmd run health` 检查前端、后端端口和 `/api/health`、`/api/status` 是否正常。
 
@@ -168,6 +168,12 @@ npm.cmd run schedule:install
 
 ```powershell
 npm.cmd run schedule:dry-run
+```
+
+检查任务是否已安装、上次运行结果和下次运行时间：
+
+```powershell
+npm.cmd run schedule:status
 ```
 
 卸载任务：

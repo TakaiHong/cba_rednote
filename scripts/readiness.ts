@@ -108,9 +108,10 @@ export async function buildReadinessChecks(): Promise<CheckResult[]> {
         (await packageScriptExists("calendar")) &&
         (await packageScriptExists("handoff")) &&
         (await packageScriptExists("go-live:check")) &&
+        (await packageScriptExists("schedule:status")) &&
         (await packageScriptExists("schedule:install")),
       severity: "required",
-      detail: "Single draft generation, batch generation, content calendar, handoff export, go-live check, and Windows scheduled task installer are present."
+      detail: "Single draft generation, batch generation, content calendar, handoff export, go-live check, and Windows scheduled task status/install commands are present."
     },
     {
       name: "publishing command",

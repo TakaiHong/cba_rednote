@@ -52,6 +52,7 @@ npm.cmd run publish -- --post latest --click-publish
 npm.cmd run publish -- --post latest --mode clipboard
 npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 npm.cmd run schedule:dry-run
+npm.cmd run schedule:status
 npm.cmd run schedule:install
 npm.cmd run schedule:uninstall
 npm.cmd run lint
@@ -81,6 +82,7 @@ npm.cmd run build
 - `npm.cmd run calendar -- --days 7` 可规划未来 7 天选题，帮助每日生成保持人群和内容形式多样。
 - 运营台和 `npm.cmd run generate:batch -- --count 7 --max-model-posts 1` 都可一次准备一周草稿，并限制最多 1 条走付费模型。
 - Windows 本地定时任务可通过 `npm.cmd run schedule:install` 安装，每天自动生成一条草稿。
+- `npm.cmd run schedule:status` 可检查每日生成任务是否已安装、上次运行结果和下次运行时间。
 - `npm.cmd run export -- --post latest` 可导出 Markdown 图文交接包。
 - `npm.cmd run image:brief -- --post latest --out .tmp/image-assets` 可导出封面文字、图片 brief、AI 出图 prompt 和素材清单。
 - `npm.cmd run image:cover -- --post latest --attach` 可生成一张低成本 3:4 PNG 模板封面，并把图片路径绑定到最新草稿。

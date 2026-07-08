@@ -27,13 +27,14 @@
     "export": "tsx scripts/export-xhs.ts",
     "publish": "tsx scripts/publish-xhs.ts",
     "publish:preflight": "tsx scripts/publish-xhs.ts --post latest --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json",
+    "schedule:status": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-daily-task.ps1",
     "schedule:dry-run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -DryRun",
     "schedule:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1",
     "schedule:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -Uninstall",
     "secrets:scan": "tsx scripts/check-secrets.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "verify": "npm run secrets:scan && npm run lint && npm run test && npm run build && npm run status && npm run readiness && npm run generate:batch -- --count 7 --dry-run && npm run publish -- --post latest --dry-run && npm run export -- --post latest --out .tmp/verify-exports && npm run image:brief -- --post latest --out .tmp/verify-image-assets && npm run handoff -- --out .tmp/verify-handoff && npm run backup:dry-run && npm run schedule:dry-run"
+    "verify": "npm run secrets:scan && npm run lint && npm run test && npm run build && npm run status && npm run readiness && npm run generate:batch -- --count 7 --dry-run && npm run publish -- --post latest --dry-run && npm run export -- --post latest --out .tmp/verify-exports && npm run image:brief -- --post latest --out .tmp/verify-image-assets && npm run handoff -- --out .tmp/verify-handoff && npm run backup:dry-run && npm run schedule:dry-run && npm run schedule:status"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
