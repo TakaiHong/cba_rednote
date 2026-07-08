@@ -4,12 +4,14 @@ import {
   generatePostBatch,
   generateCoverImage,
   getContentCalendar,
+  getDailyTaskStatus,
   getGoLiveStatus,
   getStatus,
   getPublishPackage,
   listPosts,
   type CalendarItem,
   type ContentStrategySummary,
+  type DailyTaskStatus,
   type GoLiveCheckResult,
   type MarketingPost,
   type SystemStatus,
@@ -53,6 +55,7 @@ function App() {
   const [coverLoading, setCoverLoading] = useState(false);
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
   const [goLive, setGoLive] = useState<GoLiveCheckResult>();
+  const [dailyTask, setDailyTask] = useState<DailyTaskStatus>();
   const [cost, setCost] = useState<SystemStatus["cost"]>();
   const [recentRuns, setRecentRuns] = useState<SystemStatus["recentRuns"]>([]);
   const [calendar, setCalendar] = useState<CalendarItem[]>([]);
@@ -116,6 +119,22 @@ function App() {
       if (!selectedId && nextPosts[0]) setSelectedId(nextPosts[0].id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载失败");
+    }
+  }
+
+  async function refreshDailyTaskStatus() {
+    try {
+      setDailyTask(await getDailyTaskStatus());
+    } catch {
+      setDailyTask({
+        ok: false,
+        installed: false,
+        taskName: "XHS Mini Storage Daily Draft",
+        detail: "每日任务状态暂时无法读取，请运行 npm.cmd run schedule:status。",
+        checkedAt: new Date().toISOString(),
+        command: "npm.cmd run schedule:status",
+        rawOutput: []
+      });
     }
   }
 
@@ -237,6 +256,13 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void refreshDailyTaskStatus();
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     if (filteredPosts.length === 0) return;
     if (!filteredPosts.some((post) => post.id === selectedId)) {
       setSelectedId(filteredPosts[0].id);
@@ -342,6 +368,42 @@ function App() {
           <code>npm.cmd run go-live:check</code>
         </section>
       )}
+
+      <section className={`automation-panel ${dailyTask?.installed ? "ready" : "blocked"}`}>
+        {dailyTask ? (
+          <>
+            <div>
+              <span>每日自动化</span>
+              <strong>{dailyTask.installed ? "已安装" : "未安装"}</strong>
+            </div>
+            <div>
+              <span>任务状态</span>
+              <strong>{dailyTask.state ?? dailyTask.detail ?? "等待安装"}</strong>
+            </div>
+            <div>
+              <span>下次运行</span>
+              <strong>{dailyTask.nextRunTime ?? "安装后显示"}</strong>
+            </div>
+            <code>{dailyTask.command}</code>
+          </>
+        ) : (
+          <>
+            <div>
+              <span>每日自动化</span>
+              <strong>检查中</strong>
+            </div>
+            <div>
+              <span>任务状态</span>
+              <strong>后台读取中</strong>
+            </div>
+            <div>
+              <span>下次运行</span>
+              <strong>稍后显示</strong>
+            </div>
+            <code>npm.cmd run schedule:status</code>
+          </>
+        )}
+      </section>
 
       <section className="calendar-panel">
         <div className="calendar-header">

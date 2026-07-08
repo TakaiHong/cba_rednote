@@ -33,7 +33,17 @@ before(async () => {
           attached: options.attach
         };
       }
-    }
+    },
+    scheduleStatusReader: async () => ({
+      ok: true,
+      installed: true,
+      taskName: "XHS Mini Storage Daily Draft",
+      state: "Ready",
+      nextRunTime: "7/9/2026 9:15:00 AM",
+      checkedAt: "2026-07-08T09:00:00.000Z",
+      command: "npm.cmd run schedule:status",
+      rawOutput: ["Installed: true"]
+    })
   }).listen(0);
   await new Promise<void>((resolve) => server.once("listening", resolve));
   const address = server.address() as AddressInfo;
@@ -137,5 +147,19 @@ describe("posts routes", () => {
     assert.equal(payload.ok, false);
     assert.ok(payload.missingExternalEvidence.includes("preflight evidence"));
     assert.ok(payload.nextSteps.some((step) => step.includes("publish:preflight")));
+  });
+
+  it("exposes daily task status for the dashboard", async () => {
+    const response = await fetch(`${baseUrl}/api/schedule/status`);
+    const payload = (await response.json()) as {
+      installed: boolean;
+      state: string;
+      command: string;
+    };
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.installed, true);
+    assert.equal(payload.state, "Ready");
+    assert.equal(payload.command, "npm.cmd run schedule:status");
   });
 });

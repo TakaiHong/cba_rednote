@@ -144,7 +144,8 @@ h1 {
   line-height: 1.45;
 }
 
-.go-live-panel {
+.go-live-panel,
+.automation-panel {
   background: #ffffff;
   border: 1px solid #dfe5da;
   border-left: 6px solid #2f4e88;
@@ -156,33 +157,39 @@ h1 {
   padding: 14px;
 }
 
-.go-live-panel.ready {
+.go-live-panel.ready,
+.automation-panel.ready {
   border-left-color: #1e5f4a;
 }
 
-.go-live-panel.blocked {
+.go-live-panel.blocked,
+.automation-panel.blocked {
   border-left-color: #a85332;
 }
 
-.go-live-panel div {
+.go-live-panel div,
+.automation-panel div {
   display: grid;
   gap: 6px;
 }
 
-.go-live-panel span {
+.go-live-panel span,
+.automation-panel span {
   color: #66715f;
   font-size: 13px;
   font-weight: 800;
 }
 
-.go-live-panel strong {
+.go-live-panel strong,
+.automation-panel strong {
   color: #18201b;
   font-size: 15px;
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
 
-.go-live-panel code {
+.go-live-panel code,
+.automation-panel code {
   align-self: center;
   background: #f0f3ed;
   border: 1px solid #d8ded2;
@@ -637,6 +644,7 @@ dd {
   .scoreboard,
   .strategy-panel,
   .go-live-panel,
+  .automation-panel,
   .metric-grid {
     grid-template-columns: 1fr 1fr;
   }

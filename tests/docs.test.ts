@@ -94,5 +94,7 @@ describe("project docs", () => {
     for (const content of [readme, runbook, codeMap, acceptance]) {
       assert.match(content, /schedule:status/);
     }
+    assert.match(readme, /每日自动化状态/);
+    assert.match(codeMap, /每日自动化状态/);
   });
 });

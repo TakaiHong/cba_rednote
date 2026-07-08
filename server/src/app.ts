@@ -1,11 +1,13 @@
 import cors from "cors";
 import express from "express";
 import postsRouter, { createPostsRouter, type PostsRouterDependencies } from "./routes/posts.js";
+import { getDailyTaskStatus, type DailyTaskStatus } from "./scheduleStatus.js";
 import { getSystemStatus } from "./status.js";
 import { runGoLiveCheck } from "../../scripts/go-live-check.js";
 
 export interface AppDependencies {
   posts?: PostsRouterDependencies;
+  scheduleStatusReader?: () => Promise<DailyTaskStatus>;
 }
 
 export function createApp(dependencies: AppDependencies = {}) {
@@ -24,6 +26,11 @@ export function createApp(dependencies: AppDependencies = {}) {
 
   app.get("/api/go-live", async (_req, res) => {
     res.json(await runGoLiveCheck());
+  });
+
+  app.get("/api/schedule/status", async (_req, res) => {
+    const reader = dependencies.scheduleStatusReader ?? getDailyTaskStatus;
+    res.json(await reader());
   });
 
   app.use("/api/posts", dependencies.posts ? createPostsRouter(dependencies.posts) : postsRouter);

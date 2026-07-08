@@ -120,6 +120,20 @@ export interface GoLiveCheckResult {
   }>;
 }
 
+export interface DailyTaskStatus {
+  ok: boolean;
+  installed: boolean;
+  taskName: string;
+  state?: string;
+  lastRunTime?: string;
+  lastTaskResult?: string;
+  nextRunTime?: string;
+  detail?: string;
+  checkedAt: string;
+  command: string;
+  rawOutput: string[];
+}
+
 export interface BatchGenerationResult {
   plan: {
     count: number;
@@ -207,6 +221,12 @@ export async function getGoLiveStatus() {
   const response = await fetch(`${apiBase}/go-live`);
   if (!response.ok) throw new Error("Failed to load go-live status");
   return (await response.json()) as GoLiveCheckResult;
+}
+
+export async function getDailyTaskStatus() {
+  const response = await fetch(`${apiBase}/schedule/status`);
+  if (!response.ok) throw new Error("Failed to load schedule status");
+  return (await response.json()) as DailyTaskStatus;
 }
 
 export async function getContentCalendar(days = 7) {
