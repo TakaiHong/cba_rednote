@@ -23,6 +23,7 @@
     "calendar": "tsx scripts/plan-calendar.ts",
     "handoff": "tsx scripts/handoff-package.ts",
     "image:brief": "tsx scripts/prepare-image-assets.ts",
+    "image:cover": "tsx scripts/generate-cover-image.ts",
     "export": "tsx scripts/export-xhs.ts",
     "publish": "tsx scripts/publish-xhs.ts",
     "publish:preflight": "tsx scripts/publish-xhs.ts --post latest --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json",

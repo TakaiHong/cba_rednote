@@ -46,6 +46,14 @@ npm.cmd run publish -- --post latest --images-dir .\assets\xhs
 
 `--image` 可以重复传入。`--images-dir` 会读取 `.jpg`、`.jpeg`、`.png`、`.webp` 文件。运营台里“图片素材路径”字段保存的本地图片也会自动并入上传队列，适合把 AI 出图或实拍图固定到某一条草稿上。
 
+生成一张零模型成本的模板封面并绑定到草稿：
+
+```powershell
+npm.cmd run image:cover -- --post latest --attach
+```
+
+该命令输出 3:4 PNG，适合做封面占位或轻量运营图；如果需要真实仓储空间、人物或产品质感，仍建议使用实拍图或专门的图片生成模型。
+
 导出运营交接包：
 
 ```powershell

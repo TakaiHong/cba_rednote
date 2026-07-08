@@ -81,7 +81,15 @@ This checks Git-tracked files for real-looking `DEEPSEEK_API_KEY` or OpenAI-comp
 
 ## Image Assets / 图片素材
 
-The platform currently generates image ideas, cover text, `visualBrief`, `imagePrompt`, and an asset checklist for each post. It does not generate image files by itself yet.
+The platform currently generates image ideas, cover text, `visualBrief`, `imagePrompt`, and an asset checklist for each post. It can generate a template PNG cover by itself, but it does not generate realistic photo-style image assets without a separate image provider.
+
+It can also generate a zero-model-cost 3:4 template cover PNG from the post fields:
+
+```powershell
+npm.cmd run image:cover -- --post latest --attach
+```
+
+This is a lightweight operational cover, not a realistic photo generator. Use it when speed matters; use real photos or a dedicated image model for higher-fidelity visuals.
 
 Use those prompts with a dedicated image tool or real photos, save the final images locally, then pass them to the publishing script / 发布脚本:
 

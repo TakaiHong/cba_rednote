@@ -42,6 +42,7 @@ npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md
 npm.cmd run handoff -- --out .tmp/handoff
 npm.cmd run export -- --post latest
 npm.cmd run image:brief -- --post latest --out .tmp/image-assets
+npm.cmd run image:cover -- --post latest --attach
 npm.cmd run publish -- --post latest --dry-run
 npm.cmd run publish -- --post latest --image .\assets\cover.png
 npm.cmd run publish -- --post latest --images-dir .\assets\xhs
@@ -82,6 +83,7 @@ npm.cmd run build
 - Windows 本地定时任务可通过 `npm.cmd run schedule:install` 安装，每天自动生成一条草稿。
 - `npm.cmd run export -- --post latest` 可导出 Markdown 图文交接包。
 - `npm.cmd run image:brief -- --post latest --out .tmp/image-assets` 可导出封面文字、图片 brief、AI 出图 prompt 和素材清单。
+- `npm.cmd run image:cover -- --post latest --attach` 可生成一张低成本 3:4 PNG 模板封面，并把图片路径绑定到最新草稿。
 - 运营台的“图片素材路径”可绑定本地图片；`publish` dry-run、发布包和辅助发布会自动带上这些素材，仍可额外使用 `--image` 或 `--images-dir`。
 - `npm.cmd run handoff -- --out .tmp/handoff` 可集中导出交付状态、排期、批量生成 dry-run、最新发布包和 `image-assets/` 图片素材包。
 - `npm.cmd run go-live:check` 会把真实账号 preflight 和至少一条已发布 URL 当成正式上线硬门槛。

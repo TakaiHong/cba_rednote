@@ -57,6 +57,7 @@ export async function getSystemStatus() {
       calendar: "npm.cmd run calendar -- --days 7",
       export: "npm.cmd run export -- --post latest",
       imageBrief: "npm.cmd run image:brief -- --post latest --out .tmp/image-assets",
+      imageCover: "npm.cmd run image:cover -- --post latest --attach",
       handoff: "npm.cmd run handoff -- --out .tmp/handoff",
       goLiveCheck: "npm.cmd run go-live:check",
       publishDryRun: "npm.cmd run publish -- --post latest --dry-run",

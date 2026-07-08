@@ -47,6 +47,14 @@ npm.cmd run publish -- --post latest --images-dir .\assets\xhs
 
 Recommended low-cost first step: use the generated `visualBrief` and `imagePrompt` with a dedicated image tool, then upload the resulting local images through the existing publish script.
 
+For a zero-model-cost cover placeholder, generate a template PNG from the selected post:
+
+```powershell
+npm.cmd run image:cover -- --post latest --attach
+```
+
+This creates a 3:4 Xiaohongshu-style cover image using the post title, scene, first image idea, and tags, then attaches the PNG path to the post when `--attach` is present. Use real photos or a dedicated image model when the post needs realistic product/place imagery.
+
 To export a ready-to-share image brief for the latest approved draft:
 
 ```powershell
