@@ -125,9 +125,11 @@ describe("project docs", () => {
   });
 
   it("documents the first publish checklist in handoff evidence", async () => {
+    const readme = await readFile("README.md", "utf8");
     const codeMap = await readFile("docs/code-map.md", "utf8");
     const acceptance = await readFile("docs/acceptance-checklist.md", "utf8");
 
+    assert.match(readme, /first-publish-checklist\.md/);
     assert.match(codeMap, /first-publish-checklist\.md/);
     assert.match(acceptance, /first-publish-checklist\.md/);
   });

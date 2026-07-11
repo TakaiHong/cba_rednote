@@ -263,7 +263,7 @@ function App() {
     try {
       const result = await generateHandoffPackage();
       await refresh();
-      setPublishHint(`已生成交接包：${result.outDir}`);
+      setPublishHint(`已生成交接包：${result.outDir}；首发清单：${result.files.firstPublishChecklist}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "生成交接包失败");
     } finally {
