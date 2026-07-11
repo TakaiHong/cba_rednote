@@ -123,4 +123,12 @@ describe("project docs", () => {
     assert.match(readme, /备份数据/);
     assert.match(codeMap, /运行数据备份/);
   });
+
+  it("documents the first publish checklist in handoff evidence", async () => {
+    const codeMap = await readFile("docs/code-map.md", "utf8");
+    const acceptance = await readFile("docs/acceptance-checklist.md", "utf8");
+
+    assert.match(codeMap, /first-publish-checklist\.md/);
+    assert.match(acceptance, /first-publish-checklist\.md/);
+  });
 });
