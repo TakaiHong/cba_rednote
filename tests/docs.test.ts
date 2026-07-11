@@ -107,4 +107,12 @@ describe("project docs", () => {
     assert.match(readme, /生成交接包/);
     assert.match(codeMap, /交接包生成/);
   });
+
+  it("documents dashboard Markdown exports", async () => {
+    const readme = await readFile("README.md", "utf8");
+    const codeMap = await readFile("docs/code-map.md", "utf8");
+
+    assert.match(readme, /导出 Markdown/);
+    assert.match(codeMap, /Markdown 导出/);
+  });
 });

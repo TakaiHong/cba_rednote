@@ -146,6 +146,33 @@ describe("posts routes", () => {
     assert.deepEqual((await postStore.get(post.id))?.imageAssets, [payload.outputPath]);
   });
 
+  it("exports a Markdown package for a selected post", async () => {
+    const post = await postStore.createManual({
+      title: "route export post",
+      body: "body",
+      tags: ["tag"],
+      imageIdeas: ["image"],
+      callToAction: "cta",
+      status: "approved"
+    });
+
+    const response = await fetch(`${baseUrl}/api/posts/${post.id}/export-package`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ outDir: relative(process.cwd(), join(tempRoot, "route-exports")) })
+    });
+    const payload = (await response.json()) as {
+      postId: string;
+      outputPath: string;
+      filename: string;
+    };
+
+    assert.equal(response.status, 201);
+    assert.equal(payload.postId, post.id);
+    assert.match(payload.filename, /\.md$/);
+    assert.match(payload.outputPath, /route-exports/);
+  });
+
   it("exposes go-live status for the dashboard", async () => {
     const response = await fetch(`${baseUrl}/api/go-live`);
     const payload = (await response.json()) as {

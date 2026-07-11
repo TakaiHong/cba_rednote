@@ -85,6 +85,7 @@ npm.cmd run build
 - `npm.cmd run schedule:status` 可检查每日生成任务是否已安装、上次运行结果和下次运行时间。
 - 运营台会展示每日自动化状态，直接提示本机每日生成任务是否已安装。
 - `npm.cmd run export -- --post latest` 可导出 Markdown 图文交接包。
+- 运营台发布助手里的“导出 Markdown”可直接把当前笔记写入 `exports/`。
 - `npm.cmd run image:brief -- --post latest --out .tmp/image-assets` 可导出封面文字、图片 brief、AI 出图 prompt 和素材清单。
 - `npm.cmd run image:cover -- --post latest --attach` 可生成一张低成本 3:4 PNG 模板封面，并把图片路径绑定到最新草稿。
 - 也可以在运营台右侧“发布助手”里直接点击“生成模板封面”，系统会生成 PNG 并绑定到当前草稿。

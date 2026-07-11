@@ -148,6 +148,13 @@ export interface HandoffPackageResult {
   };
 }
 
+export interface MarkdownExportResult {
+  postId: string;
+  outDir: string;
+  filename: string;
+  outputPath: string;
+}
+
 export interface BatchGenerationResult {
   plan: {
     count: number;
@@ -210,6 +217,19 @@ export async function getPublishPackage(id: string) {
   const response = await fetch(`${apiBase}/posts/${id}/publish-package`);
   if (!response.ok) throw new Error("Failed to load publish package");
   return (await response.json()) as XhsPublishPackage;
+}
+
+export async function exportMarkdownPackage(id: string, outDir = "exports") {
+  const response = await fetch(`${apiBase}/posts/${id}/export-package`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ outDir })
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to export Markdown package");
+  }
+  return (await response.json()) as MarkdownExportResult;
 }
 
 export async function generateCoverImage(id: string) {

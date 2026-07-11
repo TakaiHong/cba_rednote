@@ -1,6 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { createXhsPublishPackage, renderXhsMarkdownExport } from "../server/src/publishing/xhsPackage.js";
+import { exportXhsMarkdownPackage } from "../server/src/publishing/exportPackage.js";
 import { postStore } from "../server/src/storage/postStore.js";
 
 const postArgIndex = process.argv.findIndex((arg) => arg === "--post");
@@ -15,13 +13,6 @@ if (!post) {
   process.exit(1);
 }
 
-const publishPackage = createXhsPublishPackage(post);
-const markdown = renderXhsMarkdownExport(publishPackage);
-const safeTitle = publishPackage.title.replace(/[\\/:*?"<>|]/g, "").slice(0, 40);
-const filename = `${post.createdAt.slice(0, 10)}-${safeTitle || post.id}.md`;
-const outputPath = join(process.cwd(), outDir, filename);
+const result = await exportXhsMarkdownPackage(post, outDir);
 
-await mkdir(join(process.cwd(), outDir), { recursive: true });
-await writeFile(outputPath, markdown, "utf8");
-
-console.log(outputPath);
+console.log(result.outputPath);

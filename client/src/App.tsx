@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  exportMarkdownPackage,
   generatePost,
   generatePostBatch,
   generateCoverImage,
@@ -62,6 +63,7 @@ function App() {
   const [publishHint, setPublishHint] = useState("");
   const [visualBrief, setVisualBrief] = useState("");
   const [coverLoading, setCoverLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [handoffLoading, setHandoffLoading] = useState(false);
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
   const [goLive, setGoLive] = useState<GoLiveCheckResult>();
@@ -231,6 +233,21 @@ function App() {
     await navigator.clipboard.writeText(brief);
     setVisualBrief(publishPackage.visualBrief);
     setPublishHint("已复制图片 brief，可以发给拍摄/设计/AI 出图。");
+  }
+
+  async function handleExportMarkdownPackage() {
+    if (!selected) return;
+    setExportLoading(true);
+    setError("");
+    try {
+      const result = await exportMarkdownPackage(selected.id);
+      await refresh();
+      setPublishHint(`已导出 Markdown 发布包：${result.outputPath}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "导出发布包失败");
+    } finally {
+      setExportLoading(false);
+    }
   }
 
   async function handleCopyCommand(command: string) {
@@ -661,6 +678,9 @@ function App() {
               <strong>发布助手</strong>
               <button onClick={handleCopyPublishText}>复制发布文本</button>
               <button onClick={handleCopyVisualBrief}>复制图片 brief</button>
+              <button onClick={handleExportMarkdownPackage} disabled={exportLoading}>
+                {exportLoading ? "导出中..." : "导出 Markdown"}
+              </button>
               <button onClick={handleGenerateCoverImage} disabled={coverLoading}>
                 {coverLoading ? "生成封面中..." : "生成模板封面"}
               </button>

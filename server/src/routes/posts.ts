@@ -3,6 +3,7 @@ import { z } from "zod";
 import { generatePostBatch } from "../generation/batch.js";
 import { planContentCalendar } from "../generation/contentCalendar.js";
 import { generateUniqueMarketingPost } from "../generation/generator.js";
+import { exportXhsMarkdownPackage } from "../publishing/exportPackage.js";
 import { resolvePublishedUrlEvidence } from "../publishing/publishedUrl.js";
 import { createXhsPublishPackage } from "../publishing/xhsPackage.js";
 import { postStore } from "../storage/postStore.js";
@@ -67,6 +68,27 @@ router.get("/:id/publish-package", async (req, res) => {
   const post = await postStore.get(req.params.id);
   if (!post) return res.status(404).json({ error: "Post not found" });
   res.json(createXhsPublishPackage(post));
+});
+
+router.post("/:id/export-package", async (req, res) => {
+  const post = await postStore.get(req.params.id);
+  if (!post) return res.status(404).json({ error: "Post not found" });
+
+  try {
+    const result = await exportXhsMarkdownPackage(post, req.body?.outDir ?? "exports");
+    await runLogStore.append({
+      action: "api-export-package",
+      status: "ok",
+      message: `Exported Markdown package for post ${post.id}`,
+      metadata: {
+        postId: post.id,
+        outputPath: result.outputPath
+      }
+    });
+    res.status(201).json(result);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+  }
 });
 
 router.post("/:id/cover-image", async (req, res) => {
