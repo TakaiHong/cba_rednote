@@ -73,6 +73,8 @@ npm.cmd run publish:preflight
 
 图文发布页通常会在上传图片后才显示标题、正文和发布按钮。`publish:preflight` 会优先使用草稿已绑定的图片素材并先尝试上传；如果草稿还没有图片，先运行 `image:cover -- --post latest --attach` 生成一个模板封面，或在运营台绑定真实图片路径。
 
+`publish:preflight` 会自动等待登录和“上传图文”页就绪；如果登录后落到创作者首页，脚本会重新跳到图文发布地址再继续。默认最多等待 120 秒，也可以用 `--preflight-wait-ms` 调整。
+
 如果需要先人工登录、等待自动跳转或手动确认“上传图文”页，使用：
 
 ```powershell

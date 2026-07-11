@@ -28,6 +28,7 @@ interface CliOptions {
   imagesDir?: string;
   preflightReport?: string;
   publishedUrl?: string;
+  preflightWaitMs: number;
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -40,7 +41,8 @@ function parseArgs(argv: string[]): CliOptions {
     preflight: false,
     waitBeforePreflight: false,
     clickPublish: false,
-    imagePaths: []
+    imagePaths: [],
+    preflightWaitMs: 120000
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -57,10 +59,14 @@ function parseArgs(argv: string[]): CliOptions {
     if (arg === "--images-dir") options.imagesDir = argv[index + 1];
     if (arg === "--preflight-report") options.preflightReport = argv[index + 1];
     if (arg === "--published-url") options.publishedUrl = argv[index + 1];
+    if (arg === "--preflight-wait-ms") options.preflightWaitMs = Number(argv[index + 1] ?? options.preflightWaitMs);
   }
 
   if (!["clipboard", "assist"].includes(options.mode)) {
     throw new Error("--mode must be clipboard or assist");
+  }
+  if (!Number.isFinite(options.preflightWaitMs) || options.preflightWaitMs < 0) {
+    throw new Error("--preflight-wait-ms must be a non-negative number");
   }
 
   return options;
@@ -102,6 +108,37 @@ async function uploadImages(page: Page, selectors: Awaited<ReturnType<typeof loa
   }
 
   return undefined;
+}
+
+async function hasAnySelector(page: Page, selectors: string[]) {
+  for (const selector of selectors) {
+    if ((await page.locator(selector).count().catch(() => 0)) > 0) return true;
+  }
+  return false;
+}
+
+async function waitForUploadPage(page: Page, selectors: Awaited<ReturnType<typeof loadXhsSelectorConfig>>, timeoutMs: number) {
+  const deadline = Date.now() + timeoutMs;
+  let lastNavigationAt = 0;
+
+  while (Date.now() < deadline) {
+    if (await hasAnySelector(page, selectors.upload)) return true;
+
+    const currentUrl = page.url();
+    const shouldRetryUploadUrl =
+      currentUrl.includes("creator.xiaohongshu.com") &&
+      !currentUrl.includes("/publish/publish") &&
+      Date.now() - lastNavigationAt > 5000;
+
+    if (shouldRetryUploadUrl) {
+      lastNavigationAt = Date.now();
+      await page.goto(config.xhsCreatorUrl, { waitUntil: "domcontentloaded" }).catch(() => undefined);
+    }
+
+    await page.waitForTimeout(1000);
+  }
+
+  return false;
 }
 
 async function writeClipboard(page: Page, text: string) {
@@ -292,6 +329,9 @@ if (options.preflight) {
       "Log in if needed, confirm the Xiaohongshu upload-image page is open, then press Enter here to run selector preflight..."
     );
   }
+  console.log(`Waiting for Xiaohongshu upload-image page for up to ${Math.round(options.preflightWaitMs / 1000)} seconds...`);
+  const uploadPageReady = await waitForUploadPage(page, selectorConfig, options.preflightWaitMs);
+  console.log(`Upload-image page ready: ${uploadPageReady ? "yes" : "no"}`);
   const uploadSelector = await uploadImages(page, selectorConfig, imagePaths);
   if (imagePaths.length > 0) {
     console.log(`Preflight image upload selector: ${uploadSelector ?? "not found"}`);
@@ -311,7 +351,7 @@ if (options.preflight) {
   if (options.preflightReport) {
     await writePreflightReport(options.preflightReport, {
       postId: post.id,
-      title: post.title,
+      title: publishPackage.title,
       url: page.url(),
       generatedAt: new Date().toISOString(),
       selectors: selectorReport
