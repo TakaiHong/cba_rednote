@@ -9,6 +9,7 @@ import {
   generateHandoffPackage,
   getContentCalendar,
   getDailyTaskStatus,
+  getImageAssetUrl,
   getGoLiveStatus,
   getPreflightEvidence,
   getStatus,
@@ -21,6 +22,7 @@ import {
   type MarketingPost,
   type PreflightEvidenceResult,
   type SystemStatus,
+  type XhsPublishPackage,
   updatePost
 } from "./api.js";
 
@@ -87,6 +89,7 @@ function App() {
   const [commands, setCommands] = useState<SystemStatus["commands"]>({});
   const [recentRuns, setRecentRuns] = useState<SystemStatus["recentRuns"]>([]);
   const [calendar, setCalendar] = useState<CalendarItem[]>([]);
+  const [publishPreview, setPublishPreview] = useState<XhsPublishPackage>();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -106,6 +109,8 @@ function App() {
     () => posts.find((post) => post.id === selectedId) ?? posts[0],
     [posts, selectedId]
   );
+
+  const previewImage = publishPreview?.imageAssets[0] ?? selected?.imageAssets?.[0];
 
   const performance = useMemo(() => {
     const views = posts.reduce((sum, post) => sum + (post.metrics?.views ?? 0), 0);
@@ -363,6 +368,26 @@ function App() {
       setSelectedId(filteredPosts[0].id);
     }
   }, [filteredPosts, selectedId]);
+
+  useEffect(() => {
+    if (!selected?.id) {
+      setPublishPreview(undefined);
+      return;
+    }
+
+    let cancelled = false;
+    getPublishPackage(selected.id)
+      .then((pkg) => {
+        if (!cancelled) setPublishPreview(pkg);
+      })
+      .catch(() => {
+        if (!cancelled) setPublishPreview(undefined);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selected?.id, selected?.title, selected?.body, selected?.tags, selected?.imageAssets]);
 
   return (
     <main className="app-shell">
@@ -750,9 +775,20 @@ function App() {
             </dl>
             <div className="preview">
               <strong>发布预览</strong>
-              <h2>{selected.title}</h2>
-              <p>{selected.body}</p>
-              <p className="tags">{selected.tags.map((tag) => `#${tag}`).join(" ")}</p>
+              <div className="xhs-preview-card">
+                {previewImage ? (
+                  <img alt="Xiaohongshu cover preview" src={getImageAssetUrl(previewImage)} />
+                ) : (
+                  <div className="preview-image-empty">No image</div>
+                )}
+                <div className="xhs-preview-copy">
+                  <h2>{publishPreview?.title ?? selected.title}</h2>
+                  <p>{publishPreview?.fullText ?? selected.body}</p>
+                  <p className="tags">
+                    {publishPreview?.tagsLine || selected.tags.map((tag) => `#${tag}`).join(" ")}
+                  </p>
+                </div>
+              </div>
             </div>
             <div className="publish-helper">
               <strong>发布助手</strong>

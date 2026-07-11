@@ -259,6 +259,10 @@ export async function getPublishPackage(id: string) {
   return (await response.json()) as XhsPublishPackage;
 }
 
+export function getImageAssetUrl(path: string) {
+  return `${apiBase}/assets/image?path=${encodeURIComponent(path)}`;
+}
+
 export async function exportMarkdownPackage(id: string, outDir = "exports") {
   const response = await fetch(`${apiBase}/posts/${id}/export-package`, {
     method: "POST",

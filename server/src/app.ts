@@ -1,5 +1,8 @@
 import cors from "cors";
 import express from "express";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { relative, resolve } from "node:path";
 import { exportPerformanceReport, type PerformanceReportExportResult } from "./analytics/exportPerformanceReport.js";
 import { backupRuntimeData, type BackupResult } from "./backup.js";
 import { readPreflightEvidence } from "./publishing/preflightEvidence.js";
@@ -37,6 +40,24 @@ export function createApp(dependencies: AppDependencies = {}) {
 
   app.get("/api/preflight-evidence", async (_req, res) => {
     res.json(await readPreflightEvidence());
+  });
+
+  app.get("/api/assets/image", async (req, res) => {
+    const rawPath = typeof req.query.path === "string" ? req.query.path : "";
+    if (!rawPath.trim()) return res.status(400).json({ error: "path is required" });
+
+    const projectRoot = resolve(process.cwd());
+    const resolvedPath = resolve(projectRoot, rawPath);
+    const relativePath = relative(projectRoot, resolvedPath);
+    if (relativePath.startsWith("..") || relativePath === "" || resolve(relativePath) === relativePath || !existsSync(resolvedPath)) {
+      return res.status(404).json({ error: "Image not found" });
+    }
+
+    const lowerPath = resolvedPath.toLowerCase();
+    if (lowerPath.endsWith(".png")) res.type("image/png");
+    if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg")) res.type("image/jpeg");
+    if (lowerPath.endsWith(".webp")) res.type("image/webp");
+    res.send(await readFile(resolvedPath));
   });
 
   app.get("/api/schedule/status", async (_req, res) => {

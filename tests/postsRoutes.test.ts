@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { type Server } from "node:http";
 import { AddressInfo } from "node:net";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -220,6 +220,18 @@ describe("posts routes", () => {
     assert.equal(payload.groups.title.ok, false);
     assert.equal(payload.groups.publishButton.ok, false);
     assert.match(payload.detail, /publish:preflight/);
+  });
+
+  it("serves project image assets for dashboard preview", async () => {
+    const imagePath = join(process.cwd(), ".tmp", "route-preview.png");
+    await mkdir(join(process.cwd(), ".tmp"), { recursive: true });
+    await writeFile(imagePath, "fake image", "utf8");
+
+    const response = await fetch(`${baseUrl}/api/assets/image?path=${encodeURIComponent(relative(process.cwd(), imagePath))}`);
+
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), "fake image");
+    await rm(imagePath, { force: true });
   });
 
   it("exposes daily task status for the dashboard", async () => {
