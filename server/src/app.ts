@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import { exportPerformanceReport, type PerformanceReportExportResult } from "./analytics/exportPerformanceReport.js";
 import { backupRuntimeData, type BackupResult } from "./backup.js";
 import postsRouter, { createPostsRouter, type PostsRouterDependencies } from "./routes/posts.js";
 import { getDailyTaskStatus, type DailyTaskStatus } from "./scheduleStatus.js";
@@ -12,6 +13,7 @@ export interface AppDependencies {
   scheduleStatusReader?: () => Promise<DailyTaskStatus>;
   handoffPackageGenerator?: typeof generateHandoffPackage;
   backupRunner?: typeof backupRuntimeData;
+  performanceReportExporter?: typeof exportPerformanceReport;
 }
 
 export function createApp(dependencies: AppDependencies = {}) {
@@ -53,6 +55,17 @@ export function createApp(dependencies: AppDependencies = {}) {
     try {
       const result: BackupResult = await runner(outDir);
       res.status(result.created ? 201 : 200).json(result);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
+  app.post("/api/performance-report", async (req, res) => {
+    const exporter = dependencies.performanceReportExporter ?? exportPerformanceReport;
+    const outDir = typeof req.body?.outDir === "string" && req.body.outDir.trim() ? req.body.outDir.trim() : "exports";
+    try {
+      const result: PerformanceReportExportResult = await exporter(outDir);
+      res.status(201).json(result);
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
     }

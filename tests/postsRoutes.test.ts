@@ -65,6 +65,13 @@ before(async () => {
       created: true,
       detail: `Backup created: ${outDir}/posts-20260711-050001.json`,
       generatedAt: "2026-07-11T05:00:01.000Z"
+    }),
+    performanceReportExporter: async (outDir) => ({
+      outDir,
+      filename: "performance-report.md",
+      outputPath: `${outDir}/performance-report.md`,
+      postCount: 3,
+      measuredPosts: 1
     })
   }).listen(0);
   await new Promise<void>((resolve) => server.once("listening", resolve));
@@ -220,7 +227,7 @@ describe("posts routes", () => {
     });
     const payload = (await response.json()) as {
       outDir: string;
-      files: { summary: string; goLive: string };
+      files: { summary: string; goLive: string; firstPublishChecklist: string; performanceReport: string };
     };
 
     assert.equal(response.status, 201);
@@ -247,5 +254,25 @@ describe("posts routes", () => {
     assert.equal(payload.created, true);
     assert.match(payload.target, /posts-20260711-050001\.json/);
     assert.match(payload.detail, /Backup created/);
+  });
+
+  it("exports a standalone performance report from the dashboard API", async () => {
+    const response = await fetch(`${baseUrl}/api/performance-report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ outDir: "exports" })
+    });
+    const payload = (await response.json()) as {
+      filename: string;
+      outputPath: string;
+      postCount: number;
+      measuredPosts: number;
+    };
+
+    assert.equal(response.status, 201);
+    assert.equal(payload.filename, "performance-report.md");
+    assert.match(payload.outputPath, /performance-report\.md/);
+    assert.equal(payload.postCount, 3);
+    assert.equal(payload.measuredPosts, 1);
   });
 });

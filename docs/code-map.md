@@ -17,6 +17,7 @@
 - `server/src/modelConfig.ts`：模型供应商、DeepSeek alias、base URL、模型名和单条成本估算解析。
 - `server/src/status.ts`：系统状态汇总，供 API 和 CLI 使用。
 - `server/src/analytics/performanceReport.ts`：生成发布后复盘 Markdown，汇总曝光、互动、咨询和回填清单。
+- `server/src/analytics/exportPerformanceReport.ts`：导出独立 `performance-report.md`，供 CLI 和运营台复用。
 - `server/src/backup.ts`：备份运行数据，供运营台和备份 API 使用。
 - `server/src/scheduleStatus.ts`：解析 Windows 每日生成任务状态，供运营台状态 API 使用。
 - `server/src/types.ts`：帖子、状态、agent 输出等共享类型。
@@ -46,6 +47,7 @@
 ## Scripts
 
 - `scripts/export-xhs.ts`：导出小红书 Markdown 图文交接包。
+- `scripts/export-performance-report.ts`：导出独立发布效果复盘报告。
 - `scripts/plan-calendar.ts`：导出未来内容排期，支持 Markdown 或 JSON。
 - `scripts/generate-batch.ts`：批量生成草稿，支持 dry-run 和付费模型条数上限。
 - `scripts/go-live-check.ts`：正式上线检查，把真实账号 preflight 和已发布 URL 证据作为硬门槛。
@@ -93,6 +95,7 @@
 - `npm.cmd run backup`：备份 `data/posts.json` 到 `backups/`。
 - `npm.cmd run secrets:scan`：扫描 Git 跟踪文件，确认没有提交真实模型 API key。
 - `npm.cmd run export -- --post latest`：导出最新待发布内容的 Markdown 交接包。
+- `npm.cmd run report -- --out exports`：导出独立 `performance-report.md` 复盘报告。
 - `npm.cmd run schedule:dry-run`：检查 Windows 每日生成任务安装计划。
 - `npm.cmd run schedule:status`：检查 Windows 每日生成任务当前安装和运行状态。
 - `npm.cmd run verify`：完整本地验收，包括密钥扫描、测试、构建、发布包 dry-run、图片素材导出、handoff、备份 dry-run、定时任务 dry-run 和定时任务状态检查。

@@ -167,6 +167,14 @@ export interface BackupResult {
   generatedAt: string;
 }
 
+export interface PerformanceReportExportResult {
+  outDir: string;
+  filename: string;
+  outputPath: string;
+  postCount: number;
+  measuredPosts: number;
+}
+
 export interface BatchGenerationResult {
   plan: {
     count: number;
@@ -299,6 +307,19 @@ export async function backupRuntimeData(outDir = "backups") {
     throw new Error(payload?.error ?? "Failed to back up runtime data");
   }
   return (await response.json()) as BackupResult;
+}
+
+export async function exportPerformanceReport(outDir = "exports") {
+  const response = await fetch(`${apiBase}/performance-report`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ outDir })
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to export performance report");
+  }
+  return (await response.json()) as PerformanceReportExportResult;
 }
 
 export async function getContentCalendar(days = 7) {

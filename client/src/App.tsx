@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   backupRuntimeData,
   exportMarkdownPackage,
+  exportPerformanceReport,
   generatePost,
   generatePostBatch,
   generateCoverImage,
@@ -67,6 +68,7 @@ function App() {
   const [exportLoading, setExportLoading] = useState(false);
   const [handoffLoading, setHandoffLoading] = useState(false);
   const [backupLoading, setBackupLoading] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
   const [goLive, setGoLive] = useState<GoLiveCheckResult>();
   const [dailyTask, setDailyTask] = useState<DailyTaskStatus>();
@@ -287,6 +289,20 @@ function App() {
     }
   }
 
+  async function handleExportPerformanceReport() {
+    setReportLoading(true);
+    setError("");
+    try {
+      const result = await exportPerformanceReport();
+      await refresh();
+      setPublishHint(`已导出复盘报告：${result.outputPath}；已回填指标 ${result.measuredPosts}/${result.postCount} 条`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "导出复盘报告失败");
+    } finally {
+      setReportLoading(false);
+    }
+  }
+
   async function handleGenerateCoverImage() {
     if (!selected) return;
     setCoverLoading(true);
@@ -487,6 +503,10 @@ function App() {
           <button className="command-action" disabled={backupLoading} onClick={handleBackupRuntimeData}>
             <span>{backupLoading ? "备份中" : "备份数据"}</span>
             <code>backups/</code>
+          </button>
+          <button className="command-action" disabled={reportLoading} onClick={handleExportPerformanceReport}>
+            <span>{reportLoading ? "导出中" : "导出复盘"}</span>
+            <code>exports/performance-report.md</code>
           </button>
           {handoffCommandKeys.map(([key, label]) => {
             const command = commands[key];

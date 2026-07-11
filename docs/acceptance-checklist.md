@@ -145,6 +145,7 @@ Capture these before considering the first version ready:
 - one handoff package from `npm.cmd run handoff -- --out .tmp/handoff`, including `readiness-checks.json`, `go-live-check.json`, and `image-assets/`
 - the `first-publish-checklist.md` file inside the handoff package, used as the first real-account publish run sheet
 - the `performance-report.md` file inside the handoff package, used for first-post metrics backfill and content review
+- one standalone performance report from `npm.cmd run report -- --out exports`
 - one image asset brief from `npm.cmd run image:brief -- --post latest --out .tmp/image-assets`
 - one template cover PNG generated from `npm.cmd run image:cover -- --post latest --attach`
 - one exported Markdown handoff package from `npm.cmd run export -- --post latest`

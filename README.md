@@ -41,6 +41,7 @@ npm.cmd run go-live:check
 npm.cmd run calendar -- --days 7 --out .tmp/content-calendar.md
 npm.cmd run handoff -- --out .tmp/handoff
 npm.cmd run export -- --post latest
+npm.cmd run report -- --out exports
 npm.cmd run image:brief -- --post latest --out .tmp/image-assets
 npm.cmd run image:cover -- --post latest --attach
 npm.cmd run publish -- --post latest --dry-run
@@ -86,6 +87,7 @@ npm.cmd run build
 - 运营台会展示每日自动化状态，直接提示本机每日生成任务是否已安装。
 - `npm.cmd run export -- --post latest` 可导出 Markdown 图文交接包。
 - 运营台发布助手里的“导出 Markdown”可直接把当前笔记写入 `exports/`。
+- `npm.cmd run report -- --out exports` 和运营台“导出复盘”按钮会生成 `performance-report.md`，用于发布后回填曝光、互动和咨询。
 - `npm.cmd run image:brief -- --post latest --out .tmp/image-assets` 可导出封面文字、图片 brief、AI 出图 prompt 和素材清单。
 - `npm.cmd run image:cover -- --post latest --attach` 可生成一张低成本 3:4 PNG 模板封面，并把图片路径绑定到最新草稿。
 - 也可以在运营台右侧“发布助手”里直接点击“生成模板封面”，系统会生成 PNG 并绑定到当前草稿。
