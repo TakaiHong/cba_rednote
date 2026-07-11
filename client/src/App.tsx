@@ -47,6 +47,7 @@ const handoffCommandKeys = [
   ["verify", "完整验证"],
   ["handoff", "导出交接包"],
   ["publishPreflight", "账号预检"],
+  ["publishPreflightManual", "手动预检"],
   ["scheduleStatus", "定时状态"],
   ["scheduleInstall", "安装定时任务"]
 ] as const;

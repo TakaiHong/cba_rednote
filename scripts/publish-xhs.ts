@@ -1,5 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { createInterface } from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 import { chromium, type Page } from "playwright";
 import { config } from "../server/src/config.js";
 import { resolveImageInputs } from "../server/src/publishing/imageInputs.js";
@@ -20,6 +22,7 @@ interface CliOptions {
   noPause: boolean;
   dryRun: boolean;
   preflight: boolean;
+  waitBeforePreflight: boolean;
   clickPublish: boolean;
   imagePaths: string[];
   imagesDir?: string;
@@ -35,6 +38,7 @@ function parseArgs(argv: string[]): CliOptions {
     noPause: false,
     dryRun: false,
     preflight: false,
+    waitBeforePreflight: false,
     clickPublish: false,
     imagePaths: []
   };
@@ -47,6 +51,7 @@ function parseArgs(argv: string[]): CliOptions {
     if (arg === "--no-pause") options.noPause = true;
     if (arg === "--dry-run") options.dryRun = true;
     if (arg === "--preflight") options.preflight = true;
+    if (arg === "--wait-before-preflight") options.waitBeforePreflight = true;
     if (arg === "--click-publish") options.clickPublish = true;
     if (arg === "--image") options.imagePaths.push(argv[index + 1]);
     if (arg === "--images-dir") options.imagesDir = argv[index + 1];
@@ -59,6 +64,15 @@ function parseArgs(argv: string[]): CliOptions {
   }
 
   return options;
+}
+
+async function waitForEnter(message: string) {
+  const reader = createInterface({ input, output });
+  try {
+    await reader.question(message);
+  } finally {
+    reader.close();
+  }
 }
 
 async function uploadImages(page: Page, selectors: Awaited<ReturnType<typeof loadXhsSelectorConfig>>, imagePaths: string[]) {
@@ -270,6 +284,11 @@ console.log("Visual brief:");
 console.log(publishPackage.visualBrief);
 
 if (options.preflight) {
+  if (options.waitBeforePreflight) {
+    await waitForEnter(
+      "Log in, switch to the Xiaohongshu upload-image page, then press Enter here to run selector preflight..."
+    );
+  }
   const uploadSelector = await uploadImages(page, selectorConfig, imagePaths);
   if (imagePaths.length > 0) {
     console.log(`Preflight image upload selector: ${uploadSelector ?? "not found"}`);

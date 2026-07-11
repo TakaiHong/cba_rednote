@@ -63,6 +63,7 @@ export async function getSystemStatus() {
       goLiveCheck: "npm.cmd run go-live:check",
       publishDryRun: "npm.cmd run publish -- --post latest --dry-run",
       publishPreflight: "npm.cmd run publish:preflight",
+      publishPreflightManual: "npm.cmd run publish:preflight:manual",
       backup: "npm.cmd run backup",
       scheduleStatus: "npm.cmd run schedule:status",
       scheduleInstall: "npm.cmd run schedule:install",

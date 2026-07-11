@@ -43,6 +43,7 @@ describe("getSystemStatus", () => {
     assert.equal(status.commands.report, "npm.cmd run report -- --out exports");
     assert.equal(status.commands.handoff, "npm.cmd run handoff -- --out .tmp/handoff");
     assert.equal(status.commands.goLiveCheck, "npm.cmd run go-live:check");
+    assert.equal(status.commands.publishPreflightManual, "npm.cmd run publish:preflight:manual");
     assert.equal(status.commands.backup, "npm.cmd run backup");
     assert.equal(status.commands.scheduleStatus, "npm.cmd run schedule:status");
     assert.equal(status.commands.verify, "npm.cmd run verify");

@@ -53,6 +53,7 @@ describe("project docs", () => {
       assert.match(publishing, new RegExp(keyword));
       assert.match(runbook, new RegExp(keyword));
     }
+    assert.match(publishing, /publish:preflight:manual/);
   });
 
   it("documents model safety and image generation boundaries", async () => {

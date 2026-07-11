@@ -73,6 +73,14 @@ npm.cmd run publish:preflight
 
 图文发布页通常会在上传图片后才显示标题、正文和发布按钮。`publish:preflight` 会优先使用草稿已绑定的图片素材并先尝试上传；如果草稿还没有图片，先运行 `image:cover -- --post latest --attach` 生成一个模板封面，或在运营台绑定真实图片路径。
 
+如果需要先人工登录或手动切到“上传图文”页，使用：
+
+```powershell
+npm.cmd run publish:preflight:manual
+```
+
+浏览器打开后，登录账号并切到“上传图文”页，再回到 PowerShell 按 Enter，脚本才会上传图片并生成预检报告。
+
 默认报告路径：
 
 ```text
