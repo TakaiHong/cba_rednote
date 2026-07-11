@@ -67,8 +67,11 @@ npm.cmd run export -- --post latest
 正式依赖辅助发布前，先检查真实创作者中心页面里的选择器：
 
 ```powershell
+npm.cmd run image:cover -- --post latest --attach
 npm.cmd run publish:preflight
 ```
+
+图文发布页通常会在上传图片后才显示标题、正文和发布按钮。`publish:preflight` 会优先使用草稿已绑定的图片素材并先尝试上传；如果草稿还没有图片，先运行 `image:cover -- --post latest --attach` 生成一个模板封面，或在运营台绑定真实图片路径。
 
 默认报告路径：
 

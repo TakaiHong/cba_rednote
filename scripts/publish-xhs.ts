@@ -270,6 +270,13 @@ console.log("Visual brief:");
 console.log(publishPackage.visualBrief);
 
 if (options.preflight) {
+  const uploadSelector = await uploadImages(page, selectorConfig, imagePaths);
+  if (imagePaths.length > 0) {
+    console.log(`Preflight image upload selector: ${uploadSelector ?? "not found"}`);
+    await page.waitForTimeout(5000);
+  } else {
+    console.log("Preflight running without images. Xiaohongshu may hide title/body fields until an image is uploaded.");
+  }
   const selectorReport = await inspectSelectors(page, selectorConfig);
   const requiredGroups = ["title", "body", "upload", "publishButton"] as const;
   const missingGroups = requiredGroups.filter((group) => !hasVisibleSelectorHit(selectorReport, group));

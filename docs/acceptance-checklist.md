@@ -111,13 +111,14 @@ If native image generation is added later, use a separate image provider rather 
 
 Before enabling final-click publishing:
 
-1. Run `npm.cmd run publish:preflight`.
-2. Log in to the creator center in the opened browser.
-3. Confirm `title`, `body`, `upload`, and `publishButton` selectors are visible.
-4. Save or review `.tmp/xhs-preflight-report.json` as the selector evidence.
-5. Run a normal assisted publish with `npm.cmd run publish -- --post latest --images-dir .\assets\xhs`.
-6. Only after a stable manual review, set `XHS_ALLOW_FINAL_PUBLISH=true`.
-7. Use `npm.cmd run publish -- --post latest --images-dir .\assets\xhs --click-publish`.
+1. Make sure the latest post has an image, for example `npm.cmd run image:cover -- --post latest --attach`.
+2. Run `npm.cmd run publish:preflight`.
+3. Log in to the creator center in the opened browser.
+4. Confirm `title`, `body`, `upload`, and `publishButton` selectors are visible.
+5. Save or review `.tmp/xhs-preflight-report.json` as the selector evidence.
+6. Run a normal assisted publish with `npm.cmd run publish -- --post latest --images-dir .\assets\xhs`.
+7. Only after a stable manual review, set `XHS_ALLOW_FINAL_PUBLISH=true`.
+8. Use `npm.cmd run publish -- --post latest --images-dir .\assets\xhs --click-publish`.
 
 The final-click mode is intentionally disabled by default.
 
