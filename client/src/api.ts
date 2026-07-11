@@ -141,6 +141,7 @@ export interface HandoffPackageResult {
     readiness: string;
     goLive: string;
     firstPublishChecklist: string;
+    performanceReport: string;
     calendar: string;
     batchDryRun: string;
     summary: string;

@@ -44,6 +44,7 @@ describe("generateHandoffPackage", () => {
     };
     const summary = await readFile(join(result.outDir, "handoff-summary.md"), "utf8");
     const firstPublishChecklist = await readFile(join(result.outDir, "first-publish-checklist.md"), "utf8");
+    const performanceReport = await readFile(join(result.outDir, "performance-report.md"), "utf8");
     const imageBrief = await readFile(join(result.outDir, "image-assets", "image-asset-brief.md"), "utf8");
     const runs = await runLogStore.list();
     const handoffRun = runs.find((run) => run.action === "handoff");
@@ -55,6 +56,7 @@ describe("generateHandoffPackage", () => {
     assert.ok(files.includes("batch-generation-dry-run.json"));
     assert.ok(files.includes("handoff-summary.md"));
     assert.ok(files.includes("first-publish-checklist.md"));
+    assert.ok(files.includes("performance-report.md"));
     assert.ok(files.includes("image-assets"));
     assert.ok(imageAssetFiles.includes("image-asset-brief.md"));
     assert.ok(imageAssetFiles.includes("image-prompt.txt"));
@@ -68,10 +70,13 @@ describe("generateHandoffPackage", () => {
     assert.match(summary, /Go-Live Check/);
     assert.match(summary, /Next Steps/);
     assert.match(summary, /First publish checklist/);
+    assert.match(summary, /Performance report/);
     assert.match(summary, /Image asset brief/);
     assert.match(firstPublishChecklist, /First Xiaohongshu Publish Checklist/);
     assert.match(firstPublishChecklist, /publish:preflight/);
     assert.match(firstPublishChecklist, /--mark-published/);
+    assert.match(performanceReport, /Xiaohongshu Performance Report/);
+    assert.match(performanceReport, /Metric Backfill Checklist/);
     assert.match(imageBrief, /AI 出图 Prompt/);
     assert.ok(handoffRun);
     assert.equal(handoffRun.metadata?.hasImageAssetBrief, true);

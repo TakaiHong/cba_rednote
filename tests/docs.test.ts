@@ -132,5 +132,8 @@ describe("project docs", () => {
     assert.match(readme, /first-publish-checklist\.md/);
     assert.match(codeMap, /first-publish-checklist\.md/);
     assert.match(acceptance, /first-publish-checklist\.md/);
+    assert.match(readme, /performance-report\.md/);
+    assert.match(codeMap, /performance-report\.md/);
+    assert.match(acceptance, /performance-report\.md/);
   });
 });

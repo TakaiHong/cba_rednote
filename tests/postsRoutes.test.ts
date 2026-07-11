@@ -51,6 +51,7 @@ before(async () => {
         readiness: "readiness-checks.json",
         goLive: "go-live-check.json",
         firstPublishChecklist: "first-publish-checklist.md",
+        performanceReport: "performance-report.md",
         calendar: "content-calendar.md",
         batchDryRun: "batch-generation-dry-run.json",
         summary: "handoff-summary.md"
@@ -227,6 +228,7 @@ describe("posts routes", () => {
     assert.equal(payload.files.summary, "handoff-summary.md");
     assert.equal(payload.files.goLive, "go-live-check.json");
     assert.equal(payload.files.firstPublishChecklist, "first-publish-checklist.md");
+    assert.equal(payload.files.performanceReport, "performance-report.md");
   });
 
   it("backs up runtime data from the dashboard API", async () => {

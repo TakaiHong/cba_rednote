@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { renderPerformanceReport } from "../server/src/analytics/performanceReport.js";
 import { planBatchGeneration } from "../server/src/generation/batch.js";
 import { planContentCalendar, renderCalendarMarkdown } from "../server/src/generation/contentCalendar.js";
 import { createXhsPublishPackage, renderXhsMarkdownExport } from "../server/src/publishing/xhsPackage.js";
@@ -33,6 +34,7 @@ function renderSummary(input: {
   latestExportPath?: string;
   imageAssetPaths?: string[];
   firstPublishChecklistPath: string;
+  performanceReportPath: string;
   calendarPath: string;
   batchDryRunPath: string;
 }) {
@@ -83,6 +85,7 @@ function renderSummary(input: {
     `- Readiness JSON: readiness-checks.json`,
     `- Go-live JSON: go-live-check.json`,
     `- First publish checklist: ${input.firstPublishChecklistPath}`,
+    `- Performance report: ${input.performanceReportPath}`,
     `- Content calendar: ${input.calendarPath}`,
     `- Batch dry-run: ${input.batchDryRunPath}`,
     `- Latest publish package: ${input.latestExportPath ?? "not available"}`,
@@ -163,6 +166,7 @@ export async function generateHandoffPackage(options: HandoffOptions) {
   await mkdir(outDir, { recursive: true });
 
   const status = await getSystemStatus();
+  const posts = await postStore.list();
   await writeFile(join(outDir, "status.json"), `${JSON.stringify(status, null, 2)}\n`, "utf8");
 
   const readinessChecks = await buildReadinessChecks();
@@ -177,6 +181,9 @@ export async function generateHandoffPackage(options: HandoffOptions) {
   const batchPlan = planBatchGeneration({ count: 7, maxModelPosts: 1 });
   const batchDryRunFile = "batch-generation-dry-run.json";
   await writeFile(join(outDir, batchDryRunFile), `${JSON.stringify(batchPlan, null, 2)}\n`, "utf8");
+
+  const performanceReportFile = "performance-report.md";
+  await writeFile(join(outDir, performanceReportFile), renderPerformanceReport(posts), "utf8");
 
   let latestExportPath: string | undefined;
   let imageAssetPaths: string[] | undefined;
@@ -215,6 +222,7 @@ export async function generateHandoffPackage(options: HandoffOptions) {
       latestExportPath,
       imageAssetPaths,
       firstPublishChecklistPath: firstPublishChecklistFile,
+      performanceReportPath: performanceReportFile,
       calendarPath: calendarFile,
       batchDryRunPath: batchDryRunFile
     }),
@@ -240,6 +248,7 @@ export async function generateHandoffPackage(options: HandoffOptions) {
       readiness: "readiness-checks.json",
       goLive: "go-live-check.json",
       firstPublishChecklist: firstPublishChecklistFile,
+      performanceReport: performanceReportFile,
       calendar: calendarFile,
       batchDryRun: batchDryRunFile,
       summary: "handoff-summary.md",
