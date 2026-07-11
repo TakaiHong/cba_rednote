@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { exportPerformanceReport, type PerformanceReportExportResult } from "./analytics/exportPerformanceReport.js";
 import { backupRuntimeData, type BackupResult } from "./backup.js";
+import { readPreflightEvidence } from "./publishing/preflightEvidence.js";
 import postsRouter, { createPostsRouter, type PostsRouterDependencies } from "./routes/posts.js";
 import { getDailyTaskStatus, type DailyTaskStatus } from "./scheduleStatus.js";
 import { getSystemStatus } from "./status.js";
@@ -32,6 +33,10 @@ export function createApp(dependencies: AppDependencies = {}) {
 
   app.get("/api/go-live", async (_req, res) => {
     res.json(await runGoLiveCheck());
+  });
+
+  app.get("/api/preflight-evidence", async (_req, res) => {
+    res.json(await readPreflightEvidence());
   });
 
   app.get("/api/schedule/status", async (_req, res) => {

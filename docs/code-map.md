@@ -29,6 +29,7 @@
 - `server/src/publishing/xhsPackage.ts`：小红书发布包格式化，供 API、前端和脚本共用，包含正文、标签、封面文字、图片 brief 和已绑定图片素材。
 - `server/src/publishing/exportPackage.ts`：把单条内容导出为 Markdown 发布包，供 CLI 和运营台共用。
 - `server/src/publishing/finalPublish.ts`：最终发布点击的双保险开关，要求命令参数和环境变量同时开启。
+- `server/src/publishing/preflightEvidence.ts`：读取真实小红书账号 preflight 报告，输出缺失选择器组和可视命中详情。
 - `server/src/publishing/selectorConfig.ts`：读取和校验小红书页面选择器配置。
 - `server/src/publishing/imageInputs.ts`：解析发布脚本的本地图片输入，并和草稿绑定的图片素材一起用于上传。
 - `server/src/routes/posts.ts`：草稿列表、创建、编辑、生成接口。
@@ -40,7 +41,7 @@
 
 - `client/index.html`：Vite HTML 入口。
 - `client/src/main.tsx`：React 入口。
-- `client/src/App.tsx`：运营台主界面，含草稿编辑、图片素材路径维护、单条/批量生成、内容排期、每日自动化状态、go-live 状态、交接包生成、运行数据备份、交接命令复制区、Markdown 导出、发布助手和效果指标录入。
+- `client/src/App.tsx`：运营台主界面，含草稿编辑、图片素材路径维护、单条/批量生成、内容排期、每日自动化状态、go-live 状态、账号 preflight 详情、交接包生成、运行数据备份、交接命令复制区、Markdown 导出、发布助手和效果指标录入。
 - `client/src/api.ts`：前端 API 客户端。
 - `client/src/styles.css`：界面样式。
 

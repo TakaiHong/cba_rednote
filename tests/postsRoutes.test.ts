@@ -205,6 +205,23 @@ describe("posts routes", () => {
     assert.ok(payload.nextSteps.some((step) => step.includes("publish:preflight")));
   });
 
+  it("exposes preflight evidence details for the dashboard", async () => {
+    const response = await fetch(`${baseUrl}/api/preflight-evidence`);
+    const payload = (await response.json()) as {
+      ok: boolean;
+      missingGroups: string[];
+      groups: { title: { ok: boolean }; publishButton: { ok: boolean } };
+      detail: string;
+    };
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.ok, false);
+    assert.deepEqual(payload.missingGroups, ["title", "body", "upload", "publishButton"]);
+    assert.equal(payload.groups.title.ok, false);
+    assert.equal(payload.groups.publishButton.ok, false);
+    assert.match(payload.detail, /publish:preflight/);
+  });
+
   it("exposes daily task status for the dashboard", async () => {
     const response = await fetch(`${baseUrl}/api/schedule/status`);
     const payload = (await response.json()) as {

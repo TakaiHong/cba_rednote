@@ -10,6 +10,7 @@ import {
   getContentCalendar,
   getDailyTaskStatus,
   getGoLiveStatus,
+  getPreflightEvidence,
   getStatus,
   getPublishPackage,
   listPosts,
@@ -18,6 +19,7 @@ import {
   type DailyTaskStatus,
   type GoLiveCheckResult,
   type MarketingPost,
+  type PreflightEvidenceResult,
   type SystemStatus,
   updatePost
 } from "./api.js";
@@ -49,6 +51,13 @@ const handoffCommandKeys = [
   ["scheduleInstall", "安装定时任务"]
 ] as const;
 
+const preflightGroupLabels: Record<"title" | "body" | "upload" | "publishButton", string> = {
+  title: "标题",
+  body: "正文",
+  upload: "图片上传",
+  publishButton: "发布按钮"
+};
+
 function splitLines(value: string) {
   return value
     .split("\n")
@@ -71,6 +80,7 @@ function App() {
   const [reportLoading, setReportLoading] = useState(false);
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
   const [goLive, setGoLive] = useState<GoLiveCheckResult>();
+  const [preflight, setPreflight] = useState<PreflightEvidenceResult>();
   const [dailyTask, setDailyTask] = useState<DailyTaskStatus>();
   const [cost, setCost] = useState<SystemStatus["cost"]>();
   const [commands, setCommands] = useState<SystemStatus["commands"]>({});
@@ -126,10 +136,12 @@ function App() {
       const nextPosts = await listPosts();
       const status = await getStatus();
       const nextGoLive = await getGoLiveStatus();
+      const nextPreflight = await getPreflightEvidence();
       const nextCalendar = await getContentCalendar(7);
       setPosts(nextPosts);
       setStrategy(status.strategy);
       setGoLive(nextGoLive);
+      setPreflight(nextPreflight);
       setCost(status.cost);
       setCommands(status.commands ?? {});
       setRecentRuns(status.recentRuns ?? []);
@@ -448,6 +460,31 @@ function App() {
             <strong>{goLive.nextSteps[0] ?? "无阻塞项"}</strong>
           </div>
           <code>npm.cmd run go-live:check</code>
+        </section>
+      )}
+
+      {preflight && (
+        <section className={`go-live-panel ${preflight.ok ? "ready" : "blocked"}`}>
+          <div>
+            <span>账号预检</span>
+            <strong>{preflight.ok ? "选择器已命中" : "等待真实账号证据"}</strong>
+          </div>
+          <div>
+            <span>报告路径</span>
+            <strong>{preflight.path}</strong>
+          </div>
+          <div>
+            <span>缺失项</span>
+            <strong>{preflight.missingGroups.length ? preflight.missingGroups.join(" / ") : "无"}</strong>
+          </div>
+          <code>npm.cmd run publish:preflight</code>
+          <div className="preflight-groups">
+            {Object.entries(preflight.groups).map(([group, evidence]) => (
+              <span className={evidence.ok ? "ready" : "blocked"} key={group}>
+                {preflightGroupLabels[group as keyof typeof preflightGroupLabels]}: {evidence.ok ? "OK" : "缺失"}
+              </span>
+            ))}
+          </div>
         </section>
       )}
 

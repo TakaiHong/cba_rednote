@@ -120,6 +120,26 @@ export interface GoLiveCheckResult {
   }>;
 }
 
+export interface PreflightEvidenceResult {
+  ok: boolean;
+  path: string;
+  generatedAt?: string;
+  url?: string;
+  missingGroups: string[];
+  groups: Record<
+    "title" | "body" | "upload" | "publishButton",
+    {
+      ok: boolean;
+      selectors: Array<{
+        selector: string;
+        count: number;
+        visible: boolean;
+      }>;
+    }
+  >;
+  detail: string;
+}
+
 export interface DailyTaskStatus {
   ok: boolean;
   installed: boolean;
@@ -275,6 +295,12 @@ export async function getGoLiveStatus() {
   const response = await fetch(`${apiBase}/go-live`);
   if (!response.ok) throw new Error("Failed to load go-live status");
   return (await response.json()) as GoLiveCheckResult;
+}
+
+export async function getPreflightEvidence() {
+  const response = await fetch(`${apiBase}/preflight-evidence`);
+  if (!response.ok) throw new Error("Failed to load preflight evidence");
+  return (await response.json()) as PreflightEvidenceResult;
 }
 
 export async function getDailyTaskStatus() {

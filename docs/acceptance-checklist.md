@@ -123,6 +123,8 @@ The final-click mode is intentionally disabled by default.
 
 `npm.cmd run readiness` reads `.tmp/xhs-preflight-report.json` by default and turns the preflight warning into OK only when `title`, `body`, `upload`, and `publishButton` all have visible selector hits. To use a custom report path, set `XHS_PREFLIGHT_REPORT`.
 
+The dashboard also reads `/api/preflight-evidence` and shows which selector groups are still missing, so the publisher can fix `config/xhs-selectors.json` without opening the JSON report manually.
+
 The published URL warning turns into OK after at least one reviewed post is marked `published` with a Xiaohongshu URL, either through the dashboard or:
 
 ```powershell

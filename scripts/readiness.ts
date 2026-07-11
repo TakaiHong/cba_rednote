@@ -2,26 +2,18 @@ import { access, readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { config } from "../server/src/config.js";
 import { finalPublishGuardMessage, shouldAttemptFinalPublish } from "../server/src/publishing/finalPublish.js";
+import { readPreflightEvidence } from "../server/src/publishing/preflightEvidence.js";
 import { loadXhsSelectorConfig } from "../server/src/publishing/selectorConfig.js";
 import { postStore } from "../server/src/storage/postStore.js";
 import { getSystemStatus } from "../server/src/status.js";
+
+export { readPreflightEvidence };
 
 interface CheckResult {
   name: string;
   ok: boolean;
   severity: "required" | "warning";
   detail: string;
-}
-
-interface SelectorEvidence {
-  selector: string;
-  count: number;
-  visible: boolean;
-}
-
-interface PreflightReport {
-  generatedAt?: string;
-  selectors?: Partial<Record<"title" | "body" | "upload" | "publishButton", SelectorEvidence[]>>;
 }
 
 async function fileExists(path: string) {
@@ -37,30 +29,6 @@ async function packageScriptExists(scriptName: string) {
   const raw = await readFile("package.json", "utf8");
   const pkg = JSON.parse(raw) as { scripts?: Record<string, string> };
   return Boolean(pkg.scripts?.[scriptName]);
-}
-
-function selectorGroupHasVisibleHit(report: PreflightReport | undefined, group: keyof NonNullable<PreflightReport["selectors"]>) {
-  return Boolean(report?.selectors?.[group]?.some((item) => item.count > 0 && item.visible));
-}
-
-export async function readPreflightEvidence(path = process.env.XHS_PREFLIGHT_REPORT ?? ".tmp/xhs-preflight-report.json") {
-  try {
-    const report = JSON.parse(await readFile(path, "utf8")) as PreflightReport;
-    const requiredGroups = ["title", "body", "upload", "publishButton"] as const;
-    const missingGroups = requiredGroups.filter((group) => !selectorGroupHasVisibleHit(report, group));
-    return {
-      ok: missingGroups.length === 0,
-      detail:
-        missingGroups.length === 0
-          ? `Preflight report ${path} has visible selector hits for title, body, upload, and publishButton.`
-          : `Preflight report ${path} is missing visible hits for: ${missingGroups.join(", ")}.`
-    };
-  } catch {
-    return {
-      ok: false,
-      detail: `No usable preflight report found at ${path}. Run npm.cmd run publish:preflight in a real logged-in Xiaohongshu session.`
-    };
-  }
 }
 
 export async function readPublishedUrlEvidence() {

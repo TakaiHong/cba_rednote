@@ -83,6 +83,8 @@ describe("project docs", () => {
     }
     assert.match(acceptance, /real-account preflight report/);
     assert.match(acceptance, /published Xiaohongshu URL/);
+    assert.match(readme, /preflight 详情/);
+    assert.match(acceptance, /preflight-evidence/);
   });
 
   it("documents scheduler status checks for handoff", async () => {
