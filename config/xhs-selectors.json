@@ -12,6 +12,8 @@
     "textarea"
   ],
   "publishButton": [
+    "text=/^发布$/",
+    "xpath=//*[self::button or self::div or self::span or @role='button'][normalize-space(.)='发布']",
     "button:has-text(\"发布\")",
     "button:has-text(\"提交\")"
   ],
