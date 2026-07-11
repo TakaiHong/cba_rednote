@@ -3,11 +3,13 @@ import express from "express";
 import postsRouter, { createPostsRouter, type PostsRouterDependencies } from "./routes/posts.js";
 import { getDailyTaskStatus, type DailyTaskStatus } from "./scheduleStatus.js";
 import { getSystemStatus } from "./status.js";
+import { generateHandoffPackage } from "../../scripts/handoff-package.js";
 import { runGoLiveCheck } from "../../scripts/go-live-check.js";
 
 export interface AppDependencies {
   posts?: PostsRouterDependencies;
   scheduleStatusReader?: () => Promise<DailyTaskStatus>;
+  handoffPackageGenerator?: typeof generateHandoffPackage;
 }
 
 export function createApp(dependencies: AppDependencies = {}) {
@@ -31,6 +33,16 @@ export function createApp(dependencies: AppDependencies = {}) {
   app.get("/api/schedule/status", async (_req, res) => {
     const reader = dependencies.scheduleStatusReader ?? getDailyTaskStatus;
     res.json(await reader());
+  });
+
+  app.post("/api/handoff", async (req, res) => {
+    const generator = dependencies.handoffPackageGenerator ?? generateHandoffPackage;
+    const outDir = typeof req.body?.outDir === "string" && req.body.outDir.trim() ? req.body.outDir.trim() : ".tmp/handoff";
+    try {
+      res.status(201).json(await generator({ outDir }));
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    }
   });
 
   app.use("/api/posts", dependencies.posts ? createPostsRouter(dependencies.posts) : postsRouter);

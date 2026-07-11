@@ -104,5 +104,7 @@ describe("project docs", () => {
 
     assert.match(readme, /交接命令/);
     assert.match(codeMap, /交接命令复制区/);
+    assert.match(readme, /生成交接包/);
+    assert.match(codeMap, /交接包生成/);
   });
 });

@@ -11,7 +11,7 @@
 ## Server
 
 - `server/src/index.ts`：Express 服务入口，挂载 API 和定时任务。
-- `server/src/app.ts`：创建 Express app，供生产入口和路由测试复用，并暴露状态与 go-live 检查 API。
+- `server/src/app.ts`：创建 Express app，供生产入口和路由测试复用，并暴露状态、go-live、每日任务和 handoff 生成 API。
 - `server/src/analytics/contentStrategy.ts`：按内容风格和目标人群汇总效果，并生成下一条内容建议。
 - `server/src/config.ts`：环境变量和成本配置。
 - `server/src/modelConfig.ts`：模型供应商、DeepSeek alias、base URL、模型名和单条成本估算解析。
@@ -36,7 +36,7 @@
 
 - `client/index.html`：Vite HTML 入口。
 - `client/src/main.tsx`：React 入口。
-- `client/src/App.tsx`：运营台主界面，含草稿编辑、图片素材路径维护、单条/批量生成、内容排期、每日自动化状态、go-live 状态、交接命令复制区、发布助手和效果指标录入。
+- `client/src/App.tsx`：运营台主界面，含草稿编辑、图片素材路径维护、单条/批量生成、内容排期、每日自动化状态、go-live 状态、交接包生成、交接命令复制区、发布助手和效果指标录入。
 - `client/src/api.ts`：前端 API 客户端。
 - `client/src/styles.css`：界面样式。
 

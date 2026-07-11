@@ -134,6 +134,20 @@ export interface DailyTaskStatus {
   rawOutput: string[];
 }
 
+export interface HandoffPackageResult {
+  outDir: string;
+  files: {
+    status: string;
+    readiness: string;
+    goLive: string;
+    calendar: string;
+    batchDryRun: string;
+    summary: string;
+    latestExport?: string;
+    imageAssets?: string[];
+  };
+}
+
 export interface BatchGenerationResult {
   plan: {
     count: number;
@@ -227,6 +241,19 @@ export async function getDailyTaskStatus() {
   const response = await fetch(`${apiBase}/schedule/status`);
   if (!response.ok) throw new Error("Failed to load schedule status");
   return (await response.json()) as DailyTaskStatus;
+}
+
+export async function generateHandoffPackage(outDir = ".tmp/handoff") {
+  const response = await fetch(`${apiBase}/handoff`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ outDir })
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to generate handoff package");
+  }
+  return (await response.json()) as HandoffPackageResult;
 }
 
 export async function getContentCalendar(days = 7) {

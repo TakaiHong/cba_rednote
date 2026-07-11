@@ -90,6 +90,7 @@ npm.cmd run build
 - 也可以在运营台右侧“发布助手”里直接点击“生成模板封面”，系统会生成 PNG 并绑定到当前草稿。
 - 运营台的“图片素材路径”可绑定本地图片；`publish` dry-run、发布包和辅助发布会自动带上这些素材，仍可额外使用 `--image` 或 `--images-dir`。
 - `npm.cmd run handoff -- --out .tmp/handoff` 可集中导出交付状态、`go-live-check.json` go-live 状态、排期、批量生成 dry-run、最新发布包和 `image-assets/` 图片素材包。
+- 运营台的“生成交接包”按钮会调用后端生成 `.tmp/handoff`，方便不打开终端也能准备交接材料。
 - 运营台会展示关键交接命令，可直接复制完整验证、handoff、账号预检和定时任务命令。
 - `npm.cmd run go-live:check` 会把真实账号 preflight 和至少一条已发布 URL 当成正式上线硬门槛。
 - 运营台会展示正式上线状态，直接提示是否还缺真实账号 preflight 或已发布链接证据。

@@ -3,6 +3,7 @@ import {
   generatePost,
   generatePostBatch,
   generateCoverImage,
+  generateHandoffPackage,
   getContentCalendar,
   getDailyTaskStatus,
   getGoLiveStatus,
@@ -61,6 +62,7 @@ function App() {
   const [publishHint, setPublishHint] = useState("");
   const [visualBrief, setVisualBrief] = useState("");
   const [coverLoading, setCoverLoading] = useState(false);
+  const [handoffLoading, setHandoffLoading] = useState(false);
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
   const [goLive, setGoLive] = useState<GoLiveCheckResult>();
   const [dailyTask, setDailyTask] = useState<DailyTaskStatus>();
@@ -234,6 +236,20 @@ function App() {
   async function handleCopyCommand(command: string) {
     await navigator.clipboard.writeText(command);
     setPublishHint(`已复制命令：${command}`);
+  }
+
+  async function handleGenerateHandoffPackage() {
+    setHandoffLoading(true);
+    setError("");
+    try {
+      const result = await generateHandoffPackage();
+      await refresh();
+      setPublishHint(`已生成交接包：${result.outDir}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "生成交接包失败");
+    } finally {
+      setHandoffLoading(false);
+    }
   }
 
   async function handleGenerateCoverImage() {
@@ -429,6 +445,10 @@ function App() {
           <code>README / docs/operations-runbook.md</code>
         </div>
         <div className="command-grid">
+          <button className="command-action" disabled={handoffLoading} onClick={handleGenerateHandoffPackage}>
+            <span>{handoffLoading ? "生成中" : "生成交接包"}</span>
+            <code>.tmp/handoff</code>
+          </button>
           {handoffCommandKeys.map(([key, label]) => {
             const command = commands[key];
             return (

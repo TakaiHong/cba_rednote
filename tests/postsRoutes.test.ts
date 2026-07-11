@@ -43,6 +43,17 @@ before(async () => {
       checkedAt: "2026-07-08T09:00:00.000Z",
       command: "npm.cmd run schedule:status",
       rawOutput: ["Installed: true"]
+    }),
+    handoffPackageGenerator: async (options) => ({
+      outDir: options.outDir,
+      files: {
+        status: "status.json",
+        readiness: "readiness-checks.json",
+        goLive: "go-live-check.json",
+        calendar: "content-calendar.md",
+        batchDryRun: "batch-generation-dry-run.json",
+        summary: "handoff-summary.md"
+      }
     })
   }).listen(0);
   await new Promise<void>((resolve) => server.once("listening", resolve));
@@ -161,5 +172,22 @@ describe("posts routes", () => {
     assert.equal(payload.installed, true);
     assert.equal(payload.state, "Ready");
     assert.equal(payload.command, "npm.cmd run schedule:status");
+  });
+
+  it("generates a handoff package from the dashboard API", async () => {
+    const response = await fetch(`${baseUrl}/api/handoff`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ outDir: ".tmp/dashboard-handoff" })
+    });
+    const payload = (await response.json()) as {
+      outDir: string;
+      files: { summary: string; goLive: string };
+    };
+
+    assert.equal(response.status, 201);
+    assert.equal(payload.outDir, ".tmp/dashboard-handoff");
+    assert.equal(payload.files.summary, "handoff-summary.md");
+    assert.equal(payload.files.goLive, "go-live-check.json");
   });
 });
