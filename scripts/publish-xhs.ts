@@ -289,7 +289,7 @@ console.log(publishPackage.visualBrief);
 if (options.preflight) {
   if (options.waitBeforePreflight) {
     await waitForEnter(
-      "Log in, switch to the Xiaohongshu upload-image page, then press Enter here to run selector preflight..."
+      "Log in if needed, confirm the Xiaohongshu upload-image page is open, then press Enter here to run selector preflight..."
     );
   }
   const uploadSelector = await uploadImages(page, selectorConfig, imagePaths);

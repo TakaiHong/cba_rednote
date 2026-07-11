@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { normalizePublishedUrl, resolvePublishedUrlEvidence } from "../server/src/publishing/publishedUrl.js";
-import { createXhsPublishPackage, renderXhsMarkdownExport } from "../server/src/publishing/xhsPackage.js";
+import { createXhsPublishPackage, normalizeXhsTitle, renderXhsMarkdownExport } from "../server/src/publishing/xhsPackage.js";
 import type { MarketingPost } from "../server/src/types.js";
 
 function fromCodePoints(values: number[]) {
@@ -49,6 +49,13 @@ function postFixture(): MarketingPost {
 }
 
 describe("createXhsPublishPackage", () => {
+  it("keeps Xiaohongshu titles within the 20 character limit", () => {
+    const title = "NTU毕业搬离Hall | 家具不丢也不急运的缓冲方案";
+
+    assert.equal(normalizeXhsTitle(title), "NTU毕业搬离Hall家具暂存");
+    assert.equal(Array.from(createXhsPublishPackage({ ...postFixture(), title }).title).length <= 20, true);
+  });
+
   it("formats title, body, call to action, and normalized tags", () => {
     const pkg = createXhsPublishPackage(postFixture());
 

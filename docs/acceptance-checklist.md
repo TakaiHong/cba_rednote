@@ -113,7 +113,7 @@ Before enabling final-click publishing:
 
 1. Make sure the latest post has an image, for example `npm.cmd run image:cover -- --post latest --attach`.
 2. Run `npm.cmd run publish:preflight`.
-3. Log in to the creator center in the opened browser.
+3. Log in if needed and confirm the opened browser is on the upload-image publishing page.
 4. Confirm `title`, `body`, `upload`, and `publishButton` selectors are visible.
 5. Save or review `.tmp/xhs-preflight-report.json` as the selector evidence.
 6. Run a normal assisted publish with `npm.cmd run publish -- --post latest --images-dir .\assets\xhs`.

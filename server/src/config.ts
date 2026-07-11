@@ -12,5 +12,6 @@ export const config = {
   openAiModel: modelSettings.model,
   openAiModelCostCnyPerPostEstimate: modelSettings.estimatedCostCnyPerPost,
   maxCostCnyPerPost: Number(process.env.MAX_COST_CNY_PER_POST ?? 0.5),
-  xhsCreatorUrl: process.env.XHS_CREATOR_URL ?? "https://creator.xiaohongshu.com/"
+  xhsCreatorUrl:
+    process.env.XHS_CREATOR_URL ?? "https://creator.xiaohongshu.com/publish/publish?target=image&from=codex"
 };

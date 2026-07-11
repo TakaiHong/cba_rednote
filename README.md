@@ -75,7 +75,7 @@ npm.cmd run build
 - 默认使用本地低成本模板生成器，保证没有 API key 也能跑通。
 - 配置 `OPENAI_API_KEY` 后，可以切换到低成本模型生成更自然的版本。
 - 每条帖子预算上限通过 `MAX_COST_CNY_PER_POST` 控制，默认 0.5 元人民币。
-- 小红书发布优先采用半自动 Playwright：复用本地登录态、打开创作者中心、复制并尝试填充内容、由人工最后确认发布，降低账号风控风险；账号和选择器验证稳定后，可通过 `XHS_ALLOW_FINAL_PUBLISH=true` 搭配 `--click-publish` 显式启用最终发布点击。
+- 小红书发布优先采用半自动 Playwright：复用本地登录态、默认直达“上传图文”发布页、复制并尝试填充内容、由人工最后确认发布，降低账号风控风险；账号和选择器验证稳定后，可通过 `XHS_ALLOW_FINAL_PUBLISH=true` 搭配 `--click-publish` 显式启用最终发布点击。
 - 运营台支持录入曝光、点赞、收藏、评论、关注和咨询数，用来比较不同内容角度的实际效果。
 - 运营台和 `npm.cmd run status` 会汇总累计成本、平均成本、付费生成条数和预算状态。
 - 关键动作会写入 `data/run-log.json`，包括运营台生成/批量生成/发布回写、CLI 生成、定时生成、图片 brief 导出和 handoff 导出。

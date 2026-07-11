@@ -14,14 +14,44 @@ export interface XhsPublishPackage {
   fullText: string;
 }
 
+const xhsTitleMaxLength = 20;
+
+function fitTitle(value: string, maxLength: number) {
+  return Array.from(value.trim()).slice(0, maxLength).join("");
+}
+
+export function normalizeXhsTitle(title: string, maxLength = xhsTitleMaxLength) {
+  const trimmed = title.trim();
+  if (Array.from(trimmed).length <= maxLength) return trimmed;
+
+  const [head, ...tailParts] = trimmed.split(/[|｜]/).map((part) => part.trim()).filter(Boolean);
+  const tail = tailParts.join(" ");
+  if (head && tail) {
+    const keywords = [
+      ...(tail.includes("家具") ? ["家具暂存"] : []),
+      ...(tail.includes("行李") ? ["行李暂存"] : []),
+      ...(tail.includes("迷你仓") ? ["迷你仓"] : []),
+      ...(tail.includes("搬") ? ["搬家"] : []),
+      ...(tail.includes("回国") ? ["回国"] : []),
+      ...(tail.includes("租房") ? ["租房"] : [])
+    ];
+    const candidate = [head, ...keywords].join("");
+    if (Array.from(candidate).length <= maxLength && candidate.length > head.length) return candidate;
+    if (Array.from(head).length <= maxLength) return head;
+  }
+
+  return fitTitle(trimmed, maxLength).replace(/[，。；、|｜\s]+$/, "");
+}
+
 export function createXhsPublishPackage(post: MarketingPost): XhsPublishPackage {
+  const title = normalizeXhsTitle(post.title);
   const tagsLine = post.tags.map((tag) => `#${tag.replace(/^#/, "")}`).join(" ");
   const parts = [post.body];
   if (post.callToAction) parts.push("", post.callToAction);
   if (tagsLine) parts.push("", tagsLine);
 
   const fullText = parts.join("\n");
-  const coverText = post.title.length > 18 ? `${post.title.slice(0, 17)}...` : post.title;
+  const coverText = title;
   const visualBrief = [
     `封面文字：${coverText}`,
     `场景：${post.topic.scene}`,
@@ -43,7 +73,7 @@ export function createXhsPublishPackage(post: MarketingPost): XhsPublishPackage 
 
   return {
     postId: post.id,
-    title: post.title,
+    title,
     body: post.body,
     tagsLine,
     imageIdeas: post.imageIdeas,
