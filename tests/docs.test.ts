@@ -115,4 +115,12 @@ describe("project docs", () => {
     assert.match(readme, /导出 Markdown/);
     assert.match(codeMap, /Markdown 导出/);
   });
+
+  it("documents dashboard runtime data backups", async () => {
+    const readme = await readFile("README.md", "utf8");
+    const codeMap = await readFile("docs/code-map.md", "utf8");
+
+    assert.match(readme, /备份数据/);
+    assert.match(codeMap, /运行数据备份/);
+  });
 });

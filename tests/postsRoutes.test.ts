@@ -54,6 +54,15 @@ before(async () => {
         batchDryRun: "batch-generation-dry-run.json",
         summary: "handoff-summary.md"
       }
+    }),
+    backupRunner: async (outDir) => ({
+      ok: true,
+      source: "data/posts.json",
+      target: `${outDir}/posts-20260711-050001.json`,
+      outDir,
+      created: true,
+      detail: `Backup created: ${outDir}/posts-20260711-050001.json`,
+      generatedAt: "2026-07-11T05:00:01.000Z"
     })
   }).listen(0);
   await new Promise<void>((resolve) => server.once("listening", resolve));
@@ -216,5 +225,23 @@ describe("posts routes", () => {
     assert.equal(payload.outDir, ".tmp/dashboard-handoff");
     assert.equal(payload.files.summary, "handoff-summary.md");
     assert.equal(payload.files.goLive, "go-live-check.json");
+  });
+
+  it("backs up runtime data from the dashboard API", async () => {
+    const response = await fetch(`${baseUrl}/api/backup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ outDir: "backups" })
+    });
+    const payload = (await response.json()) as {
+      created: boolean;
+      target: string;
+      detail: string;
+    };
+
+    assert.equal(response.status, 201);
+    assert.equal(payload.created, true);
+    assert.match(payload.target, /posts-20260711-050001\.json/);
+    assert.match(payload.detail, /Backup created/);
   });
 });

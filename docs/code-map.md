@@ -16,6 +16,7 @@
 - `server/src/config.ts`：环境变量和成本配置。
 - `server/src/modelConfig.ts`：模型供应商、DeepSeek alias、base URL、模型名和单条成本估算解析。
 - `server/src/status.ts`：系统状态汇总，供 API 和 CLI 使用。
+- `server/src/backup.ts`：备份运行数据，供运营台和备份 API 使用。
 - `server/src/scheduleStatus.ts`：解析 Windows 每日生成任务状态，供运营台状态 API 使用。
 - `server/src/types.ts`：帖子、状态、agent 输出等共享类型。
 - `server/src/storage/postStore.ts`：JSON 文件存储。
@@ -37,7 +38,7 @@
 
 - `client/index.html`：Vite HTML 入口。
 - `client/src/main.tsx`：React 入口。
-- `client/src/App.tsx`：运营台主界面，含草稿编辑、图片素材路径维护、单条/批量生成、内容排期、每日自动化状态、go-live 状态、交接包生成、交接命令复制区、Markdown 导出、发布助手和效果指标录入。
+- `client/src/App.tsx`：运营台主界面，含草稿编辑、图片素材路径维护、单条/批量生成、内容排期、每日自动化状态、go-live 状态、交接包生成、运行数据备份、交接命令复制区、Markdown 导出、发布助手和效果指标录入。
 - `client/src/api.ts`：前端 API 客户端。
 - `client/src/styles.css`：界面样式。
 

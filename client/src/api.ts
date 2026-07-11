@@ -155,6 +155,16 @@ export interface MarkdownExportResult {
   outputPath: string;
 }
 
+export interface BackupResult {
+  ok: boolean;
+  source: string;
+  target?: string;
+  outDir: string;
+  created: boolean;
+  detail: string;
+  generatedAt: string;
+}
+
 export interface BatchGenerationResult {
   plan: {
     count: number;
@@ -274,6 +284,19 @@ export async function generateHandoffPackage(outDir = ".tmp/handoff") {
     throw new Error(payload?.error ?? "Failed to generate handoff package");
   }
   return (await response.json()) as HandoffPackageResult;
+}
+
+export async function backupRuntimeData(outDir = "backups") {
+  const response = await fetch(`${apiBase}/backup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ outDir })
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to back up runtime data");
+  }
+  return (await response.json()) as BackupResult;
 }
 
 export async function getContentCalendar(days = 7) {

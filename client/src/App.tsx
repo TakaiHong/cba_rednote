@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  backupRuntimeData,
   exportMarkdownPackage,
   generatePost,
   generatePostBatch,
@@ -65,6 +66,7 @@ function App() {
   const [coverLoading, setCoverLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [handoffLoading, setHandoffLoading] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
   const [goLive, setGoLive] = useState<GoLiveCheckResult>();
   const [dailyTask, setDailyTask] = useState<DailyTaskStatus>();
@@ -269,6 +271,20 @@ function App() {
     }
   }
 
+  async function handleBackupRuntimeData() {
+    setBackupLoading(true);
+    setError("");
+    try {
+      const result = await backupRuntimeData();
+      await refresh();
+      setPublishHint(result.detail);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "备份失败");
+    } finally {
+      setBackupLoading(false);
+    }
+  }
+
   async function handleGenerateCoverImage() {
     if (!selected) return;
     setCoverLoading(true);
@@ -465,6 +481,10 @@ function App() {
           <button className="command-action" disabled={handoffLoading} onClick={handleGenerateHandoffPackage}>
             <span>{handoffLoading ? "生成中" : "生成交接包"}</span>
             <code>.tmp/handoff</code>
+          </button>
+          <button className="command-action" disabled={backupLoading} onClick={handleBackupRuntimeData}>
+            <span>{backupLoading ? "备份中" : "备份数据"}</span>
+            <code>backups/</code>
           </button>
           {handoffCommandKeys.map(([key, label]) => {
             const command = commands[key];

@@ -97,6 +97,7 @@ npm.cmd run build
 - 运营台会展示正式上线状态，直接提示是否还缺真实账号 preflight 或已发布链接证据。
 - `npm.cmd run ui:smoke` 会用本机 Chrome 检查运营台标题、主界面、中文乱码和控制台错误。
 - `npm.cmd run backup` 可备份运行数据到 `backups/`。
+- 运营台“备份数据”按钮可直接把当前运行数据复制到 `backups/`。
 - `npm.cmd run readiness` 可输出交接前验收清单。
 
 ## 文档
