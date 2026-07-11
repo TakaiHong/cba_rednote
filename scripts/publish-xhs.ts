@@ -182,6 +182,9 @@ function hasVisibleSelectorHit(
   report: Awaited<ReturnType<typeof inspectSelectors>>,
   group: "title" | "body" | "upload" | "publishButton"
 ) {
+  if (group === "upload") {
+    return Boolean(report.upload?.some((item) => item.count > 0));
+  }
   return Boolean(report[group]?.some((item) => item.count > 0 && item.visible));
 }
 
@@ -296,6 +299,10 @@ if (options.preflight) {
   } else {
     console.log("Preflight running without images. Xiaohongshu may hide title/body fields until an image is uploaded.");
   }
+  const fillResult = await assistFill(page, selectorConfig, publishPackage.title, publishPackage.fullText);
+  console.log(`Preflight title selector: ${fillResult.titleSelector ?? "not found"}`);
+  console.log(`Preflight body selector: ${fillResult.bodySelector ?? "not found"}`);
+  await page.waitForTimeout(1500);
   const selectorReport = await inspectSelectors(page, selectorConfig);
   const requiredGroups = ["title", "body", "upload", "publishButton"] as const;
   const missingGroups = requiredGroups.filter((group) => !hasVisibleSelectorHit(selectorReport, group));

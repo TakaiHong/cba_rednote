@@ -31,10 +31,10 @@ describe("readPreflightEvidence", () => {
     const evidence = await readPreflightEvidence(reportPath);
 
     assert.equal(evidence.ok, false);
-    assert.deepEqual(evidence.missingGroups, ["upload", "publishButton"]);
+    assert.deepEqual(evidence.missingGroups, ["publishButton"]);
     assert.equal(evidence.groups.title.ok, true);
-    assert.equal(evidence.groups.upload.ok, false);
-    assert.match(evidence.detail, /upload, publishButton/);
+    assert.equal(evidence.groups.upload.ok, true);
+    assert.match(evidence.detail, /publishButton/);
   });
 
   it("returns a structured no-report result when the file is missing", async () => {

@@ -15,6 +15,9 @@ interface PreflightReport {
 const requiredGroups = ["title", "body", "upload", "publishButton"] as const;
 
 function selectorGroupHasVisibleHit(report: PreflightReport | undefined, group: (typeof requiredGroups)[number]) {
+  if (group === "upload") {
+    return Boolean(report?.selectors?.upload?.some((item) => item.count > 0));
+  }
   return Boolean(report?.selectors?.[group]?.some((item) => item.count > 0 && item.visible));
 }
 
