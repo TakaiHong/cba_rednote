@@ -50,6 +50,10 @@ export function renderCoverHtml(input: {
   tags: string[];
 }) {
   const tags = input.tags.slice(0, 4).map((tag) => `#${tag.replace(/^#/, "")}`);
+  const title = escapeHtml(input.coverText || input.title);
+  const scene = escapeHtml(input.scene);
+  const imageIdea = escapeHtml(input.imageIdea);
+
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -61,109 +65,174 @@ export function renderCoverHtml(input: {
       width: 1080px;
       height: 1440px;
       font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
-      background: #f7f3ea;
-      color: #1d2527;
+      background: #f2eadf;
+      color: #17211f;
     }
     .cover {
       position: relative;
       width: 1080px;
       height: 1440px;
       overflow: hidden;
-      padding: 92px 82px;
+      padding: 74px 72px;
       background:
-        linear-gradient(150deg, rgba(6, 101, 103, 0.18), transparent 42%),
-        linear-gradient(30deg, rgba(218, 78, 52, 0.20), transparent 48%),
-        #f7f3ea;
+        linear-gradient(90deg, rgba(23, 33, 31, 0.06) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(23, 33, 31, 0.06) 1px, transparent 1px),
+        #f2eadf;
+      background-size: 48px 48px;
     }
-    .badge {
-      display: inline-block;
-      padding: 18px 28px;
-      border: 3px solid #1d2527;
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 30px;
+      font-weight: 900;
+    }
+    .brand,
+    .price {
+      padding: 14px 22px;
+      border: 3px solid #17211f;
       border-radius: 999px;
-      background: #ffffff;
-      font-size: 32px;
-      font-weight: 700;
+      background: #fffdf8;
+      box-shadow: 7px 7px 0 #dfb75d;
+    }
+    .price {
+      background: #e15337;
+      color: #fffdf8;
+      box-shadow: 7px 7px 0 #17211f;
     }
     h1 {
-      margin: 72px 0 30px;
-      max-width: 860px;
-      font-size: 92px;
-      line-height: 1.04;
+      margin: 76px 0 20px;
+      width: 900px;
+      font-size: 104px;
+      line-height: 1.02;
       letter-spacing: 0;
+      font-weight: 900;
     }
     .scene {
-      max-width: 820px;
+      width: 820px;
       font-size: 38px;
-      line-height: 1.38;
-      color: #3c4648;
-    }
-    .visual {
-      position: absolute;
-      left: 82px;
-      right: 82px;
-      bottom: 210px;
-      height: 330px;
-      border: 4px solid #1d2527;
-      border-radius: 28px;
-      background: #ffffff;
-      box-shadow: 18px 18px 0 #066567;
-      padding: 44px;
-    }
-    .box-row {
-      position: absolute;
-      left: 48px;
-      bottom: 44px;
-      display: flex;
-      align-items: flex-end;
-      gap: 22px;
-    }
-    .box {
-      width: 148px;
-      height: 116px;
-      border: 4px solid #1d2527;
-      background: #d9b46f;
-    }
-    .box:nth-child(2) { height: 156px; background: #da4e34; }
-    .box:nth-child(3) { height: 92px; background: #76b7ad; }
-    .idea {
-      position: absolute;
-      right: 44px;
-      top: 42px;
-      width: 440px;
-      font-size: 34px;
-      line-height: 1.3;
+      line-height: 1.34;
       font-weight: 700;
+      color: #475451;
+    }
+    .board {
+      position: absolute;
+      left: 72px;
+      right: 72px;
+      bottom: 236px;
+      height: 560px;
+      border: 5px solid #17211f;
+      border-radius: 34px;
+      background: #fffdf8;
+      box-shadow: 18px 18px 0 #1f6a62;
+    }
+    .tape {
+      position: absolute;
+      width: 172px;
+      height: 58px;
+      background: rgba(232, 196, 117, 0.78);
+      border: 3px solid rgba(23, 33, 31, 0.55);
+      transform: rotate(-8deg);
+    }
+    .tape.one { left: 76px; top: -28px; }
+    .tape.two { right: 92px; top: -22px; transform: rotate(7deg); }
+    .sticky {
+      position: absolute;
+      border: 4px solid #17211f;
+      background: #ffe88c;
+      box-shadow: 10px 10px 0 rgba(23, 33, 31, 0.14);
+      padding: 30px;
+      font-weight: 900;
+    }
+    .sticky.main {
+      left: 58px;
+      top: 64px;
+      width: 462px;
+      height: 330px;
+      transform: rotate(-2deg);
+      font-size: 78px;
+      line-height: 1.03;
+    }
+    .sticky.side {
+      right: 58px;
+      top: 78px;
+      width: 350px;
+      height: 178px;
+      background: #b9ded7;
+      transform: rotate(3deg);
+      font-size: 35px;
+      line-height: 1.12;
+    }
+    .sticky.small {
+      left: 130px;
+      bottom: 54px;
+      width: 295px;
+      height: 136px;
+      background: #ffd0c7;
+      transform: rotate(2deg);
+      font-size: 36px;
+      line-height: 1.18;
+    }
+    .checklist {
+      position: absolute;
+      right: 62px;
+      bottom: 46px;
+      width: 392px;
+      display: grid;
+      gap: 16px;
+    }
+    .check {
+      padding: 16px 20px;
+      border: 4px solid #17211f;
+      border-radius: 18px;
+      background: #fffdf8;
+      font-size: 34px;
+      font-weight: 900;
+    }
+    .check:before {
+      content: "✓";
+      display: inline-block;
+      margin-right: 12px;
+      color: #1f6a62;
+      font-weight: 900;
     }
     .tags {
       position: absolute;
       left: 82px;
       right: 82px;
-      bottom: 84px;
+      bottom: 60px;
       display: flex;
       flex-wrap: wrap;
       gap: 16px;
-      font-size: 28px;
+      font-size: 27px;
       font-weight: 700;
     }
     .tag {
       padding: 12px 18px;
       border-radius: 999px;
-      background: #1d2527;
+      background: #17211f;
       color: #ffffff;
     }
   </style>
 </head>
 <body>
   <main class="cover">
-    <div class="badge">新加坡迷你仓</div>
-    <h1>${escapeHtml(input.coverText || input.title)}</h1>
-    <p class="scene">${escapeHtml(input.scene)}</p>
-    <section class="visual">
-      <div class="idea">${escapeHtml(input.imageIdea)}</div>
-      <div class="box-row">
-        <div class="box"></div>
-        <div class="box"></div>
-        <div class="box"></div>
+    <div class="top">
+      <div class="brand">新加坡迷你仓</div>
+      <div class="price">短租也划算</div>
+    </div>
+    <h1>${title}</h1>
+    <p class="scene">${scene}</p>
+    <section class="board">
+      <div class="tape one"></div>
+      <div class="tape two"></div>
+      <div class="sticky main">东西没地方放？</div>
+      <div class="sticky side">${imageIdea}</div>
+      <div class="sticky small">回国 / 搬家 / 租房断档</div>
+      <div class="checklist">
+        <div class="check">便宜短租</div>
+        <div class="check">自己运也行</div>
+        <div class="check">需要可帮运</div>
       </div>
     </section>
     <div class="tags">${tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
