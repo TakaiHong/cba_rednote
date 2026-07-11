@@ -23,6 +23,8 @@
 npm.cmd run publish -- --post latest
 ```
 
+正式辅助发布会先等待“上传图文”页和上传控件就绪，再上传图片和填写标题正文；默认最多等待 120 秒，可用 `--page-wait-ms` 调整。
+
 只打开页面和复制内容，不尝试填充字段：
 
 ```powershell

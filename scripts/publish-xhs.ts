@@ -28,7 +28,7 @@ interface CliOptions {
   imagesDir?: string;
   preflightReport?: string;
   publishedUrl?: string;
-  preflightWaitMs: number;
+  pageWaitMs: number;
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -42,7 +42,7 @@ function parseArgs(argv: string[]): CliOptions {
     waitBeforePreflight: false,
     clickPublish: false,
     imagePaths: [],
-    preflightWaitMs: 120000
+    pageWaitMs: 120000
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -59,14 +59,16 @@ function parseArgs(argv: string[]): CliOptions {
     if (arg === "--images-dir") options.imagesDir = argv[index + 1];
     if (arg === "--preflight-report") options.preflightReport = argv[index + 1];
     if (arg === "--published-url") options.publishedUrl = argv[index + 1];
-    if (arg === "--preflight-wait-ms") options.preflightWaitMs = Number(argv[index + 1] ?? options.preflightWaitMs);
+    if (arg === "--preflight-wait-ms" || arg === "--page-wait-ms") {
+      options.pageWaitMs = Number(argv[index + 1] ?? options.pageWaitMs);
+    }
   }
 
   if (!["clipboard", "assist"].includes(options.mode)) {
     throw new Error("--mode must be clipboard or assist");
   }
-  if (!Number.isFinite(options.preflightWaitMs) || options.preflightWaitMs < 0) {
-    throw new Error("--preflight-wait-ms must be a non-negative number");
+  if (!Number.isFinite(options.pageWaitMs) || options.pageWaitMs < 0) {
+    throw new Error("--page-wait-ms must be a non-negative number");
   }
 
   return options;
@@ -329,8 +331,8 @@ if (options.preflight) {
       "Log in if needed, confirm the Xiaohongshu upload-image page is open, then press Enter here to run selector preflight..."
     );
   }
-  console.log(`Waiting for Xiaohongshu upload-image page for up to ${Math.round(options.preflightWaitMs / 1000)} seconds...`);
-  const uploadPageReady = await waitForUploadPage(page, selectorConfig, options.preflightWaitMs);
+  console.log(`Waiting for Xiaohongshu upload-image page for up to ${Math.round(options.pageWaitMs / 1000)} seconds...`);
+  const uploadPageReady = await waitForUploadPage(page, selectorConfig, options.pageWaitMs);
   console.log(`Upload-image page ready: ${uploadPageReady ? "yes" : "no"}`);
   const uploadSelector = await uploadImages(page, selectorConfig, imagePaths);
   if (imagePaths.length > 0) {
@@ -382,7 +384,13 @@ if (options.preflight) {
 }
 
 if (options.mode === "assist") {
+  console.log(`Waiting for Xiaohongshu upload-image page for up to ${Math.round(options.pageWaitMs / 1000)} seconds...`);
+  const uploadPageReady = await waitForUploadPage(page, selectorConfig, options.pageWaitMs);
+  console.log(`Upload-image page ready: ${uploadPageReady ? "yes" : "no"}`);
   const uploadSelector = await uploadImages(page, selectorConfig, imagePaths);
+  if (imagePaths.length > 0 && uploadSelector) {
+    await page.waitForTimeout(5000);
+  }
   const result = await assistFill(page, selectorConfig, publishPackage.title, publishPackage.fullText);
   console.log(`Image upload selector: ${uploadSelector ?? "not used or not found"}`);
   console.log(`Auto-fill title selector: ${result.titleSelector ?? "not found"}`);
