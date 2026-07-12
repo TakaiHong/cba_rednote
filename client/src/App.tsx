@@ -14,9 +14,11 @@ import {
   getPreflightEvidence,
   getStatus,
   getPublishPackage,
+  installDailyTask,
   listPosts,
   startAssistedPublish,
   startPublishPreflight,
+  uninstallDailyTask,
   type CalendarItem,
   type ContentStrategySummary,
   type DailyTaskStatus,
@@ -86,6 +88,7 @@ function App() {
   const [publishLoading, setPublishLoading] = useState(false);
   const [preflightLoading, setPreflightLoading] = useState(false);
   const [urlBackfillLoading, setUrlBackfillLoading] = useState(false);
+  const [scheduleLoading, setScheduleLoading] = useState<"install" | "uninstall" | "">("");
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
   const [goLive, setGoLive] = useState<GoLiveCheckResult>();
   const [preflight, setPreflight] = useState<PreflightEvidenceResult>();
@@ -186,6 +189,21 @@ function App() {
         command: "npm.cmd run schedule:status",
         rawOutput: []
       });
+    }
+  }
+
+  async function handleDailyTaskOperation(mode: "install" | "uninstall") {
+    setScheduleLoading(mode);
+    setError("");
+    try {
+      const result = mode === "install" ? await installDailyTask() : await uninstallDailyTask();
+      setDailyTask(result.status);
+      setPublishHint(mode === "install" ? "已安装每日自动生成任务。" : "已卸载每日自动生成任务。");
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : mode === "install" ? "安装每日任务失败" : "卸载每日任务失败");
+    } finally {
+      setScheduleLoading("");
     }
   }
 
@@ -644,6 +662,23 @@ function App() {
             <div>
               <span>下次运行</span>
               <strong>{dailyTask.nextRunTime ?? "安装后显示"}</strong>
+            </div>
+            <div className="automation-actions">
+              <button
+                onClick={() => handleDailyTaskOperation("install")}
+                disabled={scheduleLoading !== "" || dailyTask.installed}
+              >
+                {scheduleLoading === "install" ? "安装中..." : "安装每日任务"}
+              </button>
+              <button onClick={refreshDailyTaskStatus} disabled={scheduleLoading !== ""}>
+                刷新状态
+              </button>
+              <button
+                onClick={() => handleDailyTaskOperation("uninstall")}
+                disabled={scheduleLoading !== "" || !dailyTask.installed}
+              >
+                {scheduleLoading === "uninstall" ? "卸载中..." : "卸载任务"}
+              </button>
             </div>
             <code>{dailyTask.command}</code>
           </>

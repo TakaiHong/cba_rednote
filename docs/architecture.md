@@ -30,7 +30,7 @@
 系统有两种每日生成方式：
 
 - 后端服务运行时，`server/src/scheduler.ts` 使用 `DAILY_CRON` 定时生成。
-- Windows 本地任务计划程序可通过 `npm.cmd run schedule:install` 安装，即使不打开前端，也会每天执行 `npm.cmd run generate`。
+- Windows 本地任务计划程序可通过运营台“每日自动化”卡片安装/卸载，或用 `npm.cmd run schedule:install` 兜底安装，即使不打开前端，也会每天执行 `npm.cmd run generate`。
 
 定时任务日志写入 `.tmp/daily-generate.out.log` 和 `.tmp/daily-generate.err.log`，卸载命令为 `npm.cmd run schedule:uninstall`。
 

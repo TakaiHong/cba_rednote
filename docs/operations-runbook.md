@@ -164,7 +164,9 @@ npm.cmd run backup:dry-run
 
 ## 每日自动化
 
-安装 Windows 任务计划程序：
+优先在运营台“每日自动化”卡片点击“安装每日任务”。安装后点击“刷新状态”，确认任务状态和下次运行时间。
+
+CLI 兜底安装 Windows 任务计划程序：
 
 ```powershell
 npm.cmd run schedule:install
@@ -182,7 +184,7 @@ npm.cmd run schedule:dry-run
 npm.cmd run schedule:status
 ```
 
-卸载任务：
+优先在运营台“每日自动化”卡片点击“卸载任务”。CLI 兜底卸载任务：
 
 ```powershell
 npm.cmd run schedule:uninstall

@@ -57,6 +57,25 @@ before(async () => {
       command: "npm.cmd run schedule:status",
       rawOutput: ["Installed: true"]
     }),
+    scheduleInstaller: async (mode) => ({
+      ok: true,
+      mode,
+      command:
+        mode === "install"
+          ? "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1"
+          : "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -Uninstall",
+      stdout: [mode === "install" ? "Scheduled task installed." : "Scheduled task removed if it existed."],
+      stderr: [],
+      status: {
+        ok: true,
+        installed: mode === "install",
+        taskName: "XHS Mini Storage Daily Draft",
+        state: mode === "install" ? "Ready" : undefined,
+        checkedAt: "2026-07-08T09:05:00.000Z",
+        command: "npm.cmd run schedule:status",
+        rawOutput: [`Installed: ${mode === "install"}`]
+      }
+    }),
     handoffPackageGenerator: async (options) => ({
       outDir: options.outDir,
       files: {
@@ -306,6 +325,30 @@ describe("posts routes", () => {
     assert.equal(payload.installed, true);
     assert.equal(payload.state, "Ready");
     assert.equal(payload.command, "npm.cmd run schedule:status");
+  });
+
+  it("installs and uninstalls the daily task from the dashboard API", async () => {
+    const installResponse = await fetch(`${baseUrl}/api/schedule/install`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+    const installPayload = (await installResponse.json()) as { mode: string; status: { installed: boolean } };
+
+    assert.equal(installResponse.status, 202);
+    assert.equal(installPayload.mode, "install");
+    assert.equal(installPayload.status.installed, true);
+
+    const uninstallResponse = await fetch(`${baseUrl}/api/schedule/uninstall`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+    const uninstallPayload = (await uninstallResponse.json()) as { mode: string; status: { installed: boolean } };
+
+    assert.equal(uninstallResponse.status, 202);
+    assert.equal(uninstallPayload.mode, "uninstall");
+    assert.equal(uninstallPayload.status.installed, false);
   });
 
   it("generates a handoff package from the dashboard API", async () => {

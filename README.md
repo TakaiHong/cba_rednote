@@ -82,9 +82,9 @@ npm.cmd run build
 - 内容池支持按状态筛选和关键词搜索，适合长期积累草稿后运营查找。
 - `npm.cmd run calendar -- --days 7` 可规划未来 7 天选题，帮助每日生成保持人群和内容形式多样。
 - 运营台和 `npm.cmd run generate:batch -- --count 7 --max-model-posts 1` 都可一次准备一周草稿，并限制最多 1 条走付费模型。
-- Windows 本地定时任务可通过 `npm.cmd run schedule:install` 安装，每天自动生成一条草稿。
+- Windows 本地定时任务可在运营台“每日自动化”卡片里安装、刷新和卸载，每天自动生成一条草稿；`npm.cmd run schedule:install` 保留为 CLI 兜底。
 - `npm.cmd run schedule:status` 可检查每日生成任务是否已安装、上次运行结果和下次运行时间。
-- 运营台会展示每日自动化状态，直接提示本机每日生成任务是否已安装。
+- 运营台会展示每日自动化状态，直接提示本机每日生成任务是否已安装，并可一键安装/卸载。
 - `npm.cmd run export -- --post latest` 可导出 Markdown 图文交接包。
 - 运营台发布助手里的“导出 Markdown”可直接把当前笔记写入 `exports/`。
 - `npm.cmd run report -- --out exports` 和运营台“导出复盘”按钮会生成 `performance-report.md`，用于发布后回填曝光、互动和咨询。

@@ -154,6 +154,15 @@ export interface DailyTaskStatus {
   rawOutput: string[];
 }
 
+export interface DailyTaskOperationResult {
+  ok: boolean;
+  mode: "install" | "uninstall";
+  command: string;
+  stdout: string[];
+  stderr: string[];
+  status: DailyTaskStatus;
+}
+
 export interface HandoffPackageResult {
   outDir: string;
   files: {
@@ -350,6 +359,32 @@ export async function getDailyTaskStatus() {
   const response = await fetch(`${apiBase}/schedule/status`);
   if (!response.ok) throw new Error("Failed to load schedule status");
   return (await response.json()) as DailyTaskStatus;
+}
+
+export async function installDailyTask() {
+  const response = await fetch(`${apiBase}/schedule/install`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({})
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to install daily task");
+  }
+  return (await response.json()) as DailyTaskOperationResult;
+}
+
+export async function uninstallDailyTask() {
+  const response = await fetch(`${apiBase}/schedule/uninstall`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({})
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to uninstall daily task");
+  }
+  return (await response.json()) as DailyTaskOperationResult;
 }
 
 export async function generateHandoffPackage(outDir = ".tmp/handoff") {

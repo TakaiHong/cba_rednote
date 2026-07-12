@@ -1,8 +1,10 @@
 import cors from "cors";
 import express from "express";
+import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { relative, resolve } from "node:path";
+import { promisify } from "node:util";
 import { exportPerformanceReport, type PerformanceReportExportResult } from "./analytics/exportPerformanceReport.js";
 import { backupRuntimeData, type BackupResult } from "./backup.js";
 import { readPreflightEvidence } from "./publishing/preflightEvidence.js";
@@ -12,9 +14,23 @@ import { getSystemStatus } from "./status.js";
 import { generateHandoffPackage } from "../../scripts/handoff-package.js";
 import { runGoLiveCheck } from "../../scripts/go-live-check.js";
 
+const execFileAsync = promisify(execFile);
+
+export interface DailyTaskOperationResult {
+  ok: boolean;
+  mode: "install" | "uninstall";
+  command: string;
+  stdout: string[];
+  stderr: string[];
+  status: DailyTaskStatus;
+}
+
+type DailyTaskInstaller = (mode: "install" | "uninstall") => Promise<DailyTaskOperationResult>;
+
 export interface AppDependencies {
   posts?: PostsRouterDependencies;
   scheduleStatusReader?: () => Promise<DailyTaskStatus>;
+  scheduleInstaller?: DailyTaskInstaller;
   handoffPackageGenerator?: typeof generateHandoffPackage;
   backupRunner?: typeof backupRuntimeData;
   performanceReportExporter?: typeof exportPerformanceReport;
@@ -22,6 +38,8 @@ export interface AppDependencies {
 
 export function createApp(dependencies: AppDependencies = {}) {
   const app = express();
+  const scheduleStatusReader = dependencies.scheduleStatusReader ?? getDailyTaskStatus;
+  const scheduleInstaller = dependencies.scheduleInstaller ?? ((mode) => runDailyTaskInstaller(mode, scheduleStatusReader));
 
   app.use(cors());
   app.use(express.json({ limit: "1mb" }));
@@ -61,8 +79,23 @@ export function createApp(dependencies: AppDependencies = {}) {
   });
 
   app.get("/api/schedule/status", async (_req, res) => {
-    const reader = dependencies.scheduleStatusReader ?? getDailyTaskStatus;
-    res.json(await reader());
+    res.json(await scheduleStatusReader());
+  });
+
+  app.post("/api/schedule/install", async (_req, res) => {
+    try {
+      res.status(202).json(await scheduleInstaller("install"));
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
+  app.post("/api/schedule/uninstall", async (_req, res) => {
+    try {
+      res.status(202).json(await scheduleInstaller("uninstall"));
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    }
   });
 
   app.post("/api/handoff", async (req, res) => {
@@ -100,4 +133,28 @@ export function createApp(dependencies: AppDependencies = {}) {
   app.use("/api/posts", dependencies.posts ? createPostsRouter(dependencies.posts) : postsRouter);
 
   return app;
+}
+
+async function runDailyTaskInstaller(
+  mode: "install" | "uninstall",
+  scheduleStatusReader: () => Promise<DailyTaskStatus>
+): Promise<DailyTaskOperationResult> {
+  const args = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/install-daily-task.ps1"];
+  if (mode === "uninstall") args.push("-Uninstall");
+
+  const command = `powershell ${args.join(" ")}`;
+  const result = await execFileAsync("powershell", args, {
+    cwd: process.cwd(),
+    windowsHide: true
+  });
+  const status = await scheduleStatusReader();
+
+  return {
+    ok: true,
+    mode,
+    command,
+    stdout: result.stdout.split(/\r?\n/).filter(Boolean),
+    stderr: result.stderr.split(/\r?\n/).filter(Boolean),
+    status
+  };
 }
