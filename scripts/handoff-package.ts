@@ -146,7 +146,8 @@ function renderFirstPublishChecklist(input: {
     "## After Publish",
     "",
     "- Copy the final Xiaohongshu note URL.",
-    "- Paste it into the dashboard's publish URL field and mark the post as published.",
+    "- Click `粘贴链接并标记已发布` in the dashboard's `发布效果` section.",
+    "- If clipboard access is unavailable, paste the note URL into the dashboard's publish URL field and click `标记已发布`.",
     "- CLI fallback:",
     latest
       ? `  \`npm.cmd run publish -- --post ${latest.id} --mark-published --published-url <url>\``

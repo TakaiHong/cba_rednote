@@ -85,6 +85,7 @@ function App() {
   const [reportLoading, setReportLoading] = useState(false);
   const [publishLoading, setPublishLoading] = useState(false);
   const [preflightLoading, setPreflightLoading] = useState(false);
+  const [urlBackfillLoading, setUrlBackfillLoading] = useState(false);
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
   const [goLive, setGoLive] = useState<GoLiveCheckResult>();
   const [preflight, setPreflight] = useState<PreflightEvidenceResult>();
@@ -226,19 +227,45 @@ function App() {
     try {
       const updated = await updatePost(selected.id, patch);
       setPosts((current) => current.map((post) => (post.id === updated.id ? updated : post)));
+      return updated;
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存失败");
+      return undefined;
     }
   }
 
-  function handleMarkPublished() {
+  async function markSelectedPublishedWithUrl(url: string) {
     if (!selected) return;
-    const normalizedUrl = selected.publishedUrl?.trim();
+    const normalizedUrl = url.trim();
     if (!normalizedUrl || !/^https?:\/\//i.test(normalizedUrl)) {
       setError("标记已发布前，请先填写有效的小红书笔记链接。");
       return;
     }
-    void handlePatch({ status: "published", publishedUrl: normalizedUrl });
+    const updated = await handlePatch({ status: "published", publishedUrl: normalizedUrl });
+    if (updated) {
+      setPublishHint("已回填小红书链接并标记为已发布。");
+      await refresh();
+    }
+  }
+
+  function handleMarkPublished() {
+    void markSelectedPublishedWithUrl(selected?.publishedUrl ?? "");
+  }
+
+  async function handlePastePublishedUrlAndMark() {
+    if (!selected) return;
+    setUrlBackfillLoading(true);
+    setError("");
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      const match = clipboardText.match(/https?:\/\/\S+/i);
+      const pastedUrl = match?.[0]?.replace(/[),，。；;\]]+$/g, "") ?? "";
+      await markSelectedPublishedWithUrl(pastedUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "读取剪贴板失败，请手动粘贴链接。");
+    } finally {
+      setUrlBackfillLoading(false);
+    }
   }
 
   async function handleCopyPublishText() {
@@ -840,6 +867,16 @@ function App() {
                   onChange={(event) => handlePatch({ publishedUrl: event.target.value })}
                 />
               </label>
+              <div className="url-backfill-actions">
+                <button onClick={handlePastePublishedUrlAndMark} type="button" disabled={urlBackfillLoading}>
+                  {urlBackfillLoading ? "读取中..." : "粘贴链接并标记已发布"}
+                </button>
+                {selected.publishedUrl && (
+                  <a href={selected.publishedUrl} rel="noreferrer" target="_blank">
+                    打开笔记
+                  </a>
+                )}
+              </div>
             </div>
 
             <div className="actions">

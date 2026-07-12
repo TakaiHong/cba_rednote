@@ -38,7 +38,7 @@ describe("evaluateGoLiveReadiness", () => {
     assert.equal(result.nextSteps.length, 2);
     assert.match(result.nextSteps[0], /账号预检/);
     assert.match(result.nextSteps[0], /CLI fallback/);
-    assert.match(result.nextSteps[1], /dashboard/);
+    assert.match(result.nextSteps[1], /粘贴链接并标记已发布/);
     assert.match(result.nextSteps[1], /CLI fallback/);
   });
 

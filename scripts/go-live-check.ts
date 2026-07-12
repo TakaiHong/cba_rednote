@@ -22,7 +22,7 @@ function buildNextSteps(input: { requiredFailures: string[]; missingExternalEvid
     steps.push("Open the dashboard and click 账号预检 in a logged-in Xiaohongshu creator session; use npm.cmd run publish:preflight only as a CLI fallback.");
   }
   if (input.missingExternalEvidence.includes("published URL evidence")) {
-    steps.push("After one reviewed manual publish, paste the Xiaohongshu note URL into the dashboard and mark the post as published; use npm.cmd run publish -- --post <post-id> --mark-published --published-url <url> only as a CLI fallback.");
+    steps.push("After one reviewed manual publish, copy the Xiaohongshu note URL and click 粘贴链接并标记已发布 in the dashboard; use npm.cmd run publish -- --post <post-id> --mark-published --published-url <url> only as a CLI fallback.");
   }
 
   return steps;

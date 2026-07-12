@@ -92,6 +92,7 @@ npm.cmd run build
 - `npm.cmd run image:cover -- --post latest --attach` 可生成一张低成本 3:4 PNG 模板封面，并把图片路径绑定到最新草稿。
 - 也可以在运营台顶部“今日发布工作台”或右侧“发布助手”里直接点击“生成便利贴封面”、“账号预检”和“打开小红书发布”，不需要手动输入发布 CLI。
 - 运营台的“图片素材路径”可绑定本地图片；`publish` dry-run、发布包和辅助发布会自动带上这些素材，仍可额外使用 `--image` 或 `--images-dir`。
+- 发布后复制小红书笔记链接，运营台“发布效果”区可一键“粘贴链接并标记已发布”，让 go-live 链接证据及时回填。
 - `npm.cmd run handoff -- --out .tmp/handoff` 可集中导出交付状态、`go-live-check.json` go-live 状态、`first-publish-checklist.md` 首发清单、`performance-report.md` 复盘报告、排期、批量生成 dry-run、最新发布包和 `image-assets/` 图片素材包。
 - 运营台的“生成交接包”按钮会调用后端生成 `.tmp/handoff`，方便不打开终端也能准备交接材料。
 - 运营台会展示关键交接命令，可直接复制完整验证、handoff、账号预检和定时任务命令。

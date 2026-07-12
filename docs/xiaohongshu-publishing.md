@@ -103,13 +103,15 @@ npm.cmd run publish -- --post latest --preflight --no-pause --preflight-report .
 
 ## 发布后回写
 
-发布成功后标记为已发布：
+发布成功后，优先在小红书复制笔记链接，回到运营台“发布效果”区点击“粘贴链接并标记已发布”。运营台会从剪贴板读取第一个 `http` 或 `https` 链接，回填小红书链接，并把当前笔记标记为已发布。
+
+CLI 兜底：
 
 ```powershell
 npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 ```
 
-`--published-url` 必须是合法的 `http` 或 `https` 链接。也可以在运营台中粘贴小红书笔记链接，再标记为已发布。回写后，运行日志会记录这次发布回写动作。
+`--published-url` 必须是合法的 `http` 或 `https` 链接。也可以在运营台中手动粘贴小红书笔记链接，再标记为已发布。回写后，运行日志会记录这次发布回写动作。
 
 ## 最终点击发布
 

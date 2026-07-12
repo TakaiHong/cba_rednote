@@ -683,6 +683,35 @@ textarea {
   min-height: 38px;
 }
 
+.url-backfill-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.url-backfill-actions button {
+  background: #2f4e88;
+  border: 0;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.url-backfill-actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.url-backfill-actions a {
+  color: #1e5f4a;
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .actions button:nth-child(2) {
   background: #2f4e88;
 }

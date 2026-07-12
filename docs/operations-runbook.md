@@ -98,11 +98,15 @@ npm.cmd run publish -- --post latest --images-dir .\assets\xhs
 
 7. 发布后回写链接和状态。
 
+在小红书复制已发布笔记链接，回到运营台“发布效果”区点击“粘贴链接并标记已发布”。运营台会从剪贴板读取第一个 `http` 或 `https` 链接，回填小红书链接，并把当前笔记标记为已发布。
+
+CLI 兜底：
+
 ```powershell
 npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>
 ```
 
-CLI 回写要求 `--published-url` 是合法的 `http` 或 `https` 链接，避免产生“已发布但没有证据”的记录。运营台标记已发布前也需要先把小红书笔记链接粘贴到“发布链接”字段，并保存状态。
+CLI 回写要求 `--published-url` 是合法的 `http` 或 `https` 链接，避免产生“已发布但没有证据”的记录。也可以手动把小红书笔记链接粘贴到“发布链接”字段，再点“标记已发布”。
 
 8. 回填效果数据。
 

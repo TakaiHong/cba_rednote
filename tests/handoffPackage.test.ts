@@ -76,6 +76,7 @@ describe("generateHandoffPackage", () => {
     assert.match(firstPublishChecklist, /http:\/\/127\.0\.0\.1:5173/);
     assert.match(firstPublishChecklist, /账号预检/);
     assert.match(firstPublishChecklist, /打开小红书发布/);
+    assert.match(firstPublishChecklist, /粘贴链接并标记已发布/);
     assert.match(firstPublishChecklist, /publish:preflight/);
     assert.match(firstPublishChecklist, /--mark-published/);
     assert.match(performanceReport, /Xiaohongshu Performance Report/);
