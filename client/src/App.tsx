@@ -17,6 +17,7 @@ import {
   installDailyTask,
   listPosts,
   startAssistedPublish,
+  startFinalPublish,
   startPublishPreflight,
   uninstallDailyTask,
   type CalendarItem,
@@ -87,6 +88,7 @@ function App() {
   const [reportLoading, setReportLoading] = useState(false);
   const [publishLoading, setPublishLoading] = useState(false);
   const [preflightLoading, setPreflightLoading] = useState(false);
+  const [finalPublishLoading, setFinalPublishLoading] = useState(false);
   const [urlBackfillLoading, setUrlBackfillLoading] = useState(false);
   const [scheduleLoading, setScheduleLoading] = useState<"install" | "uninstall" | "">("");
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
@@ -121,10 +123,6 @@ function App() {
   const previewImage = publishPreview?.imageAssets[0] ?? selected?.imageAssets?.[0];
   const approvedCount = posts.filter((post) => post.status === "approved").length;
   const publishedCount = posts.filter((post) => post.status === "published").length;
-  const selectedPublishCommand = selected ? `npm.cmd run publish -- --post ${selected.id}` : "";
-  const selectedPreflightCommand = selected
-    ? `npm.cmd run publish -- --post ${selected.id} --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json`
-    : "";
   const goLiveGap =
     goLive?.missingExternalEvidence.length
       ? `还缺：${goLive.missingExternalEvidence.join(" / ")}`
@@ -419,18 +417,66 @@ function App() {
     setPreflightLoading(true);
     setError("");
     try {
-      const result = await startPublishPreflight(selected.id);
-      await refresh();
-      window.setTimeout(() => {
-        void refresh();
-      }, 12000);
-      setPublishHint(`已启动账号预检：${result.command}。稍等 10-20 秒后运营台会自动刷新结果。`);
+      const previousGeneratedAt = preflight?.generatedAt;
+      await startPublishPreflight(selected.id);
+      setPublishHint("已启动账号预检。窗口会自动上传并填写测试内容，记录证据后自动关闭；无需按 Enter。运营台稍后自动刷新结果。");
+      for (let attempt = 0; attempt < 45; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 3000));
+        const nextPreflight = await getPreflightEvidence();
+        if (nextPreflight.generatedAt && nextPreflight.generatedAt !== previousGeneratedAt) {
+          setPreflight(nextPreflight);
+          setGoLive(await getGoLiveStatus());
+          setPublishHint(
+            nextPreflight.ok
+              ? "账号预检通过。现在可以点击“确认并发布”。"
+              : `账号预检完成，但还缺：${nextPreflight.missingGroups.join(" / ") || "有效的新报告"}。可查看下方页面按钮候选。`
+          );
+          return;
+        }
+      }
+      setPublishHint("账号预检仍在等待登录或页面加载。请在弹出的窗口完成登录，再重新点击账号预检。");
     } catch (err) {
       setError(err instanceof Error ? err.message : "启动账号预检失败");
     } finally {
       setPreflightLoading(false);
     }
   }
+
+  async function handlePrimaryPublishAction() {
+    if (!selected) return;
+    if (!previewImage) {
+      await handleGenerateCoverImage();
+      setPublishHint("封面已准备。下一步点击账号预检，确认小红书页面可自动填写。");
+      return;
+    }
+    if (!preflight?.ok) {
+      await handleStartPublishPreflight();
+      return;
+    }
+    const confirmed = window.confirm(
+      `确认发布《${publishPreview?.title ?? selected.title}》？\n\n系统将自动上传封面、填写文案并点击小红书发布按钮。`
+    );
+    if (!confirmed) return;
+
+    setFinalPublishLoading(true);
+    setError("");
+    try {
+      await startFinalPublish(selected.id);
+      setPublishHint("已开始自动发布。请留意弹出的小红书窗口；发布完成后复制笔记链接回填，运营台才会标记为已发布。");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "一键发布失败");
+    } finally {
+      setFinalPublishLoading(false);
+    }
+  }
+
+  const primaryPublishLabel = !previewImage
+    ? "1. 生成封面"
+    : !preflight?.ok
+      ? preflight?.stale
+        ? "2. 重新账号预检"
+        : "2. 账号预检"
+      : "3. 确认并发布";
 
   function updateMetric(name: keyof MarketingPost["metrics"], value: string) {
     if (!selected) return;
@@ -510,15 +556,22 @@ function App() {
               {approvedCount} 条待发布 / {publishedCount} 条已发布 / {goLiveGap}
             </p>
             <div className="focus-actions">
-              <button className="primary-button" onClick={handleGenerateCoverImage} disabled={coverLoading}>
-                {coverLoading ? "生成封面中..." : "生成便利贴封面"}
+              <button
+                className="primary-button publish-primary"
+                onClick={handlePrimaryPublishAction}
+                disabled={coverLoading || preflightLoading || finalPublishLoading}
+              >
+                {coverLoading
+                  ? "生成封面中..."
+                  : preflightLoading
+                    ? "预检中..."
+                    : finalPublishLoading
+                      ? "发布中..."
+                      : primaryPublishLabel}
               </button>
               <button onClick={handleCopyPublishText}>复制发布文案</button>
-              <button onClick={handleStartPublishPreflight} disabled={preflightLoading}>
-                {preflightLoading ? "预检中..." : "账号预检"}
-              </button>
               <button onClick={handleStartAssistedPublish} disabled={publishLoading}>
-                {publishLoading ? "打开中..." : "打开小红书发布"}
+                {publishLoading ? "打开中..." : "只填充，不发布"}
               </button>
             </div>
           </div>
@@ -624,7 +677,7 @@ function App() {
         <section className={`go-live-panel ${preflight.ok ? "ready" : "blocked"}`}>
           <div>
             <span>账号预检</span>
-            <strong>{preflight.ok ? "选择器已命中" : "等待真实账号证据"}</strong>
+            <strong>{preflight.ok ? "选择器已命中" : preflight.stale ? "报告已过期" : "等待真实账号证据"}</strong>
           </div>
           <div>
             <span>报告路径</span>
@@ -637,7 +690,6 @@ function App() {
           <button onClick={handleStartPublishPreflight} disabled={preflightLoading}>
             {preflightLoading ? "预检中..." : "从前端启动账号预检"}
           </button>
-          <code>{selectedPreflightCommand || "npm.cmd run publish:preflight"}</code>
           <div className="preflight-groups">
             {Object.entries(preflight.groups).map(([group, evidence]) => (
               <span className={evidence.ok ? "ready" : "blocked"} key={group}>
@@ -975,11 +1027,9 @@ function App() {
                 {preflightLoading ? "预检中..." : "账号预检"}
               </button>
               <button onClick={handleStartAssistedPublish} disabled={publishLoading}>
-                {publishLoading ? "打开中..." : "打开小红书发布"}
+                {publishLoading ? "打开中..." : "只填充，不发布"}
               </button>
               <span>{selected.imageAssets?.length ?? 0} 张图片素材已绑定</span>
-              <code>{selectedPreflightCommand}</code>
-              <code>{selectedPublishCommand}</code>
               {selected.publishedUrl && (
                 <a href={selected.publishedUrl} rel="noreferrer" target="_blank">
                   打开已发布笔记

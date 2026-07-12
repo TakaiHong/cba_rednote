@@ -5,6 +5,7 @@ import { generatePostBatch } from "../generation/batch.js";
 import { planContentCalendar } from "../generation/contentCalendar.js";
 import { generateUniqueMarketingPost } from "../generation/generator.js";
 import { exportXhsMarkdownPackage } from "../publishing/exportPackage.js";
+import { readPreflightEvidence } from "../publishing/preflightEvidence.js";
 import { resolvePublishedUrlEvidence } from "../publishing/publishedUrl.js";
 import { createXhsPublishPackage } from "../publishing/xhsPackage.js";
 import { postStore } from "../storage/postStore.js";
@@ -14,11 +15,13 @@ import { generateCoverImage } from "../../../scripts/generate-cover-image.js";
 type CoverImageGenerator = typeof generateCoverImage;
 type PublishLauncher = (postId: string) => Promise<{ command: string; pid?: number }>;
 type PreflightLauncher = (postId: string) => Promise<{ command: string; pid?: number; reportPath: string }>;
+type FinalPublishLauncher = (postId: string) => Promise<{ command: string; pid?: number }>;
 
 export interface PostsRouterDependencies {
   coverImageGenerator?: CoverImageGenerator;
   publishLauncher?: PublishLauncher;
   preflightLauncher?: PreflightLauncher;
+  finalPublishLauncher?: FinalPublishLauncher;
 }
 
 const postInputSchema = z.object({
@@ -55,17 +58,26 @@ export function createPostsRouter(dependencies: PostsRouterDependencies = {}) {
   const coverImageGenerator = dependencies.coverImageGenerator ?? generateCoverImage;
   const publishLauncher = dependencies.publishLauncher ?? launchAssistedPublish;
   const preflightLauncher = dependencies.preflightLauncher ?? launchPublishPreflight;
+  const finalPublishLauncher = dependencies.finalPublishLauncher ?? launchFinalPublish;
 
-async function launchAssistedPublish(postId: string) {
-  const command = `npm.cmd run publish -- --post ${postId}`;
-  const child = spawn("npm.cmd", ["run", "publish", "--", "--post", postId], {
+function spawnNpmCommand(args: string[], env = process.env) {
+  const executable = process.platform === "win32" ? process.env.ComSpec ?? "cmd.exe" : "npm";
+  const executableArgs = process.platform === "win32" ? ["/d", "/s", "/c", "npm.cmd", ...args] : args;
+  const child = spawn(executable, executableArgs, {
     cwd: process.cwd(),
     detached: true,
+    env,
     shell: false,
     stdio: "ignore",
     windowsHide: false
   });
   child.unref();
+  return child;
+}
+
+async function launchAssistedPublish(postId: string) {
+  const command = `npm.cmd run publish -- --post ${postId}`;
+  const child = spawnNpmCommand(["run", "publish", "--", "--post", postId]);
   return { command, pid: child.pid };
 }
 
@@ -73,15 +85,15 @@ async function launchPublishPreflight(postId: string) {
   const reportPath = ".tmp/xhs-preflight-report.json";
   const args = ["run", "publish", "--", "--post", postId, "--preflight", "--no-pause", "--preflight-report", reportPath];
   const command = `npm.cmd ${args.join(" ")}`;
-  const child = spawn("npm.cmd", args, {
-    cwd: process.cwd(),
-    detached: true,
-    shell: false,
-    stdio: "ignore",
-    windowsHide: false
-  });
-  child.unref();
+  const child = spawnNpmCommand(args);
   return { command, pid: child.pid, reportPath };
+}
+
+async function launchFinalPublish(postId: string) {
+  const args = ["run", "publish", "--", "--post", postId, "--click-publish", "--no-pause"];
+  const command = `npm.cmd ${args.join(" ")}`;
+  const child = spawnNpmCommand(args, { ...process.env, XHS_ALLOW_FINAL_PUBLISH: "true" });
+  return { command, pid: child.pid };
 }
 
 router.get("/", async (_req, res) => {
@@ -192,6 +204,44 @@ router.post("/:id/preflight", async (req, res) => {
   } catch (error) {
     await runLogStore.append({
       action: "api-publish-preflight",
+      status: "error",
+      message: error instanceof Error ? error.message : String(error),
+      metadata: { postId: post.id }
+    });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+  }
+});
+
+router.post("/:id/final-publish", async (req, res) => {
+  const post = await postStore.get(req.params.id);
+  if (!post) return res.status(404).json({ error: "Post not found" });
+  if (req.body?.confirmation !== "publish") {
+    return res.status(400).json({ error: "Final publish requires explicit confirmation." });
+  }
+  if (post.status !== "approved") {
+    return res.status(409).json({ error: "Only approved posts can be published." });
+  }
+  if (!post.imageAssets?.length) {
+    return res.status(409).json({ error: "Generate or attach at least one image before publishing." });
+  }
+
+  const preflight = await readPreflightEvidence();
+  if (!preflight.ok) {
+    return res.status(409).json({ error: `Account preflight is not ready: ${preflight.detail}` });
+  }
+
+  try {
+    const result = await finalPublishLauncher(post.id);
+    await runLogStore.append({
+      action: "api-final-publish",
+      status: "ok",
+      message: `Started confirmed final publish for post ${post.id}`,
+      metadata: { postId: post.id, command: result.command, pid: result.pid }
+    });
+    res.status(202).json({ postId: post.id, ...result });
+  } catch (error) {
+    await runLogStore.append({
+      action: "api-final-publish",
       status: "error",
       message: error instanceof Error ? error.message : String(error),
       metadata: { postId: post.id }

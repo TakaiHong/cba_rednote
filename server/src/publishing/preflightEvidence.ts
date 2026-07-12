@@ -16,6 +16,7 @@ interface VisibleButtonDiagnostic {
 }
 
 interface PreflightReport {
+  postId?: string;
   generatedAt?: string;
   url?: string;
   selectors?: Partial<Record<"title" | "body" | "upload" | "publishButton", SelectorEvidence[]>>;
@@ -25,6 +26,15 @@ interface PreflightReport {
 }
 
 const requiredGroups = ["title", "body", "upload", "publishButton"] as const;
+const maxPreflightAgeMs = 24 * 60 * 60 * 1000;
+
+function reportAge(generatedAt?: string, now = Date.now()) {
+  if (!generatedAt) return { ageMs: undefined, stale: true };
+  const generatedTime = Date.parse(generatedAt);
+  if (!Number.isFinite(generatedTime)) return { ageMs: undefined, stale: true };
+  const ageMs = Math.max(0, now - generatedTime);
+  return { ageMs, stale: ageMs > maxPreflightAgeMs };
+}
 
 function selectorGroupHasVisibleHit(report: PreflightReport | undefined, group: (typeof requiredGroups)[number]) {
   if (group === "upload") {
@@ -57,11 +67,16 @@ function buildGroupEvidence(report: PreflightReport | undefined, missingGroups: 
 export async function readPreflightEvidence(path = process.env.XHS_PREFLIGHT_REPORT ?? ".tmp/xhs-preflight-report.json") {
   try {
     const report = JSON.parse(await readFile(path, "utf8")) as PreflightReport;
+    const freshness = reportAge(report.generatedAt);
     const missingGroups = requiredGroups.filter((group) => !selectorGroupHasVisibleHit(report, group));
+    const selectorsReady = missingGroups.length === 0;
     return {
-      ok: missingGroups.length === 0,
+      ok: selectorsReady && !freshness.stale,
       path,
+      postId: report.postId,
       generatedAt: report.generatedAt,
+      ageMs: freshness.ageMs,
+      stale: freshness.stale,
       url: report.url,
       missingGroups,
       groups: buildGroupEvidence(report, missingGroups),
@@ -69,7 +84,9 @@ export async function readPreflightEvidence(path = process.env.XHS_PREFLIGHT_REP
         visibleButtons: report.diagnostics?.visibleButtons ?? []
       },
       detail:
-        missingGroups.length === 0
+        freshness.stale
+          ? `Preflight report ${path} is stale or has no valid timestamp${missingGroups.length ? ` and is missing visible hits for: ${missingGroups.join(", ")}` : ""}. Run account preflight again.`
+          : selectorsReady
           ? `Preflight report ${path} has visible selector hits for title, body, upload, and publishButton.`
           : `Preflight report ${path} is missing visible hits for: ${missingGroups.join(", ")}.`
     };
@@ -77,6 +94,7 @@ export async function readPreflightEvidence(path = process.env.XHS_PREFLIGHT_REP
     return {
       ok: false,
       path,
+      stale: true,
       missingGroups: [...requiredGroups],
       groups: buildGroupEvidence(undefined, requiredGroups),
       diagnostics: {

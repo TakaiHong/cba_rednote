@@ -8,7 +8,8 @@ import { after, before, describe, it } from "node:test";
 
 const tempRoot = await mkdtemp(join(tmpdir(), "xhs-routes-"));
 process.env.DATA_DIR = relative(process.cwd(), join(tempRoot, "data"));
-process.env.XHS_PREFLIGHT_REPORT = relative(process.cwd(), join(tempRoot, "missing-preflight.json"));
+const preflightReportPath = join(tempRoot, "missing-preflight.json");
+process.env.XHS_PREFLIGHT_REPORT = relative(process.cwd(), preflightReportPath);
 
 const { createApp } = await import("../server/src/app.js");
 const { postStore } = await import("../server/src/storage/postStore.js");
@@ -44,6 +45,12 @@ before(async () => {
           command: `npm.cmd run publish -- --post ${postId} --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json`,
           pid: 12346,
           reportPath: ".tmp/xhs-preflight-report.json"
+        };
+      },
+      finalPublishLauncher: async (postId) => {
+        return {
+          command: `npm.cmd run publish -- --post ${postId} --click-publish --no-pause`,
+          pid: 12347
         };
       }
     },
@@ -241,6 +248,49 @@ describe("posts routes", () => {
     assert.match(payload.command, /--preflight/);
     assert.equal(payload.pid, 12346);
     assert.equal(payload.reportPath, ".tmp/xhs-preflight-report.json");
+  });
+
+  it("starts a confirmed final publish only with fresh preflight evidence and an image", async () => {
+    const post = await postStore.createManual({
+      title: "final publish route post",
+      body: "body",
+      tags: ["tag"],
+      imageIdeas: ["image"],
+      imageAssets: [join(tempRoot, "cover.png")],
+      callToAction: "cta",
+      status: "approved"
+    });
+    const selectors = Object.fromEntries(
+      ["title", "body", "upload", "publishButton"].map((group) => [
+        group,
+        [{ selector: group, count: 1, visible: true }]
+      ])
+    );
+    await writeFile(
+      preflightReportPath,
+      JSON.stringify({ generatedAt: new Date().toISOString(), selectors }),
+      "utf8"
+    );
+
+    const missingConfirmation = await fetch(`${baseUrl}/api/posts/${post.id}/final-publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+    assert.equal(missingConfirmation.status, 400);
+
+    const response = await fetch(`${baseUrl}/api/posts/${post.id}/final-publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmation: "publish" })
+    });
+    const payload = (await response.json()) as { postId: string; command: string; pid: number };
+
+    assert.equal(response.status, 202);
+    assert.equal(payload.postId, post.id);
+    assert.match(payload.command, /--click-publish --no-pause/);
+    assert.equal(payload.pid, 12347);
+    await rm(preflightReportPath, { force: true });
   });
 
   it("exports a Markdown package for a selected post", async () => {

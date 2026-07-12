@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
 
 const appUrl = process.env.UI_SMOKE_URL ?? "http://127.0.0.1:5173";
@@ -30,6 +31,7 @@ if (!executablePath) {
 const browser = await chromium.launch({ executablePath, headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const consoleMessages: string[] = [];
+let exitCode = 0;
 
 page.on("console", (message) => {
   const entry = `${message.type()}: ${message.text()}`;
@@ -40,18 +42,46 @@ page.on("pageerror", (error) => {
 });
 
 try {
-  const response = await page.goto(appUrl, { waitUntil: "networkidle", timeout: 15000 });
+  const response = await page.goto(appUrl, { waitUntil: "domcontentloaded", timeout: 15000 });
   const status = response?.status() ?? 0;
   const title = await page.title();
   const h1 = await page.locator("h1").first().textContent({ timeout: 10000 });
+  const primaryPublishLabel = await page.locator(".operator-focus .publish-primary").textContent({ timeout: 10000 });
+  const fillOnlyButtonCount = await page.getByRole("button", { name: "只填充，不发布" }).count();
+  await page.waitForFunction(
+    () =>
+      Array.from(document.querySelectorAll<HTMLImageElement>(".focus-preview img, .xhs-preview-card img")).every(
+        (image) => image.complete && image.naturalWidth > 0
+      ),
+    undefined,
+    { timeout: 10000 }
+  );
+  const previewImageState = await page
+    .locator(".focus-preview img, .xhs-preview-card img")
+    .evaluateAll((images) =>
+      images.map((image) => ({
+        complete: (image as HTMLImageElement).complete,
+        naturalWidth: (image as HTMLImageElement).naturalWidth
+      }))
+    );
   const bodyText = await page.locator("body").innerText({ timeout: 10000 });
   const issues: string[] = [];
 
   if (status !== 200) issues.push(`Expected HTTP 200, got ${status}.`);
   if (title !== "新加坡迷你仓小红书运营台") issues.push(`Unexpected page title: ${title}`);
   if (h1 !== "小红书运营台") issues.push(`Unexpected h1: ${h1}`);
+  if (!primaryPublishLabel || !/^(1\. 生成封面|2\. (重新)?账号预检|3\. 确认并发布)$/.test(primaryPublishLabel.trim())) {
+    issues.push(`Unexpected primary publish action: ${primaryPublishLabel}`);
+  }
+  if (fillOnlyButtonCount < 1) issues.push("Missing fill-only publish action.");
+  if (previewImageState.length < 2 || previewImageState.some((image) => !image.complete || image.naturalWidth === 0)) {
+    issues.push(`Cover previews are not loaded: ${JSON.stringify(previewImageState)}`);
+  }
   if (hasMojibake(`${title}\n${bodyText}`)) issues.push("Page contains mojibake-like characters.");
   if (consoleMessages.length > 0) issues.push(`Console messages: ${consoleMessages.join(" | ")}`);
+
+  await mkdir(".tmp", { recursive: true });
+  await page.screenshot({ path: ".tmp/ui-smoke.png", fullPage: true });
 
   const result = {
     ok: issues.length === 0,
@@ -59,11 +89,19 @@ try {
     status,
     title,
     h1,
+    primaryPublishLabel: primaryPublishLabel?.trim(),
+    previewImages: previewImageState.length,
+    screenshot: ".tmp/ui-smoke.png",
     issues
   };
 
   console.log(JSON.stringify(result, null, 2));
-  if (issues.length > 0) process.exit(1);
+  if (issues.length > 0) exitCode = 1;
 } finally {
-  await browser.close();
+  await Promise.race([
+    browser.close().catch(() => undefined),
+    new Promise<void>((resolve) => setTimeout(resolve, 3000))
+  ]);
 }
+
+process.exitCode = exitCode;

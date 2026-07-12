@@ -123,7 +123,10 @@ export interface GoLiveCheckResult {
 export interface PreflightEvidenceResult {
   ok: boolean;
   path: string;
+  postId?: string;
   generatedAt?: string;
+  ageMs?: number;
+  stale: boolean;
   url?: string;
   missingGroups: string[];
   groups: Record<
@@ -330,6 +333,19 @@ export async function startAssistedPublish(id: string) {
   if (!response.ok) {
     const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
     throw new Error(payload?.error ?? "Failed to start assisted publish");
+  }
+  return (await response.json()) as AssistedPublishResult;
+}
+
+export async function startFinalPublish(id: string) {
+  const response = await fetch(`${apiBase}/posts/${id}/final-publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ confirmation: "publish" })
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to start final publish");
   }
   return (await response.json()) as AssistedPublishResult;
 }

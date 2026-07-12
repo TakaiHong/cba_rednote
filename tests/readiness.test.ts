@@ -22,6 +22,7 @@ describe("readiness evidence", () => {
     await writeFile(
       join(tempRoot, "preflight.json"),
       JSON.stringify({
+        generatedAt: new Date().toISOString(),
         selectors: {
           title: [{ selector: "title", count: 1, visible: true }],
           body: [{ selector: "body", count: 1, visible: true }],

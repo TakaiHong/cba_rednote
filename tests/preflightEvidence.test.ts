@@ -61,4 +61,39 @@ describe("readPreflightEvidence", () => {
     assert.deepEqual(evidence.diagnostics.visibleButtons, []);
     assert.match(evidence.detail, /No usable preflight report/);
   });
+
+  it("accepts complete selector evidence generated within 24 hours", async () => {
+    const reportPath = join(tempRoot, "fresh-preflight.json");
+    const selectors = Object.fromEntries(
+      ["title", "body", "upload", "publishButton"].map((group) => [
+        group,
+        [{ selector: group, count: 1, visible: true }]
+      ])
+    );
+    await writeFile(reportPath, JSON.stringify({ generatedAt: new Date().toISOString(), selectors }), "utf8");
+
+    const evidence = await readPreflightEvidence(reportPath);
+
+    assert.equal(evidence.ok, true);
+    assert.equal(evidence.stale, false);
+    assert.equal(evidence.missingGroups.length, 0);
+  });
+
+  it("rejects otherwise complete selector evidence after 24 hours", async () => {
+    const reportPath = join(tempRoot, "stale-preflight.json");
+    const selectors = Object.fromEntries(
+      ["title", "body", "upload", "publishButton"].map((group) => [
+        group,
+        [{ selector: group, count: 1, visible: true }]
+      ])
+    );
+    await writeFile(reportPath, JSON.stringify({ generatedAt: "2025-01-01T00:00:00.000Z", selectors }), "utf8");
+
+    const evidence = await readPreflightEvidence(reportPath);
+
+    assert.equal(evidence.ok, false);
+    assert.equal(evidence.stale, true);
+    assert.equal(evidence.missingGroups.length, 0);
+    assert.match(evidence.detail, /stale/);
+  });
 });

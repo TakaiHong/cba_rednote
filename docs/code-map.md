@@ -29,10 +29,10 @@
 - `server/src/publishing/xhsPackage.ts`：小红书发布包格式化，供 API、前端和脚本共用，包含正文、标签、封面文字、图片 brief 和已绑定图片素材。
 - `server/src/publishing/exportPackage.ts`：把单条内容导出为 Markdown 发布包，供 CLI 和运营台共用。
 - `server/src/publishing/finalPublish.ts`：最终发布点击的双保险开关，要求命令参数和环境变量同时开启。
-- `server/src/publishing/preflightEvidence.ts`：读取真实小红书账号 preflight 报告，输出缺失选择器组、可视命中详情和页面按钮候选诊断。
+- `server/src/publishing/preflightEvidence.ts`：读取真实小红书账号 preflight 报告，校验 24 小时有效期，输出缺失选择器组、可视命中详情和页面按钮候选诊断。
 - `server/src/publishing/selectorConfig.ts`：读取和校验小红书页面选择器配置。
 - `server/src/publishing/imageInputs.ts`：解析发布脚本的本地图片输入，并和草稿绑定的图片素材一起用于上传。
-- `server/src/routes/posts.ts`：草稿列表、创建、编辑、生成、模板封面、账号预检启动和辅助发布启动接口。
+- `server/src/routes/posts.ts`：草稿列表、创建、编辑、生成、模板封面、账号预检、只填充以及带显式确认的最终发布接口。
 - `server/src/scheduler.ts`：每日生成定时任务。
 - `server/src/cli/generate.ts`：命令行生成入口。
 - `server/src/cli/status.ts`：命令行状态输出入口。
@@ -42,7 +42,7 @@
 - `client/index.html`：Vite HTML 入口。
 - `client/src/main.tsx`：React 入口。
 - `client/src/App.tsx`：运营台主界面，含草稿编辑、图片素材路径维护、单条/批量生成、内容排期、每日自动化状态和安装/卸载按钮、go-live 状态、账号 preflight 详情和前端启动按钮、交接包生成、运行数据备份、交接命令复制区、Markdown 导出、发布助手和效果指标录入。
-- `client/src/api.ts`：前端 API 客户端，包含内容、素材、预检和辅助发布接口。
+- `client/src/api.ts`：前端 API 客户端，包含内容、素材、预检、只填充和最终发布接口。
 - `client/src/styles.css`：界面样式。
 
 ## Scripts
@@ -55,7 +55,7 @@
 - `scripts/handoff-package.ts`：集中导出交付状态、go-live 状态、内容排期、批量生成 dry-run、最新发布包、first-publish-checklist.md 首发清单、performance-report.md 复盘报告和图片素材包。
 - `scripts/prepare-image-assets.ts`：导出图片素材交接包，包含封面文字、图片 brief、AI 出图 prompt、素材清单和上传命令。
 - `scripts/generate-cover-image.ts`：用草稿内容生成低成本 3:4 PNG 模板封面，并可把图片路径绑定回草稿。
-- `scripts/publish-xhs.ts`：小红书半自动发布脚本，支持 dry-run、登录态复用、辅助填充和发布后状态回写。
+- `scripts/publish-xhs.ts`：小红书浏览器发布脚本，支持 dry-run、登录态复用、辅助填充、确认后的最终点击和发布后状态回写；只填充模式会保持浏览器打开且不要求终端输入。
 - `scripts/install-daily-task.ps1`：Windows 任务计划程序安装器，用于每天自动生成小红书草稿。
 - `scripts/check-daily-task.ps1`：查询 Windows 每日生成任务是否已安装、上次运行结果和下次运行时间。
 - `scripts/start-local.ps1`：后台启动本地前后端服务。

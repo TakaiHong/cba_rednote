@@ -83,6 +83,11 @@ async function waitForEnter(message: string) {
   }
 }
 
+async function waitForBrowserClose(page: Page) {
+  if (page.isClosed()) return;
+  await page.waitForEvent("close");
+}
+
 async function uploadImages(page: Page, selectors: Awaited<ReturnType<typeof loadXhsSelectorConfig>>, imagePaths: string[]) {
   if (imagePaths.length === 0) return undefined;
 
@@ -449,7 +454,8 @@ console.log("After manual publish, run:");
 console.log(`npm.cmd run publish -- --post ${post.id} --mark-published --published-url <url>`);
 
 if (!options.noPause) {
-  await page.pause();
+  console.log("The prepared browser will stay open until you close it. No terminal input is required.");
+  await waitForBrowserClose(page);
+} else {
+  await context.close();
 }
-
-await context.close();
