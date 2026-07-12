@@ -66,7 +66,9 @@ npm.cmd run export -- --post latest
 
 ## 真实账号预检
 
-正式依赖辅助发布前，先检查真实创作者中心页面里的选择器：
+正式依赖辅助发布前，先检查真实创作者中心页面里的选择器。运营人员优先在前端运营台点击“账号预检”；后端会按当前选中的笔记启动预检并把结果写到 `.tmp/xhs-preflight-report.json`。
+
+CLI 兜底：
 
 ```powershell
 npm.cmd run image:cover -- --post latest --attach
@@ -75,7 +77,7 @@ npm.cmd run publish:preflight
 
 图文发布页通常会在上传图片后才显示标题、正文和发布按钮。`publish:preflight` 会优先使用草稿已绑定的图片素材并先尝试上传；如果草稿还没有图片，先运行 `image:cover -- --post latest --attach` 生成一个模板封面，或在运营台绑定真实图片路径。
 
-`publish:preflight` 会自动等待登录和“上传图文”页就绪；如果登录后落到创作者首页，脚本会重新跳到图文发布地址再继续。默认最多等待 120 秒，也可以用 `--preflight-wait-ms` 调整。
+前端“账号预检”和 `publish:preflight` 都会自动等待登录和“上传图文”页就绪；如果登录后落到创作者首页，脚本会重新跳到图文发布地址再继续。默认最多等待 120 秒，也可以用 `--preflight-wait-ms` 调整。
 
 如果需要先人工登录、等待自动跳转或手动确认“上传图文”页，使用：
 
@@ -97,7 +99,7 @@ npm.cmd run publish:preflight:manual
 npm.cmd run publish -- --post latest --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json
 ```
 
-如果标题、正文或上传选择器没有命中，优先更新 `config/xhs-selectors.json`，再重新运行 preflight。
+如果标题、正文或上传选择器没有命中，优先更新 `config/xhs-selectors.json`，再从运营台重新点击“账号预检”。
 
 ## 发布后回写
 

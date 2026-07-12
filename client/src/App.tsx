@@ -16,6 +16,7 @@ import {
   getPublishPackage,
   listPosts,
   startAssistedPublish,
+  startPublishPreflight,
   type CalendarItem,
   type ContentStrategySummary,
   type DailyTaskStatus,
@@ -83,6 +84,7 @@ function App() {
   const [backupLoading, setBackupLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
   const [publishLoading, setPublishLoading] = useState(false);
+  const [preflightLoading, setPreflightLoading] = useState(false);
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
   const [goLive, setGoLive] = useState<GoLiveCheckResult>();
   const [preflight, setPreflight] = useState<PreflightEvidenceResult>();
@@ -116,6 +118,9 @@ function App() {
   const approvedCount = posts.filter((post) => post.status === "approved").length;
   const publishedCount = posts.filter((post) => post.status === "published").length;
   const selectedPublishCommand = selected ? `npm.cmd run publish -- --post ${selected.id}` : "";
+  const selectedPreflightCommand = selected
+    ? `npm.cmd run publish -- --post ${selected.id} --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json`
+    : "";
   const goLiveGap =
     goLive?.missingExternalEvidence.length
       ? `还缺：${goLive.missingExternalEvidence.join(" / ")}`
@@ -364,6 +369,24 @@ function App() {
     }
   }
 
+  async function handleStartPublishPreflight() {
+    if (!selected) return;
+    setPreflightLoading(true);
+    setError("");
+    try {
+      const result = await startPublishPreflight(selected.id);
+      await refresh();
+      window.setTimeout(() => {
+        void refresh();
+      }, 12000);
+      setPublishHint(`已启动账号预检：${result.command}。稍等 10-20 秒后运营台会自动刷新结果。`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "启动账号预检失败");
+    } finally {
+      setPreflightLoading(false);
+    }
+  }
+
   function updateMetric(name: keyof MarketingPost["metrics"], value: string) {
     if (!selected) return;
     const numericValue = Math.max(0, Number.parseInt(value || "0", 10));
@@ -446,6 +469,9 @@ function App() {
                 {coverLoading ? "生成封面中..." : "生成便利贴封面"}
               </button>
               <button onClick={handleCopyPublishText}>复制发布文案</button>
+              <button onClick={handleStartPublishPreflight} disabled={preflightLoading}>
+                {preflightLoading ? "预检中..." : "账号预检"}
+              </button>
               <button onClick={handleStartAssistedPublish} disabled={publishLoading}>
                 {publishLoading ? "打开中..." : "打开小红书发布"}
               </button>
@@ -563,7 +589,10 @@ function App() {
             <span>缺失项</span>
             <strong>{preflight.missingGroups.length ? preflight.missingGroups.join(" / ") : "无"}</strong>
           </div>
-          <code>npm.cmd run publish:preflight</code>
+          <button onClick={handleStartPublishPreflight} disabled={preflightLoading}>
+            {preflightLoading ? "预检中..." : "从前端启动账号预检"}
+          </button>
+          <code>{selectedPreflightCommand || "npm.cmd run publish:preflight"}</code>
           <div className="preflight-groups">
             {Object.entries(preflight.groups).map(([group, evidence]) => (
               <span className={evidence.ok ? "ready" : "blocked"} key={group}>
@@ -860,10 +889,14 @@ function App() {
               <button onClick={handleGenerateCoverImage} disabled={coverLoading}>
                 {coverLoading ? "生成封面中..." : "生成模板封面"}
               </button>
+              <button onClick={handleStartPublishPreflight} disabled={preflightLoading}>
+                {preflightLoading ? "预检中..." : "账号预检"}
+              </button>
               <button onClick={handleStartAssistedPublish} disabled={publishLoading}>
                 {publishLoading ? "打开中..." : "打开小红书发布"}
               </button>
               <span>{selected.imageAssets?.length ?? 0} 张图片素材已绑定</span>
+              <code>{selectedPreflightCommand}</code>
               <code>{selectedPublishCommand}</code>
               {selected.publishedUrl && (
                 <a href={selected.publishedUrl} rel="noreferrer" target="_blank">

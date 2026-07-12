@@ -218,6 +218,13 @@ export interface AssistedPublishResult {
   pid?: number;
 }
 
+export interface PublishPreflightLaunchResult {
+  postId: string;
+  command: string;
+  pid?: number;
+  reportPath: string;
+}
+
 const apiBase = "http://127.0.0.1:8787/api";
 
 export async function listPosts() {
@@ -306,6 +313,19 @@ export async function startAssistedPublish(id: string) {
     throw new Error(payload?.error ?? "Failed to start assisted publish");
   }
   return (await response.json()) as AssistedPublishResult;
+}
+
+export async function startPublishPreflight(id: string) {
+  const response = await fetch(`${apiBase}/posts/${id}/preflight`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({})
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to start publish preflight");
+  }
+  return (await response.json()) as PublishPreflightLaunchResult;
 }
 
 export async function getStatus() {

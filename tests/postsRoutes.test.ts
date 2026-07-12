@@ -38,6 +38,13 @@ before(async () => {
           command: `npm.cmd run publish -- --post ${postId}`,
           pid: 12345
         };
+      },
+      preflightLauncher: async (postId) => {
+        return {
+          command: `npm.cmd run publish -- --post ${postId} --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json`,
+          pid: 12346,
+          reportPath: ".tmp/xhs-preflight-report.json"
+        };
       }
     },
     scheduleStatusReader: async () => ({
@@ -191,6 +198,30 @@ describe("posts routes", () => {
     assert.equal(payload.postId, post.id);
     assert.match(payload.command, /npm\.cmd run publish/);
     assert.equal(payload.pid, 12345);
+  });
+
+  it("starts publish preflight from the dashboard API", async () => {
+    const post = await postStore.createManual({
+      title: "preflight route post",
+      body: "body",
+      tags: ["tag"],
+      imageIdeas: ["image"],
+      callToAction: "cta",
+      status: "approved"
+    });
+
+    const response = await fetch(`${baseUrl}/api/posts/${post.id}/preflight`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+    const payload = (await response.json()) as { postId: string; command: string; pid: number; reportPath: string };
+
+    assert.equal(response.status, 202);
+    assert.equal(payload.postId, post.id);
+    assert.match(payload.command, /--preflight/);
+    assert.equal(payload.pid, 12346);
+    assert.equal(payload.reportPath, ".tmp/xhs-preflight-report.json");
   });
 
   it("exports a Markdown package for a selected post", async () => {

@@ -13,10 +13,12 @@ import { generateCoverImage } from "../../../scripts/generate-cover-image.js";
 
 type CoverImageGenerator = typeof generateCoverImage;
 type PublishLauncher = (postId: string) => Promise<{ command: string; pid?: number }>;
+type PreflightLauncher = (postId: string) => Promise<{ command: string; pid?: number; reportPath: string }>;
 
 export interface PostsRouterDependencies {
   coverImageGenerator?: CoverImageGenerator;
   publishLauncher?: PublishLauncher;
+  preflightLauncher?: PreflightLauncher;
 }
 
 const postInputSchema = z.object({
@@ -52,6 +54,7 @@ export function createPostsRouter(dependencies: PostsRouterDependencies = {}) {
   const router = Router();
   const coverImageGenerator = dependencies.coverImageGenerator ?? generateCoverImage;
   const publishLauncher = dependencies.publishLauncher ?? launchAssistedPublish;
+  const preflightLauncher = dependencies.preflightLauncher ?? launchPublishPreflight;
 
 async function launchAssistedPublish(postId: string) {
   const command = `npm.cmd run publish -- --post ${postId}`;
@@ -64,6 +67,21 @@ async function launchAssistedPublish(postId: string) {
   });
   child.unref();
   return { command, pid: child.pid };
+}
+
+async function launchPublishPreflight(postId: string) {
+  const reportPath = ".tmp/xhs-preflight-report.json";
+  const args = ["run", "publish", "--", "--post", postId, "--preflight", "--no-pause", "--preflight-report", reportPath];
+  const command = `npm.cmd ${args.join(" ")}`;
+  const child = spawn("npm.cmd", args, {
+    cwd: process.cwd(),
+    detached: true,
+    shell: false,
+    stdio: "ignore",
+    windowsHide: false
+  });
+  child.unref();
+  return { command, pid: child.pid, reportPath };
 }
 
 router.get("/", async (_req, res) => {
@@ -145,6 +163,35 @@ router.post("/:id/assisted-publish", async (req, res) => {
   } catch (error) {
     await runLogStore.append({
       action: "api-assisted-publish",
+      status: "error",
+      message: error instanceof Error ? error.message : String(error),
+      metadata: { postId: post.id }
+    });
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+  }
+});
+
+router.post("/:id/preflight", async (req, res) => {
+  const post = await postStore.get(req.params.id);
+  if (!post) return res.status(404).json({ error: "Post not found" });
+
+  try {
+    const result = await preflightLauncher(post.id);
+    await runLogStore.append({
+      action: "api-publish-preflight",
+      status: "ok",
+      message: `Started Xiaohongshu preflight for post ${post.id}`,
+      metadata: {
+        postId: post.id,
+        command: result.command,
+        pid: result.pid,
+        reportPath: result.reportPath
+      }
+    });
+    res.status(202).json({ postId: post.id, ...result });
+  } catch (error) {
+    await runLogStore.append({
+      action: "api-publish-preflight",
       status: "error",
       message: error instanceof Error ? error.message : String(error),
       metadata: { postId: post.id }

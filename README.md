@@ -90,13 +90,13 @@ npm.cmd run build
 - `npm.cmd run report -- --out exports` 和运营台“导出复盘”按钮会生成 `performance-report.md`，用于发布后回填曝光、互动和咨询。
 - `npm.cmd run image:brief -- --post latest --out .tmp/image-assets` 可导出封面文字、图片 brief、AI 出图 prompt 和素材清单。
 - `npm.cmd run image:cover -- --post latest --attach` 可生成一张低成本 3:4 PNG 模板封面，并把图片路径绑定到最新草稿。
-- 也可以在运营台顶部“今日发布工作台”或右侧“发布助手”里直接点击“生成便利贴封面”和“打开小红书发布”，不需要手动输入发布 CLI。
+- 也可以在运营台顶部“今日发布工作台”或右侧“发布助手”里直接点击“生成便利贴封面”、“账号预检”和“打开小红书发布”，不需要手动输入发布 CLI。
 - 运营台的“图片素材路径”可绑定本地图片；`publish` dry-run、发布包和辅助发布会自动带上这些素材，仍可额外使用 `--image` 或 `--images-dir`。
 - `npm.cmd run handoff -- --out .tmp/handoff` 可集中导出交付状态、`go-live-check.json` go-live 状态、`first-publish-checklist.md` 首发清单、`performance-report.md` 复盘报告、排期、批量生成 dry-run、最新发布包和 `image-assets/` 图片素材包。
 - 运营台的“生成交接包”按钮会调用后端生成 `.tmp/handoff`，方便不打开终端也能准备交接材料。
 - 运营台会展示关键交接命令，可直接复制完整验证、handoff、账号预检和定时任务命令。
 - `npm.cmd run go-live:check` 会把真实账号 preflight 和至少一条已发布 URL 当成正式上线硬门槛。
-- 运营台会展示正式上线状态和账号 preflight 详情，直接提示是否还缺真实账号 preflight、具体选择器组或已发布链接证据。
+- 运营台会展示正式上线状态和账号 preflight 详情，直接提示是否还缺真实账号 preflight、具体选择器组或已发布链接证据，并可从前端直接启动预检。
 - `npm.cmd run ui:smoke` 会用本机 Chrome 检查运营台标题、主界面、中文乱码和控制台错误。
 - `npm.cmd run backup` 可备份运行数据到 `backups/`。
 - 运营台“备份数据”按钮可直接把当前运行数据复制到 `backups/`。

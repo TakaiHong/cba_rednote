@@ -111,12 +111,12 @@ If native image generation is added later, use a separate image provider rather 
 
 Before enabling final-click publishing:
 
-1. Make sure the latest post has an image, for example `npm.cmd run image:cover -- --post latest --attach`.
-2. Run `npm.cmd run publish:preflight`.
+1. Make sure the selected post has an image, either from the dashboard "生成便利贴封面" button or `npm.cmd run image:cover -- --post latest --attach`.
+2. Start account validation from the dashboard "账号预检" button; use `npm.cmd run publish:preflight` only as a CLI fallback.
 3. Log in if needed and confirm the opened browser is on the upload-image publishing page.
 4. Confirm `title`, `body`, `upload`, and `publishButton` selectors are visible.
 5. Save or review `.tmp/xhs-preflight-report.json` as the selector evidence.
-6. Run a normal assisted publish with `npm.cmd run publish -- --post latest --images-dir .\assets\xhs`.
+6. Start a normal assisted publish from the dashboard "打开小红书发布" button; use `npm.cmd run publish -- --post latest --images-dir .\assets\xhs` only as a CLI fallback.
 7. Only after a stable manual review, set `XHS_ALLOW_FINAL_PUBLISH=true`.
 8. Use `npm.cmd run publish -- --post latest --images-dir .\assets\xhs --click-publish`.
 

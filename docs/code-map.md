@@ -32,7 +32,7 @@
 - `server/src/publishing/preflightEvidence.ts`：读取真实小红书账号 preflight 报告，输出缺失选择器组和可视命中详情。
 - `server/src/publishing/selectorConfig.ts`：读取和校验小红书页面选择器配置。
 - `server/src/publishing/imageInputs.ts`：解析发布脚本的本地图片输入，并和草稿绑定的图片素材一起用于上传。
-- `server/src/routes/posts.ts`：草稿列表、创建、编辑、生成接口。
+- `server/src/routes/posts.ts`：草稿列表、创建、编辑、生成、模板封面、账号预检启动和辅助发布启动接口。
 - `server/src/scheduler.ts`：每日生成定时任务。
 - `server/src/cli/generate.ts`：命令行生成入口。
 - `server/src/cli/status.ts`：命令行状态输出入口。
@@ -41,8 +41,8 @@
 
 - `client/index.html`：Vite HTML 入口。
 - `client/src/main.tsx`：React 入口。
-- `client/src/App.tsx`：运营台主界面，含草稿编辑、图片素材路径维护、单条/批量生成、内容排期、每日自动化状态、go-live 状态、账号 preflight 详情、交接包生成、运行数据备份、交接命令复制区、Markdown 导出、发布助手和效果指标录入。
-- `client/src/api.ts`：前端 API 客户端。
+- `client/src/App.tsx`：运营台主界面，含草稿编辑、图片素材路径维护、单条/批量生成、内容排期、每日自动化状态、go-live 状态、账号 preflight 详情和前端启动按钮、交接包生成、运行数据备份、交接命令复制区、Markdown 导出、发布助手和效果指标录入。
+- `client/src/api.ts`：前端 API 客户端，包含内容、素材、预检和辅助发布接口。
 - `client/src/styles.css`：界面样式。
 
 ## Scripts
