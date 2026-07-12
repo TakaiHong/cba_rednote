@@ -12,6 +12,7 @@ import {
   getImageAssetUrl,
   getGoLiveStatus,
   getPreflightEvidence,
+  getPublishJob,
   getStatus,
   getPublishPackage,
   installDailyTask,
@@ -89,6 +90,7 @@ function App() {
   const [publishLoading, setPublishLoading] = useState(false);
   const [preflightLoading, setPreflightLoading] = useState(false);
   const [finalPublishLoading, setFinalPublishLoading] = useState(false);
+  const [publishSubmittedPostId, setPublishSubmittedPostId] = useState("");
   const [urlBackfillLoading, setUrlBackfillLoading] = useState(false);
   const [scheduleLoading, setScheduleLoading] = useState<"install" | "uninstall" | "">("");
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
@@ -259,6 +261,7 @@ function App() {
     }
     const updated = await handlePatch({ status: "published", publishedUrl: normalizedUrl });
     if (updated) {
+      setPublishSubmittedPostId("");
       setPublishHint("已回填小红书链接并标记为已发布。");
       await refresh();
     }
@@ -461,8 +464,19 @@ function App() {
     setFinalPublishLoading(true);
     setError("");
     try {
-      await startFinalPublish(selected.id);
-      setPublishHint("已开始自动发布。请留意弹出的小红书窗口；发布完成后复制笔记链接回填，运营台才会标记为已发布。");
+      const job = await startFinalPublish(selected.id);
+      setPublishHint("正在打开小红书、上传封面并填写文案，请勿重复点击。");
+      for (let attempt = 0; attempt < 75; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 2000));
+        const result = await getPublishJob(job.jobId);
+        if (result.status === "clicked") {
+          setPublishSubmittedPostId(selected.id);
+          setPublishHint("小红书发布按钮已自动点击。发布成功后复制笔记链接，再点击“粘贴链接并标记已发布”。");
+          return;
+        }
+        if (result.status === "failed") throw new Error(result.detail);
+      }
+      setPublishHint("发布任务仍在运行，请查看弹出的小红书窗口；不要重复点击发布。");
     } catch (err) {
       setError(err instanceof Error ? err.message : "一键发布失败");
     } finally {
@@ -470,7 +484,9 @@ function App() {
     }
   }
 
-  const primaryPublishLabel = !previewImage
+  const primaryPublishLabel = publishSubmittedPostId === selected?.id
+    ? "已点击，等待链接"
+    : !previewImage
     ? "1. 生成封面"
     : !preflight?.ok
       ? preflight?.stale
@@ -559,7 +575,12 @@ function App() {
               <button
                 className="primary-button publish-primary"
                 onClick={handlePrimaryPublishAction}
-                disabled={coverLoading || preflightLoading || finalPublishLoading}
+                disabled={
+                  coverLoading ||
+                  preflightLoading ||
+                  finalPublishLoading ||
+                  publishSubmittedPostId === selected.id
+                }
               >
                 {coverLoading
                   ? "生成封面中..."

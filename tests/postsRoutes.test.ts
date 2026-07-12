@@ -10,6 +10,8 @@ const tempRoot = await mkdtemp(join(tmpdir(), "xhs-routes-"));
 process.env.DATA_DIR = relative(process.cwd(), join(tempRoot, "data"));
 const preflightReportPath = join(tempRoot, "missing-preflight.json");
 process.env.XHS_PREFLIGHT_REPORT = relative(process.cwd(), preflightReportPath);
+const publishJobDir = join(tempRoot, "publish-jobs");
+process.env.PUBLISH_JOB_DIR = relative(process.cwd(), publishJobDir);
 
 const { createApp } = await import("../server/src/app.js");
 const { postStore } = await import("../server/src/storage/postStore.js");
@@ -49,8 +51,10 @@ before(async () => {
       },
       finalPublishLauncher: async (postId) => {
         return {
-          command: `npm.cmd run publish -- --post ${postId} --click-publish --no-pause`,
-          pid: 12347
+          command: `npm.cmd run publish -- --post ${postId} --click-publish --no-pause --result-report .tmp/publish-jobs/test.json`,
+          pid: 12347,
+          jobId: "11111111-1111-4111-8111-111111111111",
+          reportPath: ".tmp/publish-jobs/test.json"
         };
       }
     },
@@ -119,6 +123,7 @@ before(async () => {
 });
 
 after(async () => {
+  delete process.env.PUBLISH_JOB_DIR;
   await new Promise<void>((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()));
   });
@@ -218,7 +223,7 @@ describe("posts routes", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
     });
-    const payload = (await response.json()) as { postId: string; command: string; pid: number };
+    const payload = (await response.json()) as { postId: string; command: string; pid: number; jobId: string };
 
     assert.equal(response.status, 202);
     assert.equal(payload.postId, post.id);
@@ -290,7 +295,31 @@ describe("posts routes", () => {
     assert.equal(payload.postId, post.id);
     assert.match(payload.command, /--click-publish --no-pause/);
     assert.equal(payload.pid, 12347);
+    assert.equal(payload.jobId, "11111111-1111-4111-8111-111111111111");
     await rm(preflightReportPath, { force: true });
+  });
+
+  it("returns publish job progress for dashboard polling", async () => {
+    const jobId = "22222222-2222-4222-8222-222222222222";
+    await mkdir(publishJobDir, { recursive: true });
+    await writeFile(
+      join(publishJobDir, `${jobId}.json`),
+      JSON.stringify({
+        status: "clicked",
+        postId: "post-1",
+        detail: "The Xiaohongshu publish button was clicked.",
+        updatedAt: new Date().toISOString()
+      }),
+      "utf8"
+    );
+
+    const response = await fetch(`${baseUrl}/api/posts/publish-jobs/${jobId}`);
+    const payload = (await response.json()) as { jobId: string; status: string; postId: string };
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.jobId, jobId);
+    assert.equal(payload.status, "clicked");
+    assert.equal(payload.postId, "post-1");
   });
 
   it("exports a Markdown package for a selected post", async () => {

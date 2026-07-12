@@ -153,6 +153,16 @@ export interface PreflightEvidenceResult {
   detail: string;
 }
 
+export interface PublishJobResult {
+  jobId: string;
+  status: "queued" | "running" | "clicked" | "failed";
+  postId: string;
+  detail: string;
+  updatedAt: string;
+  selector?: string;
+  url?: string;
+}
+
 export interface DailyTaskStatus {
   ok: boolean;
   installed: boolean;
@@ -347,7 +357,16 @@ export async function startFinalPublish(id: string) {
     const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
     throw new Error(payload?.error ?? "Failed to start final publish");
   }
-  return (await response.json()) as AssistedPublishResult;
+  return (await response.json()) as AssistedPublishResult & { jobId: string; reportPath: string };
+}
+
+export async function getPublishJob(jobId: string) {
+  const response = await fetch(`${apiBase}/posts/publish-jobs/${jobId}`);
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to load publish job");
+  }
+  return (await response.json()) as PublishJobResult;
 }
 
 export async function startPublishPreflight(id: string) {

@@ -27,6 +27,7 @@ interface CliOptions {
   imagePaths: string[];
   imagesDir?: string;
   preflightReport?: string;
+  resultReport?: string;
   publishedUrl?: string;
   pageWaitMs: number;
 }
@@ -58,6 +59,7 @@ function parseArgs(argv: string[]): CliOptions {
     if (arg === "--image") options.imagePaths.push(argv[index + 1]);
     if (arg === "--images-dir") options.imagesDir = argv[index + 1];
     if (arg === "--preflight-report") options.preflightReport = argv[index + 1];
+    if (arg === "--result-report") options.resultReport = argv[index + 1];
     if (arg === "--published-url") options.publishedUrl = argv[index + 1];
     if (arg === "--preflight-wait-ms" || arg === "--page-wait-ms") {
       options.pageWaitMs = Number(argv[index + 1] ?? options.pageWaitMs);
@@ -276,6 +278,21 @@ async function writePreflightReport(
   await writeFile(path, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 }
 
+async function writePublishResult(
+  path: string | undefined,
+  result: {
+    status: "queued" | "running" | "clicked" | "failed";
+    postId: string;
+    detail: string;
+    selector?: string;
+    url?: string;
+  }
+) {
+  if (!path) return;
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, `${JSON.stringify({ ...result, updatedAt: new Date().toISOString() }, null, 2)}\n`, "utf8");
+}
+
 const options = parseArgs(process.argv.slice(2));
 const post = options.post === "latest" ? await postStore.latestDraft() : await postStore.get(options.post);
 
@@ -283,6 +300,31 @@ if (!post) {
   console.error("No post found. Generate or approve a draft first.");
   process.exit(1);
 }
+
+let publishResultSettled = false;
+async function reportFatalPublishError(error: unknown) {
+  if (!options.resultReport || publishResultSettled) return;
+  publishResultSettled = true;
+  const detail = error instanceof Error ? error.message : String(error);
+  await writePublishResult(options.resultReport, {
+    status: "failed",
+    postId: post?.id ?? options.post,
+    detail
+  }).catch(() => undefined);
+}
+
+process.once("uncaughtException", (error) => {
+  void reportFatalPublishError(error).finally(() => {
+    console.error(error);
+    process.exit(1);
+  });
+});
+process.once("unhandledRejection", (error) => {
+  void reportFatalPublishError(error).finally(() => {
+    console.error(error);
+    process.exit(1);
+  });
+});
 
 if (options.markPublished) {
   const publishedUrl = normalizePublishedUrl(options.publishedUrl);
@@ -314,6 +356,12 @@ const preflightEvidence = await readPreflightEvidence();
 const imagePaths = await resolveImageInputs({
   imagePaths: [...(post.imageAssets ?? []), ...options.imagePaths].filter(Boolean),
   imagesDir: options.imagesDir
+});
+
+await writePublishResult(options.resultReport, {
+  status: "running",
+  postId: post.id,
+  detail: "Browser publish task started."
 });
 
 if (options.dryRun) {
@@ -444,6 +492,14 @@ if (options.mode === "assist") {
       throw new Error("Final publish requested, but no visible enabled publish button was found.");
     }
     console.log(`Final publish clicked with selector: ${publishSelector}`);
+    await writePublishResult(options.resultReport, {
+      status: "clicked",
+      postId: post.id,
+      detail: "The Xiaohongshu publish button was clicked. Copy the published note URL back into the dashboard.",
+      selector: publishSelector,
+      url: page.url()
+    });
+    publishResultSettled = true;
   } else {
     console.log(finalPublishGuardMessage(options.clickPublish, process.env, preflightEvidence.ok));
     console.log("Review the page before publishing. The script does not click the final publish button by default.");
@@ -457,5 +513,5 @@ if (!options.noPause) {
   console.log("The prepared browser will stay open until you close it. No terminal input is required.");
   await waitForBrowserClose(page);
 } else {
-  await context.close();
+await context.close();
 }

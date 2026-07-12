@@ -1,5 +1,8 @@
 import { Router } from "express";
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { z } from "zod";
 import { generatePostBatch } from "../generation/batch.js";
 import { planContentCalendar } from "../generation/contentCalendar.js";
@@ -15,7 +18,9 @@ import { generateCoverImage } from "../../../scripts/generate-cover-image.js";
 type CoverImageGenerator = typeof generateCoverImage;
 type PublishLauncher = (postId: string) => Promise<{ command: string; pid?: number }>;
 type PreflightLauncher = (postId: string) => Promise<{ command: string; pid?: number; reportPath: string }>;
-type FinalPublishLauncher = (postId: string) => Promise<{ command: string; pid?: number }>;
+type FinalPublishLauncher = (
+  postId: string
+) => Promise<{ command: string; pid?: number; jobId: string; reportPath: string }>;
 
 export interface PostsRouterDependencies {
   coverImageGenerator?: CoverImageGenerator;
@@ -90,11 +95,43 @@ async function launchPublishPreflight(postId: string) {
 }
 
 async function launchFinalPublish(postId: string) {
-  const args = ["run", "publish", "--", "--post", postId, "--click-publish", "--no-pause"];
+  const jobId = randomUUID();
+  const jobDir = process.env.PUBLISH_JOB_DIR ?? ".tmp/publish-jobs";
+  const reportPath = join(jobDir, `${jobId}.json`);
+  await mkdir(jobDir, { recursive: true });
+  await writeFile(
+    reportPath,
+    `${JSON.stringify({ status: "queued", postId, detail: "Publish task queued.", updatedAt: new Date().toISOString() }, null, 2)}\n`,
+    "utf8"
+  );
+  const args = [
+    "run",
+    "publish",
+    "--",
+    "--post",
+    postId,
+    "--click-publish",
+    "--no-pause",
+    "--result-report",
+    reportPath
+  ];
   const command = `npm.cmd ${args.join(" ")}`;
   const child = spawnNpmCommand(args, { ...process.env, XHS_ALLOW_FINAL_PUBLISH: "true" });
-  return { command, pid: child.pid };
+  return { command, pid: child.pid, jobId, reportPath };
 }
+
+router.get("/publish-jobs/:jobId", async (req, res) => {
+  if (!/^[a-f0-9-]{36}$/i.test(req.params.jobId)) {
+    return res.status(400).json({ error: "Invalid publish job id." });
+  }
+  try {
+    const jobDir = process.env.PUBLISH_JOB_DIR ?? ".tmp/publish-jobs";
+    const report = JSON.parse(await readFile(join(jobDir, `${req.params.jobId}.json`), "utf8"));
+    res.json({ jobId: req.params.jobId, ...report });
+  } catch {
+    res.status(404).json({ error: "Publish job not found." });
+  }
+});
 
 router.get("/", async (_req, res) => {
   res.json(await postStore.list());

@@ -70,7 +70,7 @@ try {
   if (status !== 200) issues.push(`Expected HTTP 200, got ${status}.`);
   if (title !== "新加坡迷你仓小红书运营台") issues.push(`Unexpected page title: ${title}`);
   if (h1 !== "小红书运营台") issues.push(`Unexpected h1: ${h1}`);
-  if (!primaryPublishLabel || !/^(1\. 生成封面|2\. (重新)?账号预检|3\. 确认并发布)$/.test(primaryPublishLabel.trim())) {
+  if (!primaryPublishLabel || !/^(1\. 生成封面|2\. (重新)?账号预检|3\. 确认并发布|已点击，等待链接)$/.test(primaryPublishLabel.trim())) {
     issues.push(`Unexpected primary publish action: ${primaryPublishLabel}`);
   }
   if (fillOnlyButtonCount < 1) issues.push("Missing fill-only publish action.");
