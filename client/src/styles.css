@@ -366,6 +366,29 @@ h1 {
   color: #a85332;
 }
 
+.preflight-diagnostics {
+  align-items: center;
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 8px !important;
+  grid-column: 1 / -1;
+}
+
+.preflight-diagnostics strong {
+  color: #66715f;
+  font-size: 13px;
+}
+
+.preflight-diagnostics span {
+  background: #f0f3ed;
+  border: 1px solid #d8ded2;
+  border-radius: 6px;
+  color: #263228;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 8px;
+}
+
 .calendar-panel {
   background: #ffffff;
   border: 1px solid #dfe5da;

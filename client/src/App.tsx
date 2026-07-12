@@ -645,6 +645,16 @@ function App() {
               </span>
             ))}
           </div>
+          {preflight.diagnostics.visibleButtons.length > 0 && (
+            <div className="preflight-diagnostics">
+              <strong>页面按钮候选</strong>
+              {preflight.diagnostics.visibleButtons.slice(0, 8).map((button, index) => (
+                <span key={`${button.text}-${button.ariaLabel}-${index}`}>
+                  {button.text || button.ariaLabel}
+                </span>
+              ))}
+            </div>
+          )}
         </section>
       )}
 

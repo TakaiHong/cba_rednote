@@ -217,6 +217,33 @@ async function inspectSelectors(page: Page, selectors: Awaited<ReturnType<typeof
   return result;
 }
 
+async function inspectVisibleButtonCandidates(page: Page) {
+  return page
+    .locator("button, [role='button']")
+    .evaluateAll((elements) =>
+      elements
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+          return {
+            tag: element.tagName.toLowerCase(),
+            text: (element.textContent ?? "").replace(/\s+/g, " ").trim(),
+            ariaLabel: element.getAttribute("aria-label") ?? "",
+            role: element.getAttribute("role") ?? "",
+            className: typeof element.className === "string" ? element.className : "",
+            visible:
+              rect.width > 0 &&
+              rect.height > 0 &&
+              style.visibility !== "hidden" &&
+              style.display !== "none"
+          };
+        })
+        .filter((item) => item.visible && (item.text || item.ariaLabel))
+        .slice(0, 30)
+    )
+    .catch(() => []);
+}
+
 function hasVisibleSelectorHit(
   report: Awaited<ReturnType<typeof inspectSelectors>>,
   group: "title" | "body" | "upload" | "publishButton"
@@ -235,6 +262,9 @@ async function writePreflightReport(
     url: string;
     generatedAt: string;
     selectors: Awaited<ReturnType<typeof inspectSelectors>>;
+    diagnostics?: {
+      visibleButtons: Awaited<ReturnType<typeof inspectVisibleButtonCandidates>>;
+    };
   }
 ) {
   await mkdir(dirname(path), { recursive: true });
@@ -346,6 +376,7 @@ if (options.preflight) {
   console.log(`Preflight body selector: ${fillResult.bodySelector ?? "not found"}`);
   await page.waitForTimeout(1500);
   const selectorReport = await inspectSelectors(page, selectorConfig);
+  const visibleButtons = await inspectVisibleButtonCandidates(page);
   const requiredGroups = ["title", "body", "upload", "publishButton"] as const;
   const missingGroups = requiredGroups.filter((group) => !hasVisibleSelectorHit(selectorReport, group));
   console.log("Selector preflight:");
@@ -356,7 +387,10 @@ if (options.preflight) {
       title: publishPackage.title,
       url: page.url(),
       generatedAt: new Date().toISOString(),
-      selectors: selectorReport
+      selectors: selectorReport,
+      diagnostics: {
+        visibleButtons
+      }
     });
     console.log(`Preflight report written: ${options.preflightReport}`);
   }

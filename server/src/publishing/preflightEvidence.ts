@@ -6,10 +6,22 @@ interface SelectorEvidence {
   visible: boolean;
 }
 
+interface VisibleButtonDiagnostic {
+  tag: string;
+  text: string;
+  ariaLabel: string;
+  role: string;
+  className: string;
+  visible: boolean;
+}
+
 interface PreflightReport {
   generatedAt?: string;
   url?: string;
   selectors?: Partial<Record<"title" | "body" | "upload" | "publishButton", SelectorEvidence[]>>;
+  diagnostics?: {
+    visibleButtons?: VisibleButtonDiagnostic[];
+  };
 }
 
 const requiredGroups = ["title", "body", "upload", "publishButton"] as const;
@@ -53,6 +65,9 @@ export async function readPreflightEvidence(path = process.env.XHS_PREFLIGHT_REP
       url: report.url,
       missingGroups,
       groups: buildGroupEvidence(report, missingGroups),
+      diagnostics: {
+        visibleButtons: report.diagnostics?.visibleButtons ?? []
+      },
       detail:
         missingGroups.length === 0
           ? `Preflight report ${path} has visible selector hits for title, body, upload, and publishButton.`
@@ -64,6 +79,9 @@ export async function readPreflightEvidence(path = process.env.XHS_PREFLIGHT_REP
       path,
       missingGroups: [...requiredGroups],
       groups: buildGroupEvidence(undefined, requiredGroups),
+      diagnostics: {
+        visibleButtons: []
+      },
       detail: `No usable preflight report found at ${path}. Run npm.cmd run publish:preflight in a real logged-in Xiaohongshu session.`
     };
   }

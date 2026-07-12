@@ -200,7 +200,7 @@ npm.cmd run schedule:uninstall
 2. 在打开的浏览器里登录或扫码。
 3. 等待运营台自动刷新，确认标题、正文、上传和发布按钮选择器有命中。
 4. `.tmp/xhs-preflight-report.json` 会作为真实账号页面的选择器证据。
-5. 如果选择器没有命中，更新 `config/xhs-selectors.json`。
+5. 如果选择器没有命中，先看运营台账号预检卡片里的“页面按钮候选”，再更新 `config/xhs-selectors.json`。
 6. 再次点击“账号预检”，确认通过后再执行真实辅助发布。
 
 CLI 兜底命令：

@@ -23,6 +23,18 @@ describe("readPreflightEvidence", () => {
           body: [{ selector: "body", count: 1, visible: true }],
           upload: [{ selector: "upload", count: 1, visible: false }],
           publishButton: []
+        },
+        diagnostics: {
+          visibleButtons: [
+            {
+              tag: "button",
+              text: "发布笔记",
+              ariaLabel: "",
+              role: "",
+              className: "publish",
+              visible: true
+            }
+          ]
         }
       }),
       "utf8"
@@ -34,6 +46,7 @@ describe("readPreflightEvidence", () => {
     assert.deepEqual(evidence.missingGroups, ["publishButton"]);
     assert.equal(evidence.groups.title.ok, true);
     assert.equal(evidence.groups.upload.ok, true);
+    assert.equal(evidence.diagnostics.visibleButtons[0].text, "发布笔记");
     assert.match(evidence.detail, /publishButton/);
   });
 
@@ -45,6 +58,7 @@ describe("readPreflightEvidence", () => {
     assert.equal(evidence.path, missingPath);
     assert.deepEqual(evidence.missingGroups, ["title", "body", "upload", "publishButton"]);
     assert.equal(evidence.groups.publishButton.selectors.length, 0);
+    assert.deepEqual(evidence.diagnostics.visibleButtons, []);
     assert.match(evidence.detail, /No usable preflight report/);
   });
 });

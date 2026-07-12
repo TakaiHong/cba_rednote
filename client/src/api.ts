@@ -137,6 +137,16 @@ export interface PreflightEvidenceResult {
       }>;
     }
   >;
+  diagnostics: {
+    visibleButtons: Array<{
+      tag: string;
+      text: string;
+      ariaLabel: string;
+      role: string;
+      className: string;
+      visible: boolean;
+    }>;
+  };
   detail: string;
 }
 

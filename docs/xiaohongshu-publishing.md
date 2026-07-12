@@ -93,13 +93,13 @@ npm.cmd run publish:preflight:manual
 .tmp/xhs-preflight-report.json
 ```
 
-报告会记录 `title`、`body`、`upload` 和 `publishButton` 四组选项的命中数量与可见性。也可以自定义路径：
+报告会记录 `title`、`body`、`upload` 和 `publishButton` 四组选项的命中数量与可见性，并附带页面上可见按钮的候选文本，方便排查小红书改版后的发布按钮文案。也可以自定义路径：
 
 ```powershell
 npm.cmd run publish -- --post latest --preflight --no-pause --preflight-report .tmp/xhs-preflight-report.json
 ```
 
-如果标题、正文或上传选择器没有命中，优先更新 `config/xhs-selectors.json`，再从运营台重新点击“账号预检”。
+如果标题、正文、上传或发布按钮选择器没有命中，先看运营台账号预检卡片里的“页面按钮候选”，再更新 `config/xhs-selectors.json`，然后从运营台重新点击“账号预检”。
 
 ## 发布后回写
 
