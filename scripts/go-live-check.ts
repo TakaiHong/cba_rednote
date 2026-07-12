@@ -19,10 +19,10 @@ function buildNextSteps(input: { requiredFailures: string[]; missingExternalEvid
     steps.push("Run npm.cmd run readiness and fix required failures before real account validation.");
   }
   if (input.missingExternalEvidence.includes("preflight evidence")) {
-    steps.push("Run npm.cmd run publish:preflight in a logged-in Xiaohongshu creator session.");
+    steps.push("Open the dashboard and click 账号预检 in a logged-in Xiaohongshu creator session; use npm.cmd run publish:preflight only as a CLI fallback.");
   }
   if (input.missingExternalEvidence.includes("published URL evidence")) {
-    steps.push("After one reviewed manual publish, record the note URL in the dashboard or run npm.cmd run publish -- --post <post-id> --mark-published --published-url <url>.");
+    steps.push("After one reviewed manual publish, paste the Xiaohongshu note URL into the dashboard and mark the post as published; use npm.cmd run publish -- --post <post-id> --mark-published --published-url <url> only as a CLI fallback.");
   }
 
   return steps;

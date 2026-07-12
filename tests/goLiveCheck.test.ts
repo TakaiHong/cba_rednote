@@ -36,8 +36,10 @@ describe("evaluateGoLiveReadiness", () => {
     assert.deepEqual(result.requiredFailures, []);
     assert.deepEqual(result.missingExternalEvidence, ["preflight evidence", "published URL evidence"]);
     assert.equal(result.nextSteps.length, 2);
-    assert.match(result.nextSteps[0], /publish:preflight/);
-    assert.match(result.nextSteps[1], /--mark-published/);
+    assert.match(result.nextSteps[0], /账号预检/);
+    assert.match(result.nextSteps[0], /CLI fallback/);
+    assert.match(result.nextSteps[1], /dashboard/);
+    assert.match(result.nextSteps[1], /CLI fallback/);
   });
 
   it("passes when required checks and external evidence are present", () => {

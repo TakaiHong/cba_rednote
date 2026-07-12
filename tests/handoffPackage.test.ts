@@ -65,7 +65,7 @@ describe("generateHandoffPackage", () => {
     assert.ok(readiness.some((check) => check.name === "preflight evidence" && check.ok === false));
     assert.equal(goLive.ok, false);
     assert.ok(goLive.missingExternalEvidence.includes("preflight evidence"));
-    assert.ok(goLive.nextSteps.some((step) => step.includes("publish:preflight")));
+    assert.ok(goLive.nextSteps.some((step) => step.includes("账号预检")));
     assert.match(summary, /Readiness Checks/);
     assert.match(summary, /Go-Live Check/);
     assert.match(summary, /Next Steps/);
@@ -73,6 +73,9 @@ describe("generateHandoffPackage", () => {
     assert.match(summary, /Performance report/);
     assert.match(summary, /Image asset brief/);
     assert.match(firstPublishChecklist, /First Xiaohongshu Publish Checklist/);
+    assert.match(firstPublishChecklist, /http:\/\/127\.0\.0\.1:5173/);
+    assert.match(firstPublishChecklist, /账号预检/);
+    assert.match(firstPublishChecklist, /打开小红书发布/);
     assert.match(firstPublishChecklist, /publish:preflight/);
     assert.match(firstPublishChecklist, /--mark-published/);
     assert.match(performanceReport, /Xiaohongshu Performance Report/);
