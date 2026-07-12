@@ -32,6 +32,12 @@ before(async () => {
           outputPath,
           attached: options.attach
         };
+      },
+      publishLauncher: async (postId) => {
+        return {
+          command: `npm.cmd run publish -- --post ${postId}`,
+          pid: 12345
+        };
       }
     },
     scheduleStatusReader: async () => ({
@@ -162,6 +168,29 @@ describe("posts routes", () => {
     assert.match(payload.outputPath, /generated-cover\.png$/);
     assert.deepEqual(payload.post.imageAssets, [payload.outputPath]);
     assert.deepEqual((await postStore.get(post.id))?.imageAssets, [payload.outputPath]);
+  });
+
+  it("starts assisted publish from the dashboard API", async () => {
+    const post = await postStore.createManual({
+      title: "publish route post",
+      body: "body",
+      tags: ["tag"],
+      imageIdeas: ["image"],
+      callToAction: "cta",
+      status: "approved"
+    });
+
+    const response = await fetch(`${baseUrl}/api/posts/${post.id}/assisted-publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+    const payload = (await response.json()) as { postId: string; command: string; pid: number };
+
+    assert.equal(response.status, 202);
+    assert.equal(payload.postId, post.id);
+    assert.match(payload.command, /npm\.cmd run publish/);
+    assert.equal(payload.pid, 12345);
   });
 
   it("exports a Markdown package for a selected post", async () => {

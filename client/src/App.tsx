@@ -15,6 +15,7 @@ import {
   getStatus,
   getPublishPackage,
   listPosts,
+  startAssistedPublish,
   type CalendarItem,
   type ContentStrategySummary,
   type DailyTaskStatus,
@@ -81,6 +82,7 @@ function App() {
   const [handoffLoading, setHandoffLoading] = useState(false);
   const [backupLoading, setBackupLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
+  const [publishLoading, setPublishLoading] = useState(false);
   const [strategy, setStrategy] = useState<ContentStrategySummary>();
   const [goLive, setGoLive] = useState<GoLiveCheckResult>();
   const [preflight, setPreflight] = useState<PreflightEvidenceResult>();
@@ -111,6 +113,13 @@ function App() {
   );
 
   const previewImage = publishPreview?.imageAssets[0] ?? selected?.imageAssets?.[0];
+  const approvedCount = posts.filter((post) => post.status === "approved").length;
+  const publishedCount = posts.filter((post) => post.status === "published").length;
+  const selectedPublishCommand = selected ? `npm.cmd run publish -- --post ${selected.id}` : "";
+  const goLiveGap =
+    goLive?.missingExternalEvidence.length
+      ? `还缺：${goLive.missingExternalEvidence.join(" / ")}`
+      : "上线证据已齐";
 
   const performance = useMemo(() => {
     const views = posts.reduce((sum, post) => sum + (post.metrics?.views ?? 0), 0);
@@ -340,6 +349,21 @@ function App() {
     }
   }
 
+  async function handleStartAssistedPublish() {
+    if (!selected) return;
+    setPublishLoading(true);
+    setError("");
+    try {
+      const result = await startAssistedPublish(selected.id);
+      await refresh();
+      setPublishHint(`已打开小红书辅助发布窗口：${result.command}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "打开小红书发布失败");
+    } finally {
+      setPublishLoading(false);
+    }
+  }
+
   function updateMetric(name: keyof MarketingPost["metrics"], value: string) {
     if (!selected) return;
     const numericValue = Math.max(0, Number.parseInt(value || "0", 10));
@@ -408,6 +432,42 @@ function App() {
 
       {error && <div className="error">{error}</div>}
       {batchHint && <div className="notice">{batchHint}</div>}
+
+      {selected && (
+        <section className="operator-focus">
+          <div className="focus-summary">
+            <span>今日发布工作台</span>
+            <h2>{publishPreview?.title ?? selected.title}</h2>
+            <p>
+              {approvedCount} 条待发布 / {publishedCount} 条已发布 / {goLiveGap}
+            </p>
+            <div className="focus-actions">
+              <button className="primary-button" onClick={handleGenerateCoverImage} disabled={coverLoading}>
+                {coverLoading ? "生成封面中..." : "生成便利贴封面"}
+              </button>
+              <button onClick={handleCopyPublishText}>复制发布文案</button>
+              <button onClick={handleStartAssistedPublish} disabled={publishLoading}>
+                {publishLoading ? "打开中..." : "打开小红书发布"}
+              </button>
+            </div>
+          </div>
+          <div className="focus-preview">
+            {previewImage ? (
+              <img alt="当前封面预览" src={getImageAssetUrl(previewImage)} />
+            ) : (
+              <div>暂无封面</div>
+            )}
+          </div>
+          <div className="focus-checklist">
+            <strong>发布前确认</strong>
+            <span className={previewImage ? "ok" : "todo"}>{previewImage ? "封面已绑定" : "先生成便利贴封面"}</span>
+            <span className={preflight?.ok ? "ok" : "todo"}>{preflight?.ok ? "账号预检通过" : "需跑账号预检"}</span>
+            <span className={selected.publishedUrl ? "ok" : "todo"}>
+              {selected.publishedUrl ? "已回填发布链接" : "发布后回填链接"}
+            </span>
+          </div>
+        </section>
+      )}
 
       <section className="scoreboard">
         <div>
@@ -800,8 +860,11 @@ function App() {
               <button onClick={handleGenerateCoverImage} disabled={coverLoading}>
                 {coverLoading ? "生成封面中..." : "生成模板封面"}
               </button>
+              <button onClick={handleStartAssistedPublish} disabled={publishLoading}>
+                {publishLoading ? "打开中..." : "打开小红书发布"}
+              </button>
               <span>{selected.imageAssets?.length ?? 0} 张图片素材已绑定</span>
-              <code>npm.cmd run publish -- --post {selected.id}</code>
+              <code>{selectedPublishCommand}</code>
               {selected.publishedUrl && (
                 <a href={selected.publishedUrl} rel="noreferrer" target="_blank">
                   打开已发布笔记

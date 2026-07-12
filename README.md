@@ -75,7 +75,7 @@ npm.cmd run build
 - 默认使用本地低成本模板生成器，保证没有 API key 也能跑通。
 - 配置 `OPENAI_API_KEY` 后，可以切换到低成本模型生成更自然的版本。
 - 每条帖子预算上限通过 `MAX_COST_CNY_PER_POST` 控制，默认 0.5 元人民币。
-- 小红书发布优先采用半自动 Playwright：复用本地登录态、默认直达“上传图文”发布页、复制并尝试填充内容、由人工最后确认发布，降低账号风控风险；账号和选择器验证稳定后，可通过 `XHS_ALLOW_FINAL_PUBLISH=true` 搭配 `--click-publish` 显式启用最终发布点击。
+- 小红书发布优先采用运营台一键触发的半自动 Playwright：复用本地登录态、默认直达“上传图文”发布页、上传封面并尝试填充内容、由人工最后确认发布，降低账号风控风险；CLI 命令保留为兜底，账号和选择器验证稳定后，可通过 `XHS_ALLOW_FINAL_PUBLISH=true` 搭配 `--click-publish` 显式启用最终发布点击。
 - 运营台支持录入曝光、点赞、收藏、评论、关注和咨询数，用来比较不同内容角度的实际效果。
 - 运营台和 `npm.cmd run status` 会汇总累计成本、平均成本、付费生成条数和预算状态。
 - 关键动作会写入 `data/run-log.json`，包括运营台生成/批量生成/发布回写、CLI 生成、定时生成、图片 brief 导出和 handoff 导出。
@@ -90,7 +90,7 @@ npm.cmd run build
 - `npm.cmd run report -- --out exports` 和运营台“导出复盘”按钮会生成 `performance-report.md`，用于发布后回填曝光、互动和咨询。
 - `npm.cmd run image:brief -- --post latest --out .tmp/image-assets` 可导出封面文字、图片 brief、AI 出图 prompt 和素材清单。
 - `npm.cmd run image:cover -- --post latest --attach` 可生成一张低成本 3:4 PNG 模板封面，并把图片路径绑定到最新草稿。
-- 也可以在运营台右侧“发布助手”里直接点击“生成模板封面”，系统会生成 PNG 并绑定到当前草稿。
+- 也可以在运营台顶部“今日发布工作台”或右侧“发布助手”里直接点击“生成便利贴封面”和“打开小红书发布”，不需要手动输入发布 CLI。
 - 运营台的“图片素材路径”可绑定本地图片；`publish` dry-run、发布包和辅助发布会自动带上这些素材，仍可额外使用 `--image` 或 `--images-dir`。
 - `npm.cmd run handoff -- --out .tmp/handoff` 可集中导出交付状态、`go-live-check.json` go-live 状态、`first-publish-checklist.md` 首发清单、`performance-report.md` 复盘报告、排期、批量生成 dry-run、最新发布包和 `image-assets/` 图片素材包。
 - 运营台的“生成交接包”按钮会调用后端生成 `.tmp/handoff`，方便不打开终端也能准备交接材料。

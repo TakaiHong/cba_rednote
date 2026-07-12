@@ -212,6 +212,12 @@ export interface CoverImageResult {
   post?: MarketingPost;
 }
 
+export interface AssistedPublishResult {
+  postId: string;
+  command: string;
+  pid?: number;
+}
+
 const apiBase = "http://127.0.0.1:8787/api";
 
 export async function listPosts() {
@@ -287,6 +293,19 @@ export async function generateCoverImage(id: string) {
     throw new Error(payload?.error ?? "Failed to generate cover image");
   }
   return (await response.json()) as CoverImageResult;
+}
+
+export async function startAssistedPublish(id: string) {
+  const response = await fetch(`${apiBase}/posts/${id}/assisted-publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({})
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to start assisted publish");
+  }
+  return (await response.json()) as AssistedPublishResult;
 }
 
 export async function getStatus() {

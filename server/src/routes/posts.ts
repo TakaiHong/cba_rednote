@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { spawn } from "node:child_process";
 import { z } from "zod";
 import { generatePostBatch } from "../generation/batch.js";
 import { planContentCalendar } from "../generation/contentCalendar.js";
@@ -11,9 +12,11 @@ import { runLogStore } from "../storage/runLogStore.js";
 import { generateCoverImage } from "../../../scripts/generate-cover-image.js";
 
 type CoverImageGenerator = typeof generateCoverImage;
+type PublishLauncher = (postId: string) => Promise<{ command: string; pid?: number }>;
 
 export interface PostsRouterDependencies {
   coverImageGenerator?: CoverImageGenerator;
+  publishLauncher?: PublishLauncher;
 }
 
 const postInputSchema = z.object({
@@ -48,6 +51,20 @@ const batchGenerateSchema = z.object({
 export function createPostsRouter(dependencies: PostsRouterDependencies = {}) {
   const router = Router();
   const coverImageGenerator = dependencies.coverImageGenerator ?? generateCoverImage;
+  const publishLauncher = dependencies.publishLauncher ?? launchAssistedPublish;
+
+async function launchAssistedPublish(postId: string) {
+  const command = `npm.cmd run publish -- --post ${postId}`;
+  const child = spawn("npm.cmd", ["run", "publish", "--", "--post", postId], {
+    cwd: process.cwd(),
+    detached: true,
+    shell: false,
+    stdio: "ignore",
+    windowsHide: false
+  });
+  child.unref();
+  return { command, pid: child.pid };
+}
 
 router.get("/", async (_req, res) => {
   res.json(await postStore.list());
@@ -104,6 +121,34 @@ router.post("/:id/cover-image", async (req, res) => {
     const updated = await postStore.get(post.id);
     res.status(201).json({ ...result, post: updated });
   } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+  }
+});
+
+router.post("/:id/assisted-publish", async (req, res) => {
+  const post = await postStore.get(req.params.id);
+  if (!post) return res.status(404).json({ error: "Post not found" });
+
+  try {
+    const result = await publishLauncher(post.id);
+    await runLogStore.append({
+      action: "api-assisted-publish",
+      status: "ok",
+      message: `Started assisted publish for post ${post.id}`,
+      metadata: {
+        postId: post.id,
+        command: result.command,
+        pid: result.pid
+      }
+    });
+    res.status(202).json({ postId: post.id, ...result });
+  } catch (error) {
+    await runLogStore.append({
+      action: "api-assisted-publish",
+      status: "error",
+      message: error instanceof Error ? error.message : String(error),
+      metadata: { postId: post.id }
+    });
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });

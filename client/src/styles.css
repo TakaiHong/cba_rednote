@@ -109,6 +109,115 @@ h1 {
   padding: 10px 12px;
 }
 
+.operator-focus {
+  background: #ffffff;
+  border: 1px solid #dfe5da;
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(320px, 1.2fr) 260px minmax(220px, 0.8fr);
+  margin-bottom: 18px;
+  padding: 16px;
+}
+
+.focus-summary {
+  display: grid;
+  gap: 10px;
+}
+
+.focus-summary span,
+.focus-checklist strong {
+  color: #66715f;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.focus-summary h2 {
+  font-size: 30px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.focus-summary p {
+  color: #4d574b;
+  font-size: 14px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.focus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.focus-actions button,
+.publish-helper button {
+  background: #2f4e88;
+  border: 0;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-weight: 800;
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+.focus-actions button:disabled,
+.publish-helper button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.focus-preview {
+  align-self: start;
+  background: #f0f3ed;
+  border: 1px solid #d8ded2;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.focus-preview img,
+.focus-preview div {
+  aspect-ratio: 3 / 4;
+  display: block;
+  object-fit: cover;
+  width: 100%;
+}
+
+.focus-preview div {
+  align-items: center;
+  color: #66715f;
+  display: flex;
+  font-size: 13px;
+  font-weight: 800;
+  justify-content: center;
+}
+
+.focus-checklist {
+  align-self: start;
+  display: grid;
+  gap: 10px;
+}
+
+.focus-checklist span {
+  border: 1px solid #d8ded2;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 10px;
+}
+
+.focus-checklist .ok {
+  background: #eef7f2;
+  color: #1e5f4a;
+}
+
+.focus-checklist .todo {
+  background: #fff3ee;
+  color: #a85332;
+}
+
 .scoreboard {
   display: grid;
   gap: 12px;
@@ -676,8 +785,9 @@ dd {
   border-radius: 6px;
   color: white;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 800;
   min-height: 38px;
+  padding: 0 12px;
 }
 
 .publish-helper button + button {
@@ -762,6 +872,10 @@ dd {
   .automation-panel,
   .metric-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .operator-focus {
+    grid-template-columns: 1fr;
   }
 
   .calendar-header {
