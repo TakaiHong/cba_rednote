@@ -36,7 +36,8 @@ export async function generateMarketingPost(
   const review = reviewAgent(generated);
   review.approved = false;
   review.notes.unshift("Source-backed draft requires human fact verification before publishing.");
-  const factSafetyIssues = findUnsupportedFactSignals(generated);
+  const sourceReferences = referencesForSourceIds(generated.sourceIds ?? []);
+  const factSafetyIssues = findUnsupportedFactSignals(generated, sourceReferences);
   const now = new Date().toISOString();
 
   return {
@@ -48,7 +49,7 @@ export async function generateMarketingPost(
     metrics: { views: 0, likes: 0, saves: 0, comments: 0, follows: 0, inquiries: 0 },
     estimatedCostCny: generator === "openai-compatible" ? config.openAiModelCostCnyPerPostEstimate : 0,
     generator,
-    sourceReferences: referencesForSourceIds(generated.sourceIds ?? []),
+    sourceReferences,
     factCheck:
       factSafetyIssues.length > 0
         ? { status: "blocked", notes: ["Blocked by fact safety guard.", ...factSafetyIssues] }
@@ -123,7 +124,8 @@ export async function regenerateMarketingPost(post: MarketingPost, feedback: str
   const review = reviewAgent(generated);
   review.approved = false;
   review.notes.unshift("Source-backed draft requires human fact verification before publishing.");
-  const factSafetyIssues = findUnsupportedFactSignals(generated);
+  const sourceReferences = sourcePack.filter((source) => (generated.sourceIds ?? []).includes(source.id));
+  const factSafetyIssues = findUnsupportedFactSignals(generated, sourceReferences);
 
   return {
     ...post,
@@ -132,7 +134,7 @@ export async function regenerateMarketingPost(post: MarketingPost, feedback: str
     review,
     estimatedCostCny: generator === "openai-compatible" ? config.openAiModelCostCnyPerPostEstimate : 0,
     generator,
-    sourceReferences: sourcePack.filter((source) => (generated.sourceIds ?? []).includes(source.id)),
+    sourceReferences,
     factCheck:
       factSafetyIssues.length > 0
         ? { status: "blocked", notes: ["Blocked by fact safety guard.", ...factSafetyIssues] }

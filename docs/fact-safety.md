@@ -24,5 +24,14 @@ An operator cannot override a blocked draft. Remove the unsupported detail or ad
 - NTU International Students: `https://www.ntu.edu.sg/life-at-ntu/student-life/student-activities-and-engagement/inclusion-and-integration/int-students`
 - NTU Academic Calendars: `https://www.ntu.edu.sg/admissions/matriculation/academic-calendars`
 - NTU Clubs & Societies: `https://www.ntu.edu.sg/life-at-ntu/student-life/student-activities-and-engagement`
+- NTU Library Services: `https://www.ntu.edu.sg/education/libraries/services`
+- NTU Library Spaces: `https://www.ntu.edu.sg/education/libraries/about-ntu-library`
+- NTU Accommodation: `https://www.ntu.edu.sg/life-at-ntu/accommodation`
+- NTU Undergraduate Housing Application: `https://www.ntu.edu.sg/life-at-ntu/accommodation/undergraduate-housing/application`
+- NTU Career Services: `https://www.ntu.edu.sg/life-at-ntu/student-life/student-services/onestop/bond-management/seeking-employment`
+- NTU Student Wellbeing Services: `https://www.ntu.edu.sg/life-at-ntu/student-life/campus-life-and-wellbeing/ntu-wellbeing/student-wellbeing-services`
+- NTU Residential Education: `https://www.ntu.edu.sg/life-at-ntu/student-life/campus-life-and-wellbeing/residential-education`
+- NBS Undergraduate Life: `https://www.ntu.edu.sg/business/admissions/ugadmission/undergraduate-student-life`
+- NBS Undergraduate Programmes: `https://www.ntu.edu.sg/business/admissions/ugadmission`
 
 Treat each source as time-sensitive. Before publishing a factual post, open the attached source links and verify that the specific wording remains current.
