@@ -62,6 +62,7 @@ export interface MarketingPost extends GeneratedPost {
   updatedAt: string;
   publishedAt?: string;
   publishedUrl?: string;
+  revisionNotes?: string[];
 }
 
 export interface CreatePostInput {
@@ -84,6 +85,7 @@ export interface UpdatePostInput {
   callToAction?: string;
   status?: PostStatus;
   publishedUrl?: string;
+  revisionNotes?: string[];
   metrics?: Partial<PostMetrics>;
 }
 

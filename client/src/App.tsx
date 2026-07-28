@@ -22,6 +22,7 @@ import {
   startFinalPublish,
   startPublishPreflight,
   uninstallDailyTask,
+  uploadImageAsset,
   type CalendarItem,
   type ContentStrategySummary,
   type DailyTaskStatus,
@@ -42,7 +43,7 @@ const statusLabels: Record<MarketingPost["status"], string> = {
 
 const statusFilters = ["all", "draft", "approved", "published", "archived"] as const;
 type StatusFilter = (typeof statusFilters)[number];
-type WorkspaceTab = "workspace" | "publish" | "calendar" | "operations";
+type WorkspaceTab = "make" | "publish" | "calendar" | "operations";
 
 const metricLabels: Array<[keyof MarketingPost["metrics"], string]> = [
   ["views", "曝光"],
@@ -106,7 +107,11 @@ function App() {
   const [publishPreview, setPublishPreview] = useState<XhsPublishPackage>();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("workspace");
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("make");
+  const [revisionNote, setRevisionNote] = useState("");
+  const [makeStage, setMakeStage] = useState<1 | 2 | 3>(1);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [publishUrlDrafts, setPublishUrlDrafts] = useState<Record<string, string>>({});
 
   const filteredPosts = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -217,6 +222,8 @@ function App() {
       const post = await generatePost();
       await refresh();
       setSelectedId(post.id);
+      setActiveTab("make");
+      setMakeStage(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "生成失败");
     } finally {
@@ -232,6 +239,8 @@ function App() {
       const result = await generatePostBatch(7, 1);
       await refresh();
       if (result.posts[0]) setSelectedId(result.posts[0].id);
+      setActiveTab("make");
+      setMakeStage(1);
       setBatchHint(
         `已生成 ${result.posts.length} 条草稿，最高模型成本约 ${result.plan.estimatedMaxCostCny.toFixed(2)} 元。`
       );
@@ -242,16 +251,72 @@ function App() {
     }
   }
 
-  async function handlePatch(patch: Partial<MarketingPost>) {
-    if (!selected) return;
+  async function handlePostPatch(id: string, patch: Partial<MarketingPost>) {
     setError("");
     try {
-      const updated = await updatePost(selected.id, patch);
+      const updated = await updatePost(id, patch);
       setPosts((current) => current.map((post) => (post.id === updated.id ? updated : post)));
       return updated;
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存失败");
       return undefined;
+    }
+  }
+
+  async function handlePatch(patch: Partial<MarketingPost>) {
+    if (!selected) return;
+    return handlePostPatch(selected.id, patch);
+  }
+
+  async function handleUploadCover(file?: File) {
+    if (!selected || !file) return;
+    setUploadingImage(true);
+    setError("");
+    try {
+      const result = await uploadImageAsset(selected.id, file);
+      setPosts((current) => current.map((post) => (post.id === result.post.id ? result.post : post)));
+      setPublishHint("已上传并绑定自有封面图片。");
+      setMakeStage(3);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "图片上传失败");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  async function handleSaveRevisionNote() {
+    if (!selected || !revisionNote.trim()) return;
+    const updated = await handlePatch({ revisionNotes: [...(selected.revisionNotes ?? []), revisionNote.trim()] });
+    if (updated) {
+      setRevisionNote("");
+      setPublishHint("审核意见已保存，可据此继续修改文案或封面。");
+    }
+  }
+
+  async function handleSaveToPublish(post = selected) {
+    if (!post) return;
+    if (!(post.imageAssets?.length)) {
+      setError("请先生成或上传至少一张封面图片，再保存到发布列表。");
+      return;
+    }
+    const updated = await handlePostPatch(post.id, { status: "approved" });
+    if (updated) {
+      setSelectedId(updated.id);
+      setActiveTab("publish");
+      setPublishHint("已保存到发布列表，等待人工在小红书发布。");
+    }
+  }
+
+  async function handlePublishBoardMark(post: MarketingPost) {
+    const url = (publishUrlDrafts[post.id] ?? post.publishedUrl ?? "").trim();
+    if (!/^https?:\/\//i.test(url)) {
+      setError("标记已发布前，请填写有效的小红书笔记链接。");
+      return;
+    }
+    const updated = await handlePostPatch(post.id, { status: "published", publishedUrl: url });
+    if (updated) {
+      setPublishUrlDrafts((current) => ({ ...current, [post.id]: updated.publishedUrl ?? url }));
+      setPublishHint("已标记发布并回填笔记链接。");
     }
   }
 
@@ -396,6 +461,7 @@ function App() {
         await refresh();
       }
       setPublishHint(`已生成并绑定模板封面：${result.outputPath}`);
+      setMakeStage(3);
     } catch (err) {
       setError(err instanceof Error ? err.message : "生成封面失败");
     } finally {
@@ -527,8 +593,8 @@ function App() {
           {loading ? "生成中" : "新建笔记"}
         </button>
         <nav className="nav-links" aria-label="工作区">
-          <button className={activeTab === "workspace" ? "active" : ""} data-testid="nav-workspace" onClick={() => setActiveTab("workspace")} type="button"><LayoutDashboard aria-hidden="true" size={17} />内容工作台</button>
-          <button className={activeTab === "publish" ? "active" : ""} data-testid="nav-publish" onClick={() => setActiveTab("publish")} type="button"><ClipboardCheck aria-hidden="true" size={17} />发布流程</button>
+          <button className={activeTab === "make" ? "active" : ""} data-testid="nav-make" onClick={() => setActiveTab("make")} type="button"><LayoutDashboard aria-hidden="true" size={17} />制作</button>
+          <button className={activeTab === "publish" ? "active" : ""} data-testid="nav-publish" onClick={() => setActiveTab("publish")} type="button"><ClipboardCheck aria-hidden="true" size={17} />发布</button>
           <button className={activeTab === "calendar" ? "active" : ""} data-testid="nav-calendar" onClick={() => setActiveTab("calendar")} type="button"><CalendarDays aria-hidden="true" size={17} />内容日历</button>
           <button className={activeTab === "operations" ? "active" : ""} data-testid="nav-operations" onClick={() => setActiveTab("operations")} type="button"><Settings2 aria-hidden="true" size={17} />运营设置</button>
         </nav>
@@ -553,7 +619,7 @@ function App() {
       {error && <div className="error">{error}</div>}
       {batchHint && <div className="notice">{batchHint}</div>}
 
-      {activeTab === "publish" && selected && (
+      {selected && false && activeTab === "publish" && (
         <section className="workflow-guide" aria-labelledby="workflow-heading">
           <div>
             <p className="eyebrow">TODAY'S RELEASE</p>
@@ -570,7 +636,7 @@ function App() {
         </section>
       )}
 
-      {activeTab === "publish" && selected && (
+      {selected && false && activeTab === "publish" && (
         <section className="operator-focus" id="today-workspace">
           <div className="focus-summary">
             <span>今日发布工作台</span>
@@ -598,7 +664,7 @@ function App() {
           </div>
           <div className="focus-preview">
             {previewImage ? (
-              <img alt="当前封面预览" src={getImageAssetUrl(previewImage)} />
+              <img alt="当前封面预览" src={getImageAssetUrl(previewImage ?? "")} />
             ) : (
               <div>暂无封面</div>
             )}
@@ -610,6 +676,43 @@ function App() {
             <span className={selected.publishedUrl ? "ok" : "todo"}>
               {selected.publishedUrl ? "已回填发布链接" : "发布后回填链接"}
             </span>
+          </div>
+        </section>
+      )}
+
+      {activeTab === "publish" && (
+        <section className="publish-board" aria-labelledby="publish-board-heading">
+          <div className="publish-board-header">
+            <div>
+              <p className="eyebrow">PUBLISH QUEUE</p>
+              <h2 id="publish-board-heading">发布管理</h2>
+              <p>在小红书人工发布后，在这里回填链接并更新帖子状态。</p>
+            </div>
+            <div className="publish-counts"><strong>{approvedCount}</strong><span>待发布</span><strong>{publishedCount}</strong><span>已发布</span></div>
+          </div>
+          <div className="publish-posts">
+            {posts.map((post) => {
+              const url = publishUrlDrafts[post.id] ?? post.publishedUrl ?? "";
+              return (
+                <article className="publish-post" key={post.id}>
+                  <div>
+                    <span className={`status-pill ${post.status}`}>{statusLabels[post.status]}</span>
+                    <h3>{post.title}</h3>
+                    <p>{post.imageAssets?.length ? "封面已准备" : "缺少封面"} · {post.tags.slice(0, 3).map((tag) => `#${tag}`).join(" ")}</p>
+                  </div>
+                  <div className="publish-post-actions">
+                    <button onClick={() => { setSelectedId(post.id); setActiveTab("make"); }} type="button">继续制作</button>
+                    {post.status !== "published" && <button onClick={() => void handlePostPatch(post.id, { status: "approved" })} type="button">设为待发布</button>}
+                    <input aria-label={`${post.title} 发布链接`} onChange={(event) => setPublishUrlDrafts((current) => ({ ...current, [post.id]: event.target.value }))} placeholder="粘贴发布后的笔记链接" value={url} />
+                    {post.status === "published" ? (
+                      post.publishedUrl && <a href={post.publishedUrl} rel="noreferrer" target="_blank">打开笔记</a>
+                    ) : (
+                      <button className="publish-mark" onClick={() => void handlePublishBoardMark(post)} type="button">标记已发布</button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
       )}
@@ -874,7 +977,22 @@ function App() {
         </section>
       )}
 
-      {activeTab === "workspace" && (
+      {activeTab === "make" && selected && (
+        <section className="make-guide" aria-labelledby="make-guide-heading">
+          <div>
+            <p className="eyebrow">MAKE A POST</p>
+            <h2 id="make-guide-heading">制作一篇可发布的笔记</h2>
+            <p>按照下方 3 步完成审核、封面和最终预览；保存后才会进入发布列表。</p>
+          </div>
+          <ol>
+            <li className={makeStage === 1 ? "active" : ""}><button onClick={() => setMakeStage(1)} type="button"><span>1</span><strong>生成与审核<small>生成文案和标签，修改后保存审核意见</small></strong></button></li>
+            <li className={makeStage === 2 ? "active" : ""}><button onClick={() => setMakeStage(2)} type="button"><span>2</span><strong>制作封面<small>生成模板封面，或上传自己的图片</small></strong></button></li>
+            <li className={makeStage === 3 ? "active" : ""}><button onClick={() => setMakeStage(3)} type="button"><span>3</span><strong>预览并保存<small>确认图文无误，保存到发布列表</small></strong></button></li>
+          </ol>
+        </section>
+      )}
+
+      {activeTab === "make" && selected && (
       <section className="workspace" id="content-library">
         <aside className="post-list">
           <div className="panel-title">内容池</div>
@@ -903,7 +1021,7 @@ function App() {
             <button
               className={`post-item ${post.id === selected?.id ? "active" : ""}`}
               key={post.id}
-              onClick={() => setSelectedId(post.id)}
+              onClick={() => { setSelectedId(post.id); setMakeStage(1); }}
             >
               <span>{post.title}</span>
               <small>
@@ -1031,6 +1149,22 @@ function App() {
           <aside className="insights" id="publish-checklist">
             <div className="panel-title">发布清单</div>
             <p className="insights-lead">{selected.topic.scene}</p>
+            <section className="make-cover-step">
+              <strong>第 2 步：制作封面</strong>
+              <p>{previewImage ? "已绑定封面，可继续查看预览。" : "请选择生成模板封面，或上传自有图片。"}</p>
+              <div>
+                <button onClick={handleGenerateCoverImage} disabled={coverLoading} type="button">{coverLoading ? "生成中..." : "生成模板封面"}</button>
+                <label className="image-upload-control">上传图片<input accept="image/png,image/jpeg,image/webp" disabled={uploadingImage} onChange={(event) => void handleUploadCover(event.target.files?.[0])} type="file" /></label>
+              </div>
+            </section>
+            <button className="advance-step" disabled={!previewImage || makeStage > 2} onClick={() => setMakeStage(3)} type="button">封面完成，进入第 3 步预览</button>
+            <section className="revision-step">
+              <strong>审核意见</strong>
+              <textarea onChange={(event) => setRevisionNote(event.target.value)} placeholder="例如：标题更口语一点；封面换成更轻松的语气。" rows={3} value={revisionNote} />
+              <button disabled={!revisionNote.trim()} onClick={() => void handleSaveRevisionNote()} type="button">保存审核意见</button>
+              {(selected.revisionNotes?.length ?? 0) > 0 && <small>最近：{selected.revisionNotes?.at(-1)}</small>}
+            </section>
+            <button className="advance-step" disabled={makeStage !== 1} onClick={() => setMakeStage(2)} type="button">审核通过，进入第 2 步制作封面</button>
             <details className="side-details">
               <summary>选题信息</summary>
               <dl>
@@ -1042,7 +1176,7 @@ function App() {
                 <dd>{selected.review.notes.join("；")}</dd>
               </dl>
             </details>
-            <details className="side-details">
+            <details className="side-details" open>
               <summary>发布预览</summary>
               <div className="preview">
               <strong>发布预览</strong>
@@ -1090,6 +1224,7 @@ function App() {
               {visualBrief && <pre>{visualBrief}</pre>}
               </div>
             </details>
+            <button className="save-to-publish" disabled={!previewImage} onClick={() => void handleSaveToPublish()} type="button">第 3 步：确认并保存到发布列表</button>
           </aside>
         )}
       </section>

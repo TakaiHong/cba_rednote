@@ -50,6 +50,7 @@ function withDefaults(post: MarketingPost): MarketingPost {
   return {
     ...post,
     imageAssets: post.imageAssets ?? [],
+    revisionNotes: post.revisionNotes ?? [],
     metrics: {
       ...emptyMetrics,
       ...(post.metrics ?? {})
@@ -89,6 +90,7 @@ export const postStore = {
       tags: input.tags,
       imageIdeas: input.imageIdeas,
       imageAssets: input.imageAssets ?? [],
+      revisionNotes: [],
       callToAction: input.callToAction,
       status: input.status ?? "draft",
       topic: manualTopic,

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { type Server } from "node:http";
 import { AddressInfo } from "node:net";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -206,6 +206,31 @@ describe("posts routes", () => {
     assert.match(payload.outputPath, /generated-cover\.png$/);
     assert.deepEqual(payload.post.imageAssets, [payload.outputPath]);
     assert.deepEqual((await postStore.get(post.id))?.imageAssets, [payload.outputPath]);
+  });
+
+  it("uploads and attaches an operator-provided cover image", async () => {
+    const post = await postStore.createManual({
+      title: "upload route post",
+      body: "body",
+      tags: ["tag"],
+      imageIdeas: ["image"],
+      callToAction: "cta"
+    });
+
+    const response = await fetch(`${baseUrl}/api/posts/${post.id}/image-upload`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename: "cover.png",
+        contentBase64: Buffer.from("image-bytes").toString("base64")
+      })
+    });
+    const payload = (await response.json()) as { outputPath: string; post: { imageAssets: string[] } };
+
+    assert.equal(response.status, 201);
+    assert.match(payload.outputPath, /uploaded-images/);
+    assert.deepEqual(payload.post.imageAssets, [payload.outputPath]);
+    assert.equal(await readFile(join(process.cwd(), payload.outputPath), "utf8"), "image-bytes");
   });
 
   it("starts assisted publish from the dashboard API", async () => {

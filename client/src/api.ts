@@ -35,6 +35,7 @@ export interface MarketingPost {
   createdAt: string;
   updatedAt: string;
   publishedUrl?: string;
+  revisionNotes?: string[];
 }
 
 export interface XhsPublishPackage {
@@ -244,6 +245,11 @@ export interface CoverImageResult {
   post?: MarketingPost;
 }
 
+export interface ImageUploadResult {
+  post: MarketingPost;
+  outputPath: string;
+}
+
 export interface AssistedPublishResult {
   postId: string;
   command: string;
@@ -332,6 +338,22 @@ export async function generateCoverImage(id: string) {
     throw new Error(payload?.error ?? "Failed to generate cover image");
   }
   return (await response.json()) as CoverImageResult;
+}
+
+export async function uploadImageAsset(id: string, file: File) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  const response = await fetch(`${apiBase}/posts/${id}/image-upload`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: file.name, contentBase64: btoa(binary) })
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to upload image");
+  }
+  return (await response.json()) as ImageUploadResult;
 }
 
 export async function startAssistedPublish(id: string) {

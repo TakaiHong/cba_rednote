@@ -2,7 +2,7 @@ import { Router } from "express";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, extname, join } from "node:path";
 import { z } from "zod";
 import { generatePostBatch } from "../generation/batch.js";
 import { planContentCalendar } from "../generation/contentCalendar.js";
@@ -35,6 +35,7 @@ const postInputSchema = z.object({
   tags: z.array(z.string()).default([]),
   imageIdeas: z.array(z.string()).default([]),
   imageAssets: z.array(z.string().min(1)).default([]),
+  revisionNotes: z.array(z.string().min(1).max(500)).default([]),
   callToAction: z.string().default(""),
   status: z.enum(["draft", "approved", "published", "archived"]).optional(),
   metrics: z
@@ -57,6 +58,13 @@ const batchGenerateSchema = z.object({
   count: z.number().int().min(1).max(14).default(7),
   maxModelPosts: z.number().int().min(0).max(14).default(1)
 });
+
+const imageUploadSchema = z.object({
+  filename: z.string().min(1).max(120),
+  contentBase64: z.string().min(1).max(8_000_000)
+});
+
+const supportedImageExtensions = new Set([".png", ".jpg", ".jpeg", ".webp"]);
 
 export function createPostsRouter(dependencies: PostsRouterDependencies = {}) {
   const router = Router();
@@ -190,6 +198,36 @@ router.post("/:id/cover-image", async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
+});
+
+router.post("/:id/image-upload", async (req, res) => {
+  const post = await postStore.get(req.params.id);
+  if (!post) return res.status(404).json({ error: "Post not found" });
+
+  const input = imageUploadSchema.parse(req.body ?? {});
+  const filename = basename(input.filename).replace(/[^a-zA-Z0-9._-]/g, "_");
+  const extension = extname(filename).toLowerCase();
+  if (!supportedImageExtensions.has(extension)) {
+    return res.status(400).json({ error: "Only PNG, JPG, JPEG, and WebP images are supported." });
+  }
+
+  const imageBuffer = Buffer.from(input.contentBase64, "base64");
+  if (!imageBuffer.length || imageBuffer.length > 5 * 1024 * 1024) {
+    return res.status(400).json({ error: "Image must be between 1 byte and 5 MB." });
+  }
+
+  const outputDir = join(".tmp", "uploaded-images", post.id);
+  const outputPath = join(outputDir, `${Date.now()}-${filename}`);
+  await mkdir(outputDir, { recursive: true });
+  await writeFile(outputPath, imageBuffer);
+  const updated = await postStore.update(post.id, { imageAssets: [...(post.imageAssets ?? []), outputPath] });
+  await runLogStore.append({
+    action: "api-upload-image",
+    status: "ok",
+    message: `Uploaded image for post ${post.id}`,
+    metadata: { postId: post.id, outputPath }
+  });
+  res.status(201).json({ post: updated, outputPath });
 });
 
 router.post("/:id/assisted-publish", async (req, res) => {

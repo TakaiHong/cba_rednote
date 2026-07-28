@@ -13,11 +13,11 @@ The implemented direction combines the selected references:
 - Implementation: `.tmp/ui-smoke.png`
 - Side-by-side comparison: `.tmp/design-qa-comparison.png`
 - Browser viewport checks: populated CBA draft at the default desktop viewport and at `390 x 844`; the mobile sidebar becomes a two-column navigation area and all primary actions remain readable.
-- Automated UI smoke: passed after switching through the publishing, calendar, and operations tabs; it verifies the five-step release guide, manual publishing action, calendar items, and a loaded cover preview.
+- Automated UI smoke: passed after switching through the making, publishing, calendar, and operations tabs; it verifies the three-step making guide, publish queue, and calendar items.
 
 ## Review
 
-The sidebar separates the experience into four independent tabs: content workspace, release flow, content calendar, and operations settings. The release view gives the selected post, cover, manual publishing action, and a five-step daily guide equal weight. Frosted surfaces are limited to primary work areas and use readable contrast, light borders, and restrained shadows; there are no decorative gradients or background effects.
+The sidebar separates the experience into four independent tabs: making, publishing, content calendar, and operations settings. The making view guides operators through review, cover preparation (template or uploaded image), and final preview before saving the post to the publishing queue. The publishing view handles only status management and Xiaohongshu URL backfill. Frosted surfaces are limited to primary work areas and use readable contrast, light borders, and restrained shadows; there are no decorative gradients or background effects.
 
 No P0, P1, or P2 visual issues remain in the reviewed populated desktop state.
 
@@ -27,6 +27,7 @@ No P0, P1, or P2 visual issues remain in the reviewed populated desktop state.
 2. Brought the cover preview and manual publishing confirmation into the top workspace.
 3. Applied subtle translucent panels, compact borders, and responsive layout rules while retaining the existing workflows.
 4. Split the long dashboard into independent tabs and added the guided daily release flow.
+5. Reframed the main workflow around separate making and publishing tabs, including persisted review notes and operator-provided image upload.
 
 ## Final Result
 
