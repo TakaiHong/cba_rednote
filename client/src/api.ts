@@ -281,6 +281,16 @@ export async function generatePost() {
   return (await response.json()) as MarketingPost;
 }
 
+export async function regeneratePost(id: string, feedback: string) {
+  const response = await fetch(`${apiBase}/posts/${id}/regenerate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ feedback })
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return (await response.json()) as MarketingPost;
+}
+
 export async function generatePostBatch(count = 7, maxModelPosts = 1) {
   const response = await fetch(`${apiBase}/posts/generate-batch`, {
     method: "POST",

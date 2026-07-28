@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { config } from "../config.js";
 import type { MarketingPost } from "../types.js";
 import { copyAgent, reviewAgent, topicAgent } from "./agents.js";
-import { generateWithOpenAiCompatibleModel } from "./modelClient.js";
+import { generateWithOpenAiCompatibleModel, reviseWithOpenAiCompatibleModel } from "./modelClient.js";
 import { checkDuplicatePost } from "./qualityGuard.js";
 
 interface GenerationOptions {
@@ -91,4 +91,33 @@ export async function generateUniqueMarketingPost(
   bestPost.review.approved = false;
   bestPost.review.notes.push("Needs manual review: all generated candidates were similar to previous posts.");
   return bestPost;
+}
+
+export async function regenerateMarketingPost(post: MarketingPost, feedback: string): Promise<MarketingPost> {
+  let generated = copyAgent(post.topic);
+  let generator: MarketingPost["generator"] = "local-template";
+
+  try {
+    const modelPost = await reviseWithOpenAiCompatibleModel(post, feedback);
+    if (modelPost) {
+      generated = modelPost;
+      generator = "openai-compatible";
+    }
+  } catch (error) {
+    console.warn(`[generator] revision model fallback: ${error instanceof Error ? error.message : "unknown error"}`);
+  }
+
+  generated = normalizeGeneratedPost(generated, post.topic);
+  const review = reviewAgent(generated);
+
+  return {
+    ...post,
+    ...generated,
+    status: "draft",
+    review,
+    estimatedCostCny: generator === "openai-compatible" ? config.openAiModelCostCnyPerPostEstimate : 0,
+    generator,
+    revisionNotes: [...(post.revisionNotes ?? []), feedback],
+    updatedAt: new Date().toISOString()
+  };
 }

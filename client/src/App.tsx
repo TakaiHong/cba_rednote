@@ -5,6 +5,7 @@ import {
   exportMarkdownPackage,
   exportPerformanceReport,
   generatePost,
+  regeneratePost,
   generateCoverImage,
   generateHandoffPackage,
   getContentCalendar,
@@ -103,6 +104,7 @@ function App() {
   const [publishPreview, setPublishPreview] = useState<XhsPublishPackage>();
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("guide");
   const [revisionNote, setRevisionNote] = useState("");
+  const [regeneratingCopy, setRegeneratingCopy] = useState(false);
   const [makeStage, setMakeStage] = useState<1 | 2 | 3>(1);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [publishUrlDrafts, setPublishUrlDrafts] = useState<Record<string, string>>({});
@@ -252,6 +254,23 @@ function App() {
     if (updated) {
       setRevisionNote("");
       setPublishHint("审核意见已保存，可据此继续修改文案或封面。");
+    }
+  }
+
+  async function handleRegenerateFromFeedback() {
+    if (!selected || !revisionNote.trim()) return;
+    setRegeneratingCopy(true);
+    setError("");
+    try {
+      const updated = await regeneratePost(selected.id, revisionNote.trim());
+      setPosts((current) => current.map((post) => (post.id === updated.id ? updated : post)));
+      setRevisionNote("");
+      setMakeStage(1);
+      setPublishHint("已按审核意见重新生成文案，请重新审核后再制作封面。");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "按意见重新生成失败");
+    } finally {
+      setRegeneratingCopy(false);
     }
   }
 
@@ -941,16 +960,23 @@ function App() {
           <div>
             <p className="eyebrow">MAKE</p>
             <h2>制作笔记</h2>
-            <p>完成当前笔记的文案、封面和预览后，再保存到发布列表。</p>
+            <p>按顺序完成文案、封面和预览；当前笔记始终在同一页完成。</p>
           </div>
-          <button className="primary-button" onClick={handleGenerate} disabled={loading} type="button">
-            <PenLine aria-hidden="true" size={16} />
-            {loading ? "生成中" : "新建笔记"}
-          </button>
         </header>
 
         {selected && (
           <section className="editor">
+            <div className="make-step-heading">
+              <div className="cover-actions">
+                <span>第 1 步</span>
+                <h3>AI 生成与审核文案</h3>
+                <p>生成标题、正文和标签后，在这里直接修改或提交审核意见。</p>
+              </div>
+              <button className="primary-button" onClick={handleGenerate} disabled={loading} type="button">
+                <PenLine aria-hidden="true" size={16} />
+                {loading ? "生成中" : "AI 生成新文案"}
+              </button>
+            </div>
             <div className="meta-row">
               <span>{statusLabels[selected.status]}</span>
               <span>{selected.topic.targetSegment}</span>
@@ -1016,6 +1042,19 @@ function App() {
               />
             </label>
 
+            <section className="revision-step">
+              <strong>审核意见</strong>
+              <textarea onChange={(event) => setRevisionNote(event.target.value)} placeholder="例如：标题更口语一点；内容增加一个真实的校园场景。" rows={3} value={revisionNote} />
+              <div className="revision-actions">
+                <button disabled={!revisionNote.trim()} onClick={() => void handleSaveRevisionNote()} type="button">只保存意见</button>
+                <button className="regenerate-copy" disabled={!revisionNote.trim() || regeneratingCopy} onClick={() => void handleRegenerateFromFeedback()} type="button">
+                  {regeneratingCopy ? "AI 重写中..." : "按意见 AI 重新生成"}
+                </button>
+              </div>
+              {(selected.revisionNotes?.length ?? 0) > 0 && <small>最近意见：{selected.revisionNotes?.at(-1)}</small>}
+            </section>
+            <button className="advance-step" disabled={makeStage !== 1} onClick={() => setMakeStage(2)} type="button">文案审核通过，进入第 2 步制作封面</button>
+
             <details className="editor-details">
               <summary>发布数据与回填</summary>
               <div className="metrics-editor">
@@ -1066,21 +1105,19 @@ function App() {
         {selected && (
           <section className="make-actions" id="publish-checklist">
             <section className="make-cover-step">
-              <strong>第 2 步：制作封面</strong>
-              <p>{previewImage ? "已绑定封面，可继续查看预览。" : "请选择生成模板封面，或上传自有图片。"}</p>
-              <div>
-                <button onClick={handleGenerateCoverImage} disabled={coverLoading} type="button">{coverLoading ? "生成中..." : "生成模板封面"}</button>
+              <div className="make-step-heading">
+                <div>
+                  <span>第 2 步</span>
+                  <h3>制作封面图片</h3>
+                  <p>{previewImage ? "已绑定封面；可以重新生成，也可以换成自己上传的图片。" : "使用 AI 生成一张模板封面，或上传自己的图片。"}</p>
+                </div>
+              </div>
+              <div className="cover-actions">
+                <button className="ai-cover-button" onClick={handleGenerateCoverImage} disabled={coverLoading} type="button">{coverLoading ? "AI 制图中..." : "AI 生成封面"}</button>
                 <label className="image-upload-control">上传图片<input accept="image/png,image/jpeg,image/webp" disabled={uploadingImage} onChange={(event) => void handleUploadCover(event.target.files?.[0])} type="file" /></label>
               </div>
             </section>
             <button className="advance-step" disabled={!previewImage || makeStage > 2} onClick={() => setMakeStage(3)} type="button">封面完成，进入第 3 步预览</button>
-            <section className="revision-step">
-              <strong>审核意见</strong>
-              <textarea onChange={(event) => setRevisionNote(event.target.value)} placeholder="例如：标题更口语一点；封面换成更轻松的语气。" rows={3} value={revisionNote} />
-              <button disabled={!revisionNote.trim()} onClick={() => void handleSaveRevisionNote()} type="button">保存审核意见</button>
-              {(selected.revisionNotes?.length ?? 0) > 0 && <small>最近：{selected.revisionNotes?.at(-1)}</small>}
-            </section>
-            <button className="advance-step" disabled={makeStage !== 1} onClick={() => setMakeStage(2)} type="button">审核通过，进入第 2 步制作封面</button>
             <details className="side-details">
               <summary>选题信息</summary>
               <dl>
@@ -1092,10 +1129,15 @@ function App() {
                 <dd>{selected.review.notes.join("；")}</dd>
               </dl>
             </details>
-            <details className="side-details" open>
-              <summary>发布预览</summary>
+            <section className="preview-step">
+              <div className="make-step-heading">
+                <div>
+                  <span>第 3 步</span>
+                  <h3>预览并保存</h3>
+                  <p>确认标题、正文、标签和封面无误后，保存到发布列表。</p>
+                </div>
+              </div>
               <div className="preview">
-              <strong>发布预览</strong>
               <div className="xhs-preview-card">
                 {previewImage ? (
                   <img alt="Xiaohongshu cover preview" src={getImageAssetUrl(previewImage)} />
@@ -1111,7 +1153,7 @@ function App() {
                 </div>
               </div>
               </div>
-            </details>
+            </section>
             <details className="side-details">
               <summary>更多发布工具</summary>
               <div className="publish-helper">
@@ -1140,7 +1182,7 @@ function App() {
               {visualBrief && <pre>{visualBrief}</pre>}
               </div>
             </details>
-            <button className="save-to-publish" disabled={!previewImage} onClick={() => void handleSaveToPublish()} type="button">第 3 步：确认并保存到发布列表</button>
+            <button className="save-to-publish" disabled={!previewImage} onClick={() => void handleSaveToPublish()} type="button">确认无误，保存到发布列表</button>
           </section>
         )}
       </section>

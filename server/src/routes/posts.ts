@@ -6,7 +6,7 @@ import { basename, extname, join } from "node:path";
 import { z } from "zod";
 import { generatePostBatch } from "../generation/batch.js";
 import { planContentCalendar } from "../generation/contentCalendar.js";
-import { generateUniqueMarketingPost } from "../generation/generator.js";
+import { generateUniqueMarketingPost, regenerateMarketingPost } from "../generation/generator.js";
 import { exportXhsMarkdownPackage } from "../publishing/exportPackage.js";
 import { readPreflightEvidence } from "../publishing/preflightEvidence.js";
 import { resolvePublishedUrlEvidence } from "../publishing/publishedUrl.js";
@@ -14,8 +14,10 @@ import { createXhsPublishPackage } from "../publishing/xhsPackage.js";
 import { postStore } from "../storage/postStore.js";
 import { runLogStore } from "../storage/runLogStore.js";
 import { generateCoverImage } from "../../../scripts/generate-cover-image.js";
+import type { MarketingPost } from "../types.js";
 
 type CoverImageGenerator = typeof generateCoverImage;
+type PostRegenerator = (post: MarketingPost, feedback: string) => Promise<MarketingPost>;
 type PublishLauncher = (postId: string) => Promise<{ command: string; pid?: number }>;
 type PreflightLauncher = (postId: string) => Promise<{ command: string; pid?: number; reportPath: string }>;
 type FinalPublishLauncher = (
@@ -24,6 +26,7 @@ type FinalPublishLauncher = (
 
 export interface PostsRouterDependencies {
   coverImageGenerator?: CoverImageGenerator;
+  postRegenerator?: PostRegenerator;
   publishLauncher?: PublishLauncher;
   preflightLauncher?: PreflightLauncher;
   finalPublishLauncher?: FinalPublishLauncher;
@@ -59,6 +62,10 @@ const batchGenerateSchema = z.object({
   maxModelPosts: z.number().int().min(0).max(14).default(1)
 });
 
+const regenerateSchema = z.object({
+  feedback: z.string().trim().min(1).max(500)
+});
+
 const imageUploadSchema = z.object({
   filename: z.string().min(1).max(120),
   contentBase64: z.string().min(1).max(8_000_000)
@@ -69,6 +76,7 @@ const supportedImageExtensions = new Set([".png", ".jpg", ".jpeg", ".webp"]);
 export function createPostsRouter(dependencies: PostsRouterDependencies = {}) {
   const router = Router();
   const coverImageGenerator = dependencies.coverImageGenerator ?? generateCoverImage;
+  const postRegenerator = dependencies.postRegenerator ?? regenerateMarketingPost;
   const publishLauncher = dependencies.publishLauncher ?? launchAssistedPublish;
   const preflightLauncher = dependencies.preflightLauncher ?? launchPublishPreflight;
   const finalPublishLauncher = dependencies.finalPublishLauncher ?? launchFinalPublish;
@@ -196,6 +204,32 @@ router.post("/:id/cover-image", async (req, res) => {
     const updated = await postStore.get(post.id);
     res.status(201).json({ ...result, post: updated });
   } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+  }
+});
+
+router.post("/:id/regenerate", async (req, res) => {
+  const post = await postStore.get(req.params.id);
+  if (!post) return res.status(404).json({ error: "Post not found" });
+
+  const input = regenerateSchema.parse(req.body ?? {});
+  try {
+    const regenerated = await postRegenerator(post, input.feedback);
+    const updated = await postStore.update(post.id, regenerated);
+    await runLogStore.append({
+      action: "api-regenerate-post",
+      status: "ok",
+      message: `Regenerated post ${post.id} from review feedback.`,
+      metadata: { postId: post.id, generator: regenerated.generator }
+    });
+    res.status(201).json(updated);
+  } catch (error) {
+    await runLogStore.append({
+      action: "api-regenerate-post",
+      status: "error",
+      message: error instanceof Error ? error.message : String(error),
+      metadata: { postId: post.id }
+    });
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });

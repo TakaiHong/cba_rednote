@@ -1,5 +1,5 @@
 import { config } from "../config.js";
-import type { GeneratedPost, TopicPlan } from "../types.js";
+import type { GeneratedPost, MarketingPost, TopicPlan } from "../types.js";
 
 interface ChatCompletionResponse {
   choices?: Array<{
@@ -70,5 +70,67 @@ export async function generateWithOpenAiCompatibleModel(topic: TopicPlan): Promi
     tags: parsed.tags,
     imageIdeas: Array.isArray(parsed.imageIdeas) ? parsed.imageIdeas : [],
     callToAction: parsed.callToAction ?? "需要短租存放可以私信物品清单，我帮你估空间和价格。"
+  };
+}
+
+export async function reviseWithOpenAiCompatibleModel(
+  post: Pick<MarketingPost, "title" | "body" | "tags" | "imageIdeas" | "callToAction" | "topic">,
+  feedback: string
+): Promise<GeneratedPost | undefined> {
+  if (!canUseModel()) return undefined;
+
+  const response = await fetch(`${config.openAiBaseUrl.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.openAiApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: config.openAiModel,
+      temperature: 0.72,
+      max_tokens: 1200,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "你是 NTU CBA 华商会的小红书内容运营。根据审核意见改写现有笔记，保留原选题事实和同学聊天感。标题必须不超过 20 个字符；不要虚构官方规则、过度营销或夸张承诺。只输出 JSON。"
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            task: "按审核意见改写小红书笔记",
+            feedback,
+            requiredShape: {
+              title: "string",
+              body: "string with paragraphs",
+              tags: ["string"],
+              imageIdeas: ["string"],
+              callToAction: "string"
+            },
+            currentPost: post
+          })
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Model request failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as ChatCompletionResponse;
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) return undefined;
+
+  const parsed = JSON.parse(content) as Partial<GeneratedPost>;
+  if (!parsed.title || !parsed.body || !Array.isArray(parsed.tags)) return undefined;
+
+  return {
+    title: parsed.title,
+    body: parsed.body,
+    tags: parsed.tags,
+    imageIdeas: Array.isArray(parsed.imageIdeas) ? parsed.imageIdeas : [],
+    callToAction: parsed.callToAction ?? post.callToAction
   };
 }

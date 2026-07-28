@@ -30,6 +30,7 @@ No P0, P1, or P2 visual issues remain in the reviewed populated desktop state.
 5. Reframed the main workflow around separate making and publishing tabs, including persisted review notes and operator-provided image upload.
 6. Moved the workflow overview into its own first sidebar tab and corrected the step-card text layout.
 7. Removed the making content pool, top-level generation controls, and publishing-checklist card to focus each tab on its single job.
+8. Made the three making stages explicit in the workspace, with AI generation for copy and cover images plus an in-place, feedback-driven copy regeneration action.
 
 ## Final Result
 

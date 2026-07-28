@@ -36,6 +36,13 @@ before(async () => {
           attached: options.attach
         };
       },
+      postRegenerator: async (post, feedback) => ({
+        ...post,
+        title: "regenerated title",
+        status: "draft",
+        revisionNotes: [...(post.revisionNotes ?? []), feedback],
+        updatedAt: "2026-07-11T05:00:01.000Z"
+      }),
       publishLauncher: async (postId) => {
         return {
           command: `npm.cmd run publish -- --post ${postId}`,
@@ -206,6 +213,30 @@ describe("posts routes", () => {
     assert.match(payload.outputPath, /generated-cover\.png$/);
     assert.deepEqual(payload.post.imageAssets, [payload.outputPath]);
     assert.deepEqual((await postStore.get(post.id))?.imageAssets, [payload.outputPath]);
+  });
+
+  it("regenerates the current post from review feedback", async () => {
+    const post = await postStore.createManual({
+      title: "original title",
+      body: "original body",
+      tags: ["tag"],
+      imageIdeas: ["image"],
+      callToAction: "cta",
+      status: "approved"
+    });
+
+    const response = await fetch(`${baseUrl}/api/posts/${post.id}/regenerate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feedback: "标题更口语一点，增加校园场景" })
+    });
+    const payload = (await response.json()) as { id: string; status: string; revisionNotes: string[]; title: string };
+
+    assert.equal(response.status, 201);
+    assert.equal(payload.id, post.id);
+    assert.equal(payload.status, "draft");
+    assert.deepEqual(payload.revisionNotes, ["标题更口语一点，增加校园场景"]);
+    assert.notEqual(payload.title, "");
   });
 
   it("uploads and attaches an operator-provided cover image", async () => {
