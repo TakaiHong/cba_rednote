@@ -46,8 +46,14 @@ try {
   const status = response?.status() ?? 0;
   const title = await page.title();
   const h1 = await page.locator("h1").first().textContent({ timeout: 10000 });
+  await page.getByTestId("nav-publish").click();
   const primaryPublishLabel = await page.locator(".operator-focus .publish-primary").textContent({ timeout: 10000 });
+  const workflowStepCount = await page.locator(".workflow-guide li").count();
+  await page.getByTestId("nav-operations").click();
   const fillOnlyButtonCount = await page.getByTestId("assisted-publish").count();
+  await page.getByTestId("nav-calendar").click();
+  const calendarItemCount = await page.locator(".calendar-view .calendar-item").count();
+  await page.getByTestId("nav-publish").click();
   await page.waitForFunction(
     () =>
       Array.from(document.querySelectorAll<HTMLImageElement>(".focus-preview img, .xhs-preview-card img")).every(
@@ -74,7 +80,9 @@ try {
     issues.push(`Unexpected primary publish action: ${primaryPublishLabel}`);
   }
   if (fillOnlyButtonCount < 1) issues.push("Missing fill-only publish action.");
-  if (previewImageState.length < 2 || previewImageState.some((image) => !image.complete || image.naturalWidth === 0)) {
+  if (workflowStepCount !== 5) issues.push(`Expected five daily release steps, got ${workflowStepCount}.`);
+  if (calendarItemCount < 1) issues.push("Content calendar is missing after switching tabs.");
+  if (previewImageState.length < 1 || previewImageState.some((image) => !image.complete || image.naturalWidth === 0)) {
     issues.push(`Cover previews are not loaded: ${JSON.stringify(previewImageState)}`);
   }
   if (hasMojibake(`${title}\n${bodyText}`)) issues.push("Page contains mojibake-like characters.");

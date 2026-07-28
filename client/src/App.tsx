@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, ClipboardCheck, FileText, GraduationCap, LayoutDashboard, PenLine } from "lucide-react";
+import { CalendarDays, ClipboardCheck, GraduationCap, LayoutDashboard, PenLine, Settings2 } from "lucide-react";
 import {
   backupRuntimeData,
   exportMarkdownPackage,
@@ -42,6 +42,7 @@ const statusLabels: Record<MarketingPost["status"], string> = {
 
 const statusFilters = ["all", "draft", "approved", "published", "archived"] as const;
 type StatusFilter = (typeof statusFilters)[number];
+type WorkspaceTab = "workspace" | "publish" | "calendar" | "operations";
 
 const metricLabels: Array<[keyof MarketingPost["metrics"], string]> = [
   ["views", "曝光"],
@@ -105,6 +106,7 @@ function App() {
   const [publishPreview, setPublishPreview] = useState<XhsPublishPackage>();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("workspace");
 
   const filteredPosts = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -524,11 +526,11 @@ function App() {
           <PenLine aria-hidden="true" size={17} />
           {loading ? "生成中" : "新建笔记"}
         </button>
-        <nav className="nav-links">
-          <a className="active" href="#today-workspace"><LayoutDashboard aria-hidden="true" size={17} />内容工作台</a>
-          <a href="#content-library"><FileText aria-hidden="true" size={17} />内容库</a>
-          <a href="#content-calendar"><CalendarDays aria-hidden="true" size={17} />内容日历</a>
-          <a href="#publish-checklist"><ClipboardCheck aria-hidden="true" size={17} />发布清单</a>
+        <nav className="nav-links" aria-label="工作区">
+          <button className={activeTab === "workspace" ? "active" : ""} data-testid="nav-workspace" onClick={() => setActiveTab("workspace")} type="button"><LayoutDashboard aria-hidden="true" size={17} />内容工作台</button>
+          <button className={activeTab === "publish" ? "active" : ""} data-testid="nav-publish" onClick={() => setActiveTab("publish")} type="button"><ClipboardCheck aria-hidden="true" size={17} />发布流程</button>
+          <button className={activeTab === "calendar" ? "active" : ""} data-testid="nav-calendar" onClick={() => setActiveTab("calendar")} type="button"><CalendarDays aria-hidden="true" size={17} />内容日历</button>
+          <button className={activeTab === "operations" ? "active" : ""} data-testid="nav-operations" onClick={() => setActiveTab("operations")} type="button"><Settings2 aria-hidden="true" size={17} />运营设置</button>
         </nav>
         <p className="nav-note">每天自动备稿，发布由账号管理员完成。</p>
       </aside>
@@ -551,7 +553,24 @@ function App() {
       {error && <div className="error">{error}</div>}
       {batchHint && <div className="notice">{batchHint}</div>}
 
-      {selected && (
+      {activeTab === "publish" && selected && (
+        <section className="workflow-guide" aria-labelledby="workflow-heading">
+          <div>
+            <p className="eyebrow">TODAY'S RELEASE</p>
+            <h2 id="workflow-heading">每天按这 5 步完成一篇</h2>
+            <p>系统只负责备稿和整理，最后一步始终由账号管理员在小红书人工发布。</p>
+          </div>
+          <ol>
+            <li><span>1</span><strong>选草稿<small>在内容工作台确认标题、正文和标签</small></strong></li>
+            <li><span>2</span><strong>生成封面<small>使用平台生成的便利贴信息封面</small></strong></li>
+            <li><span>3</span><strong>复制图文<small>把标题和正文复制到小红书创作中心</small></strong></li>
+            <li><span>4</span><strong>人工发布<small>由已登录账号确认最终发布</small></strong></li>
+            <li><span>5</span><strong>回填链接<small>粘贴笔记链接，之后补录数据</small></strong></li>
+          </ol>
+        </section>
+      )}
+
+      {activeTab === "publish" && selected && (
         <section className="operator-focus" id="today-workspace">
           <div className="focus-summary">
             <span>今日发布工作台</span>
@@ -595,7 +614,8 @@ function App() {
         </section>
       )}
 
-      <details className="operations-drawer">
+      {activeTab === "operations" && (
+      <details className="operations-drawer" open>
         <summary>
           <span>运营数据与设置</span>
           <small>排期、数据、自动化和交接工具</small>
@@ -810,31 +830,6 @@ function App() {
         </div>
       </section>
 
-      <section className="calendar-panel" id="content-calendar">
-        <div className="calendar-header">
-          <div>
-            <span>内容排期</span>
-            <strong>未来 7 天选题方向</strong>
-          </div>
-          <code>npm.cmd run calendar -- --days 7</code>
-        </div>
-        <div className="calendar-grid">
-          {calendar.map((item) => (
-            <article className="calendar-item" key={`${item.date}-${item.slot}`}>
-              <div className="calendar-date">
-                <strong>{item.date.slice(5)}</strong>
-                <span>Day {item.slot}</span>
-              </div>
-              <p>{item.topic.hook}</p>
-              <small>
-                {item.topic.style} / {item.topic.targetSegment}
-              </small>
-              <em>{item.objective}</em>
-            </article>
-          ))}
-        </div>
-      </section>
-
       <section className="run-log-panel">
         <div className="panel-title">最近运行</div>
         {recentRuns.length === 0 && <p className="empty">暂无运行记录。</p>}
@@ -850,7 +845,36 @@ function App() {
       </section>
         </div>
       </details>
+      )}
 
+      {activeTab === "calendar" && (
+        <section className="calendar-panel calendar-view" id="content-calendar">
+          <div className="calendar-header">
+            <div>
+              <span>内容排期</span>
+              <strong>未来 7 天选题方向</strong>
+            </div>
+            <code>npm.cmd run calendar -- --days 7</code>
+          </div>
+          <div className="calendar-grid">
+            {calendar.map((item) => (
+              <article className="calendar-item" key={`${item.date}-${item.slot}`}>
+                <div className="calendar-date">
+                  <strong>{item.date.slice(5)}</strong>
+                  <span>Day {item.slot}</span>
+                </div>
+                <p>{item.topic.hook}</p>
+                <small>
+                  {item.topic.style} / {item.topic.targetSegment}
+                </small>
+                <em>{item.objective}</em>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {activeTab === "workspace" && (
       <section className="workspace" id="content-library">
         <aside className="post-list">
           <div className="panel-title">内容池</div>
@@ -1069,6 +1093,7 @@ function App() {
           </aside>
         )}
       </section>
+      )}
       </div>
     </main>
   );
