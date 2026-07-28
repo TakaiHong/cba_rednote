@@ -47,7 +47,7 @@ try {
   const title = await page.title();
   const h1 = await page.locator("h1").first().textContent({ timeout: 10000 });
   const primaryPublishLabel = await page.locator(".operator-focus .publish-primary").textContent({ timeout: 10000 });
-  const fillOnlyButtonCount = await page.getByRole("button", { name: "辅助填充（可选）" }).count();
+  const fillOnlyButtonCount = await page.getByTestId("assisted-publish").count();
   await page.waitForFunction(
     () =>
       Array.from(document.querySelectorAll<HTMLImageElement>(".focus-preview img, .xhs-preview-card img")).every(

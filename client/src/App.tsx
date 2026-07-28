@@ -575,9 +575,6 @@ function App() {
                       : primaryPublishLabel}
               </button>
               <button onClick={handleCopyPublishText}>复制发布文案</button>
-              <button onClick={handleStartAssistedPublish} disabled={publishLoading}>
-                {publishLoading ? "打开中..." : "辅助填充（可选）"}
-              </button>
             </div>
           </div>
           <div className="focus-preview">
@@ -598,6 +595,18 @@ function App() {
         </section>
       )}
 
+      <details className="operations-drawer">
+        <summary>
+          <span>运营数据与设置</span>
+          <small>排期、数据、自动化和交接工具</small>
+        </summary>
+        <div className="operations-content">
+          <div className="operations-utilities">
+            <span>账号辅助</span>
+            <button data-testid="assisted-publish" onClick={handleStartAssistedPublish} disabled={publishLoading}>
+              {publishLoading ? "打开中..." : "辅助填充（可选）"}
+            </button>
+          </div>
       <section className="scoreboard" id="performance-summary">
         <div>
           <span>总曝光</span>
@@ -839,6 +848,8 @@ function App() {
           </div>
         ))}
       </section>
+        </div>
+      </details>
 
       <section className="workspace" id="content-library">
         <aside className="post-list">
@@ -945,7 +956,9 @@ function App() {
               />
             </label>
 
-            <div className="metrics-editor">
+            <details className="editor-details">
+              <summary>发布数据与回填</summary>
+              <div className="metrics-editor">
               <div className="panel-title">发布效果</div>
               <div className="metric-grid">
                 {metricLabels.map(([name, label]) => (
@@ -986,22 +999,28 @@ function App() {
               <button onClick={handleMarkPublished}>标记已发布</button>
               <button onClick={() => handlePatch({ status: "archived" })}>归档</button>
             </div>
+            </details>
           </section>
         )}
 
         {selected && (
           <aside className="insights" id="publish-checklist">
-            <div className="panel-title">选题逻辑</div>
-            <p>{selected.topic.scene}</p>
-            <dl>
-              <dt>角度</dt>
-              <dd>{selected.topic.angle}</dd>
-              <dt>本地信号</dt>
-              <dd>{selected.topic.localSignals.join(" / ")}</dd>
-              <dt>审核备注</dt>
-              <dd>{selected.review.notes.join("；")}</dd>
-            </dl>
-            <div className="preview">
+            <div className="panel-title">发布清单</div>
+            <p className="insights-lead">{selected.topic.scene}</p>
+            <details className="side-details">
+              <summary>选题信息</summary>
+              <dl>
+                <dt>角度</dt>
+                <dd>{selected.topic.angle}</dd>
+                <dt>本地信号</dt>
+                <dd>{selected.topic.localSignals.join(" / ")}</dd>
+                <dt>审核备注</dt>
+                <dd>{selected.review.notes.join("；")}</dd>
+              </dl>
+            </details>
+            <details className="side-details">
+              <summary>发布预览</summary>
+              <div className="preview">
               <strong>发布预览</strong>
               <div className="xhs-preview-card">
                 {previewImage ? (
@@ -1017,8 +1036,11 @@ function App() {
                   </p>
                 </div>
               </div>
-            </div>
-            <div className="publish-helper">
+              </div>
+            </details>
+            <details className="side-details">
+              <summary>更多发布工具</summary>
+              <div className="publish-helper">
               <strong>发布助手</strong>
               <button onClick={handleCopyPublishText}>复制发布文本</button>
               <button onClick={handleCopyVisualBrief}>复制图片 brief</button>
@@ -1042,7 +1064,8 @@ function App() {
               )}
               {publishHint && <p>{publishHint}</p>}
               {visualBrief && <pre>{visualBrief}</pre>}
-            </div>
+              </div>
+            </details>
           </aside>
         )}
       </section>
