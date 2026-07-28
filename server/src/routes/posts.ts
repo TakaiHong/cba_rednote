@@ -16,6 +16,9 @@ import { runLogStore } from "../storage/runLogStore.js";
 import { generateCoverImage } from "../../../scripts/generate-cover-image.js";
 import type { MarketingPost } from "../types.js";
 import { officialSources } from "../generation/officialSources.js";
+import { config } from "../config.js";
+import { saveImageAsset, saveLocalImageAsset } from "../storage/assetStore.js";
+import { usesCloudStorage } from "../storage/firebaseAdmin.js";
 
 type CoverImageGenerator = typeof generateCoverImage;
 type PostRegenerator = (post: MarketingPost, feedback: string) => Promise<MarketingPost>;
@@ -246,10 +249,13 @@ router.post("/:id/cover-image", async (req, res) => {
     const result = await coverImageGenerator({
       post: post.id,
       outDir: req.body?.outDir ?? ".tmp/generated-covers",
-      attach: true
+      attach: !usesCloudStorage()
     });
-    const updated = await postStore.get(post.id);
-    res.status(201).json({ ...result, post: updated });
+    const outputPath = await saveLocalImageAsset(post.id, result.outputPath);
+    const updated = usesCloudStorage()
+      ? await postStore.update(post.id, { imageAssets: [...new Set([...(post.imageAssets ?? []), outputPath])] })
+      : await postStore.get(post.id);
+    res.status(201).json({ ...result, outputPath, attached: true, post: updated });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
@@ -297,10 +303,7 @@ router.post("/:id/image-upload", async (req, res) => {
     return res.status(400).json({ error: "Image must be between 1 byte and 5 MB." });
   }
 
-  const outputDir = join(".tmp", "uploaded-images", post.id);
-  const outputPath = join(outputDir, `${Date.now()}-${filename}`);
-  await mkdir(outputDir, { recursive: true });
-  await writeFile(outputPath, imageBuffer);
+  const outputPath = await saveImageAsset(post.id, filename, imageBuffer);
   const updated = await postStore.update(post.id, { imageAssets: [...(post.imageAssets ?? []), outputPath] });
   await runLogStore.append({
     action: "api-upload-image",
@@ -312,6 +315,9 @@ router.post("/:id/image-upload", async (req, res) => {
 });
 
 router.post("/:id/assisted-publish", async (req, res) => {
+  if (config.cloudRuntime) {
+    return res.status(410).json({ error: "Cloud deployment does not run Xiaohongshu browser automation. Publish manually and paste the URL back here." });
+  }
   const post = await postStore.get(req.params.id);
   if (!post) return res.status(404).json({ error: "Post not found" });
 
@@ -340,6 +346,9 @@ router.post("/:id/assisted-publish", async (req, res) => {
 });
 
 router.post("/:id/preflight", async (req, res) => {
+  if (config.cloudRuntime) {
+    return res.status(410).json({ error: "Cloud deployment does not run Xiaohongshu browser preflight. Run it locally in the logged-in creator session." });
+  }
   const post = await postStore.get(req.params.id);
   if (!post) return res.status(404).json({ error: "Post not found" });
 

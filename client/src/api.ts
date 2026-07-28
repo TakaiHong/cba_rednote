@@ -280,7 +280,9 @@ export interface PublishPreflightLaunchResult {
   reportPath: string;
 }
 
-const apiBase = "http://127.0.0.1:8787/api";
+const apiBase = window.location.hostname === "127.0.0.1" && window.location.port === "5173"
+  ? "http://127.0.0.1:8787/api"
+  : "/api";
 
 export async function listPosts() {
   const response = await fetch(`${apiBase}/posts`);

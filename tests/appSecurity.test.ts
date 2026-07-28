@@ -25,6 +25,9 @@ describe("public dashboard protection", () => {
     const health = await fetch(`${baseUrl}/api/health`);
     assert.equal(health.status, 200);
 
+    const scheduler = await fetch(`${baseUrl}/api/jobs/daily-generate`, { method: "POST" });
+    assert.equal(scheduler.status, 401);
+
     const denied = await fetch(`${baseUrl}/api/status`);
     assert.equal(denied.status, 401);
     assert.match(denied.headers.get("www-authenticate") ?? "", /Basic/);

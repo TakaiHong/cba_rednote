@@ -10,5 +10,9 @@ if (config.isProduction && !config.dashboardPassword) {
 
 app.listen(config.port, config.host, () => {
   console.log(`[server] listening on http://${config.host}:${config.port}`);
-  startScheduler();
+  if (config.cloudRuntime) {
+    console.log("[scheduler] Cloud Scheduler endpoint enabled; in-process cron is disabled.");
+  } else {
+    startScheduler();
+  }
 });

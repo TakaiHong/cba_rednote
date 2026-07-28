@@ -2,10 +2,12 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import type { CreatePostInput, MarketingPost, TopicPlan, UpdatePostInput } from "../types.js";
+import { firestoreDb } from "./firebaseAdmin.js";
 
 // The mini-storage workspace remains in data/posts.json. Keep CBA content isolated.
 const dataDir = process.env.DATA_DIR ? join(process.cwd(), process.env.DATA_DIR) : join(process.cwd(), "data", "ntu-cba");
 const dataFile = join(dataDir, "posts.json");
+const firestoreCollection = "ntu-cba-posts";
 
 async function ensureDataFile() {
   await mkdir(dirname(dataFile), { recursive: true });
@@ -33,6 +35,26 @@ async function readPosts(): Promise<MarketingPost[]> {
 async function writePosts(posts: MarketingPost[]) {
   await ensureDataFile();
   await writeFile(dataFile, `${JSON.stringify(posts, null, 2)}\n`, "utf8");
+}
+
+async function readFirestorePosts() {
+  const db = firestoreDb();
+  if (!db) return undefined;
+  const snapshot = await db.collection(firestoreCollection).get();
+  return snapshot.docs.map((document) => withDefaults(document.data() as MarketingPost));
+}
+
+async function updateFirestorePost(id: string, updater: (existing: MarketingPost) => MarketingPost) {
+  const db = firestoreDb();
+  if (!db) return undefined;
+  const reference = db.collection(firestoreCollection).doc(id);
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(reference);
+    if (!snapshot.exists) return undefined;
+    const updated = updater(withDefaults(snapshot.data() as MarketingPost));
+    transaction.set(reference, updated);
+    return updated;
+  });
 }
 
 const manualTopic: TopicPlan = {
@@ -66,13 +88,17 @@ function withDefaults(post: MarketingPost): MarketingPost {
 
 export const postStore = {
   async list() {
-    const posts = await readPosts();
+    const posts = (await readFirestorePosts()) ?? (await readPosts());
     return posts.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
 
   async get(id: string) {
-    const posts = await readPosts();
-    return posts.find((post) => post.id === id);
+    const db = firestoreDb();
+    if (db) {
+      const snapshot = await db.collection(firestoreCollection).doc(id).get();
+      return snapshot.exists ? withDefaults(snapshot.data() as MarketingPost) : undefined;
+    }
+    return (await readPosts()).find((post) => post.id === id);
   },
 
   async latestDraft() {
@@ -81,6 +107,11 @@ export const postStore = {
   },
 
   async createGenerated(post: MarketingPost) {
+    const db = firestoreDb();
+    if (db) {
+      await db.collection(firestoreCollection).doc(post.id).set(post);
+      return post;
+    }
     const posts = await readPosts();
     posts.push(post);
     await writePosts(posts);
@@ -109,13 +140,31 @@ export const postStore = {
       createdAt: now,
       updatedAt: now
     };
-    const posts = await readPosts();
-    posts.push(post);
-    await writePosts(posts);
+    const db = firestoreDb();
+    if (db) {
+      await db.collection(firestoreCollection).doc(post.id).set(post);
+    } else {
+      const posts = await readPosts();
+      posts.push(post);
+      await writePosts(posts);
+    }
     return post;
   },
 
   async update(id: string, input: UpdatePostInput) {
+    const firestorePost = await updateFirestorePost(id, (existing) => {
+      const status = input.status ?? existing.status;
+      return {
+        ...existing,
+        ...input,
+        metrics: input.metrics ? { ...emptyMetrics, ...existing.metrics, ...input.metrics } : existing.metrics,
+        status,
+        publishedAt: status === "published" ? existing.publishedAt ?? new Date().toISOString() : existing.publishedAt,
+        updatedAt: new Date().toISOString()
+      };
+    });
+    if (firestorePost !== undefined || firestoreDb()) return firestorePost;
+
     const posts = await readPosts();
     const index = posts.findIndex((post) => post.id === id);
     if (index === -1) return undefined;

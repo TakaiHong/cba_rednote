@@ -3,8 +3,7 @@ import express from "express";
 import { execFile } from "node:child_process";
 import { timingSafeEqual } from "node:crypto";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
-import { join, relative, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { exportPerformanceReport, type PerformanceReportExportResult } from "./analytics/exportPerformanceReport.js";
 import { backupRuntimeData, type BackupResult } from "./backup.js";
@@ -13,6 +12,8 @@ import postsRouter, { createPostsRouter, type PostsRouterDependencies } from "./
 import { getDailyTaskStatus, type DailyTaskStatus } from "./scheduleStatus.js";
 import { getSystemStatus } from "./status.js";
 import { config } from "./config.js";
+import { readImageAsset } from "./storage/assetStore.js";
+import { runScheduledGeneration } from "./scheduler.js";
 import { generateHandoffPackage } from "../../scripts/handoff-package.js";
 import { runGoLiveCheck } from "../../scripts/go-live-check.js";
 
@@ -60,6 +61,20 @@ export function createApp(dependencies: AppDependencies = {}) {
     res.json({ ok: true, service: "ntu-cba-xhs-platform" });
   });
 
+  app.post("/api/jobs/daily-generate", async (req, res) => {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "") ?? "";
+    if (!config.cloudSchedulerToken || token !== config.cloudSchedulerToken) {
+      return res.status(401).json({ error: "Unauthorized scheduler request" });
+    }
+
+    try {
+      const post = await runScheduledGeneration();
+      return res.status(201).json({ postId: post.id, status: "generated" });
+    } catch (error) {
+      return res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
   app.use(createDashboardAuthMiddleware(dashboardAuth));
 
   app.get("/api/status", async (_req, res) => {
@@ -77,19 +92,12 @@ export function createApp(dependencies: AppDependencies = {}) {
   app.get("/api/assets/image", async (req, res) => {
     const rawPath = typeof req.query.path === "string" ? req.query.path : "";
     if (!rawPath.trim()) return res.status(400).json({ error: "path is required" });
-
-    const projectRoot = resolve(process.cwd());
-    const resolvedPath = resolve(projectRoot, rawPath);
-    const relativePath = relative(projectRoot, resolvedPath);
-    if (relativePath.startsWith("..") || relativePath === "" || resolve(relativePath) === relativePath || !existsSync(resolvedPath)) {
-      return res.status(404).json({ error: "Image not found" });
+    try {
+      const asset = await readImageAsset(rawPath);
+      res.type(asset.contentType).send(asset.bytes);
+    } catch {
+      res.status(404).json({ error: "Image not found" });
     }
-
-    const lowerPath = resolvedPath.toLowerCase();
-    if (lowerPath.endsWith(".png")) res.type("image/png");
-    if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg")) res.type("image/jpeg");
-    if (lowerPath.endsWith(".webp")) res.type("image/webp");
-    res.send(await readFile(resolvedPath));
   });
 
   app.get("/api/schedule/status", async (_req, res) => {

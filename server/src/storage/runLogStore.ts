@@ -2,9 +2,11 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import type { RunLogEntry } from "../types.js";
+import { firestoreDb } from "./firebaseAdmin.js";
 
 const dataDir = process.env.DATA_DIR ? join(process.cwd(), process.env.DATA_DIR) : join(process.cwd(), "data");
 const dataFile = join(dataDir, "run-log.json");
+const firestoreCollection = "ntu-cba-run-logs";
 
 async function ensureDataFile() {
   await mkdir(dirname(dataFile), { recursive: true });
@@ -36,6 +38,14 @@ async function writeEntries(entries: RunLogEntry[]) {
 
 export const runLogStore = {
   async list(limit = 20) {
+    const db = firestoreDb();
+    if (db) {
+      const snapshot = await db.collection(firestoreCollection).get();
+      return snapshot.docs
+        .map((document) => document.data() as RunLogEntry)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, limit);
+    }
     const entries = await readEntries();
     return entries.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
   },
@@ -46,9 +56,14 @@ export const runLogStore = {
       createdAt: new Date().toISOString(),
       ...input
     };
-    const entries = await readEntries();
-    entries.push(entry);
-    await writeEntries(entries.slice(-500));
+    const db = firestoreDb();
+    if (db) {
+      await db.collection(firestoreCollection).doc(entry.id).set(entry);
+    } else {
+      const entries = await readEntries();
+      entries.push(entry);
+      await writeEntries(entries.slice(-500));
+    }
     return entry;
   }
 };
