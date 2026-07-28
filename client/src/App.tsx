@@ -965,9 +965,9 @@ function App() {
         </header>
 
         {selected && (
-          <section className="editor">
+          <section className="editor make-step-card">
             <div className="make-step-heading">
-              <div className="cover-actions">
+              <div>
                 <span>第 1 步</span>
                 <h3>AI 生成与审核文案</h3>
                 <p>生成标题、正文和标签后，在这里直接修改或提交审核意见。</p>
@@ -1104,7 +1104,7 @@ function App() {
 
         {selected && (
           <section className="make-actions" id="publish-checklist">
-            <section className="make-cover-step">
+            <section className="make-cover-step make-step-card">
               <div className="make-step-heading">
                 <div>
                   <span>第 2 步</span>
@@ -1116,7 +1116,6 @@ function App() {
                 <button className="ai-cover-button" onClick={handleGenerateCoverImage} disabled={coverLoading} type="button">{coverLoading ? "AI 制图中..." : "AI 生成封面"}</button>
                 <label className="image-upload-control">上传图片<input accept="image/png,image/jpeg,image/webp" disabled={uploadingImage} onChange={(event) => void handleUploadCover(event.target.files?.[0])} type="file" /></label>
               </div>
-            </section>
             <button className="advance-step" disabled={!previewImage || makeStage > 2} onClick={() => setMakeStage(3)} type="button">封面完成，进入第 3 步预览</button>
             <details className="side-details">
               <summary>选题信息</summary>
@@ -1129,7 +1128,8 @@ function App() {
                 <dd>{selected.review.notes.join("；")}</dd>
               </dl>
             </details>
-            <section className="preview-step">
+            </section>
+            <section className="preview-step make-step-card">
               <div className="make-step-heading">
                 <div>
                   <span>第 3 步</span>
@@ -1153,7 +1153,6 @@ function App() {
                 </div>
               </div>
               </div>
-            </section>
             <details className="side-details">
               <summary>更多发布工具</summary>
               <div className="publish-helper">
@@ -1183,6 +1182,7 @@ function App() {
               </div>
             </details>
             <button className="save-to-publish" disabled={!previewImage} onClick={() => void handleSaveToPublish()} type="button">确认无误，保存到发布列表</button>
+            </section>
           </section>
         )}
       </section>
