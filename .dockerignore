@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.env
+.env.*
+.tmp
+backups
+exports
+data
+playwright
+test-results
+coverage
+npm-debug.log*

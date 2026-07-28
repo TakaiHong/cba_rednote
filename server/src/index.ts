@@ -4,7 +4,11 @@ import { startScheduler } from "./scheduler.js";
 
 const app = createApp();
 
-app.listen(config.port, () => {
-  console.log(`[server] listening on http://127.0.0.1:${config.port}`);
+if (config.isProduction && !config.dashboardPassword) {
+  throw new Error("DASHBOARD_PASSWORD must be configured before running in production.");
+}
+
+app.listen(config.port, config.host, () => {
+  console.log(`[server] listening on http://${config.host}:${config.port}`);
   startScheduler();
 });

@@ -4,7 +4,7 @@ import { generateMarketingPost } from "../server/src/generation/generator.js";
 
 describe("generateMarketingPost", () => {
   it("creates a budget-safe approved draft with XHS fields", async () => {
-    const post = await generateMarketingPost(3);
+    const post = await generateMarketingPost(3, { useModel: false });
 
     assert.ok(post.id);
     assert.ok(post.title.length > 0);

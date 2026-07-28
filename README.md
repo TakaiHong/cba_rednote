@@ -113,3 +113,4 @@ npm.cmd run build
 - [运营手册](docs/operations-runbook.md)
 - [小红书发布说明](docs/xiaohongshu-publishing.md)
 - [验收清单](docs/acceptance-checklist.md)
+- [公开部署](docs/public-deployment.md)

@@ -5,6 +5,10 @@ const modelSettings = resolveModelSettings(process.env);
 
 export const config = {
   port: Number(process.env.PORT ?? 8787),
+  host: process.env.HOST ?? "0.0.0.0",
+  isProduction: process.env.NODE_ENV === "production",
+  dashboardUsername: process.env.DASHBOARD_USERNAME ?? "operator",
+  dashboardPassword: process.env.DASHBOARD_PASSWORD ?? "",
   dailyCron: process.env.DAILY_CRON ?? "15 9 * * *",
   modelProvider: modelSettings.provider,
   openAiApiKey: modelSettings.apiKey,

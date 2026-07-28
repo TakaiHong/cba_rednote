@@ -1,9 +1,10 @@
 import cors from "cors";
 import express from "express";
 import { execFile } from "node:child_process";
+import { timingSafeEqual } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { relative, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import { exportPerformanceReport, type PerformanceReportExportResult } from "./analytics/exportPerformanceReport.js";
 import { backupRuntimeData, type BackupResult } from "./backup.js";
@@ -11,6 +12,7 @@ import { readPreflightEvidence } from "./publishing/preflightEvidence.js";
 import postsRouter, { createPostsRouter, type PostsRouterDependencies } from "./routes/posts.js";
 import { getDailyTaskStatus, type DailyTaskStatus } from "./scheduleStatus.js";
 import { getSystemStatus } from "./status.js";
+import { config } from "./config.js";
 import { generateHandoffPackage } from "../../scripts/handoff-package.js";
 import { runGoLiveCheck } from "../../scripts/go-live-check.js";
 
@@ -34,12 +36,22 @@ export interface AppDependencies {
   handoffPackageGenerator?: typeof generateHandoffPackage;
   backupRunner?: typeof backupRuntimeData;
   performanceReportExporter?: typeof exportPerformanceReport;
+  dashboardAuth?: DashboardAuth;
+}
+
+export interface DashboardAuth {
+  username: string;
+  password: string;
 }
 
 export function createApp(dependencies: AppDependencies = {}) {
   const app = express();
   const scheduleStatusReader = dependencies.scheduleStatusReader ?? getDailyTaskStatus;
   const scheduleInstaller = dependencies.scheduleInstaller ?? ((mode) => runDailyTaskInstaller(mode, scheduleStatusReader));
+  const dashboardAuth = dependencies.dashboardAuth ?? {
+    username: config.dashboardUsername,
+    password: config.dashboardPassword
+  };
 
   app.use(cors());
   app.use(express.json({ limit: "8mb" }));
@@ -47,6 +59,8 @@ export function createApp(dependencies: AppDependencies = {}) {
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, service: "ntu-cba-xhs-platform" });
   });
+
+  app.use(createDashboardAuthMiddleware(dashboardAuth));
 
   app.get("/api/status", async (_req, res) => {
     res.json(await getSystemStatus());
@@ -132,7 +146,37 @@ export function createApp(dependencies: AppDependencies = {}) {
 
   app.use("/api/posts", dependencies.posts ? createPostsRouter(dependencies.posts) : postsRouter);
 
+  const staticDir = resolve(process.cwd(), "dist");
+  const indexFile = join(staticDir, "index.html");
+  if (existsSync(indexFile)) {
+    app.use(express.static(staticDir));
+    app.get("/{*path}", (req, res, next) => {
+      if (req.path.startsWith("/api/")) return next();
+      res.sendFile(indexFile);
+    });
+  }
+
   return app;
+}
+
+function createDashboardAuthMiddleware(auth: DashboardAuth) {
+  if (!auth.password) {
+    return (_req: express.Request, _res: express.Response, next: express.NextFunction) => next();
+  }
+
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const header = req.headers.authorization;
+    const encoded = header?.startsWith("Basic ") ? header.slice(6) : "";
+    const expected = Buffer.from(`${auth.username}:${auth.password}`, "utf8");
+    const actual = Buffer.from(encoded, "base64");
+
+    if (actual.length === expected.length && timingSafeEqual(actual, expected)) {
+      return next();
+    }
+
+    res.setHeader("WWW-Authenticate", 'Basic realm="NTU CBA Content Desk", charset="UTF-8"');
+    return res.status(401).json({ error: "Authentication required" });
+  };
 }
 
 async function runDailyTaskInstaller(
