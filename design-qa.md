@@ -17,7 +17,7 @@ The implemented direction combines the selected references:
 
 ## Review
 
-The sidebar separates the experience into five independent tabs: a top-level flow guide, making, publishing, content calendar, and operations settings. The making view guides operators through review, cover preparation (template or uploaded image), and final preview before saving the post to the publishing queue. The publishing view handles only status management and Xiaohongshu URL backfill. Frosted surfaces are limited to primary work areas and use readable contrast, light borders, and restrained shadows; there are no decorative gradients or background effects.
+The sidebar separates the experience into five independent tabs: a top-level flow guide, making, publishing, content calendar, and operations settings. The making view keeps attention on one current note, with the new-note action located in that workspace; it no longer includes a content pool or draft-switching list. Cover preparation, review notes, and final preview follow directly below the editor. The publishing view handles only status management and Xiaohongshu URL backfill, using lightweight rows rather than a surrounding panel. Frosted surfaces are limited to primary work areas and use readable contrast, light borders, and restrained shadows; there are no decorative gradients or background effects.
 
 No P0, P1, or P2 visual issues remain in the reviewed populated desktop state.
 
@@ -29,6 +29,7 @@ No P0, P1, or P2 visual issues remain in the reviewed populated desktop state.
 4. Split the long dashboard into independent tabs and added the guided daily release flow.
 5. Reframed the main workflow around separate making and publishing tabs, including persisted review notes and operator-provided image upload.
 6. Moved the workflow overview into its own first sidebar tab and corrected the step-card text layout.
+7. Removed the making content pool, top-level generation controls, and publishing-checklist card to focus each tab on its single job.
 
 ## Final Result
 

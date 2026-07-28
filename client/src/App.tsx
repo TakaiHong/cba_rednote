@@ -5,7 +5,6 @@ import {
   exportMarkdownPackage,
   exportPerformanceReport,
   generatePost,
-  generatePostBatch,
   generateCoverImage,
   generateHandoffPackage,
   getContentCalendar,
@@ -41,8 +40,6 @@ const statusLabels: Record<MarketingPost["status"], string> = {
   archived: "归档"
 };
 
-const statusFilters = ["all", "draft", "approved", "published", "archived"] as const;
-type StatusFilter = (typeof statusFilters)[number];
 type WorkspaceTab = "guide" | "make" | "publish" | "calendar" | "operations";
 
 const metricLabels: Array<[keyof MarketingPost["metrics"], string]> = [
@@ -82,7 +79,6 @@ function App() {
   const [selectedId, setSelectedId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [batchHint, setBatchHint] = useState("");
   const [publishHint, setPublishHint] = useState("");
   const [visualBrief, setVisualBrief] = useState("");
   const [coverLoading, setCoverLoading] = useState(false);
@@ -105,25 +101,11 @@ function App() {
   const [recentRuns, setRecentRuns] = useState<SystemStatus["recentRuns"]>([]);
   const [calendar, setCalendar] = useState<CalendarItem[]>([]);
   const [publishPreview, setPublishPreview] = useState<XhsPublishPackage>();
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("guide");
   const [revisionNote, setRevisionNote] = useState("");
   const [makeStage, setMakeStage] = useState<1 | 2 | 3>(1);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [publishUrlDrafts, setPublishUrlDrafts] = useState<Record<string, string>>({});
-
-  const filteredPosts = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-    return posts.filter((post) => {
-      const matchesStatus = statusFilter === "all" || post.status === statusFilter;
-      const searchable = [post.title, post.body, post.topic.scene, post.topic.angle, post.tags.join(" ")]
-        .join(" ")
-        .toLowerCase();
-      const matchesSearch = !normalizedQuery || searchable.includes(normalizedQuery);
-      return matchesStatus && matchesSearch;
-    });
-  }, [posts, searchQuery, statusFilter]);
 
   const selected = useMemo(
     () => posts.find((post) => post.id === selectedId) ?? posts[0],
@@ -226,26 +208,6 @@ function App() {
       setMakeStage(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "生成失败");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleGenerateBatch() {
-    setLoading(true);
-    setError("");
-    setBatchHint("");
-    try {
-      const result = await generatePostBatch(7, 1);
-      await refresh();
-      if (result.posts[0]) setSelectedId(result.posts[0].id);
-      setActiveTab("make");
-      setMakeStage(1);
-      setBatchHint(
-        `已生成 ${result.posts.length} 条草稿，最高模型成本约 ${result.plan.estimatedMaxCostCny.toFixed(2)} 元。`
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "批量生成失败");
     } finally {
       setLoading(false);
     }
@@ -552,13 +514,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (filteredPosts.length === 0) return;
-    if (!filteredPosts.some((post) => post.id === selectedId)) {
-      setSelectedId(filteredPosts[0].id);
-    }
-  }, [filteredPosts, selectedId]);
-
-  useEffect(() => {
     if (!selected?.id) {
       setPublishPreview(undefined);
       return;
@@ -588,10 +543,6 @@ function App() {
             <span>华商会运营</span>
           </div>
         </div>
-        <button className="nav-create" onClick={handleGenerate} disabled={loading}>
-          <PenLine aria-hidden="true" size={17} />
-          {loading ? "生成中" : "新建笔记"}
-        </button>
         <nav className="nav-links" aria-label="工作区">
           <button className={activeTab === "guide" ? "active" : ""} data-testid="nav-guide" onClick={() => setActiveTab("guide")} type="button"><ClipboardCheck aria-hidden="true" size={17} />流程</button>
           <button className={activeTab === "make" ? "active" : ""} data-testid="nav-make" onClick={() => setActiveTab("make")} type="button"><LayoutDashboard aria-hidden="true" size={17} />制作</button>
@@ -607,18 +558,9 @@ function App() {
           <p className="eyebrow">NTU CBA CHINESE BUSINESS ASSOCIATION</p>
           <h1>小红书运营台</h1>
         </div>
-        <div className="topbar-actions">
-          <button className="primary-button" onClick={handleGenerate} disabled={loading}>
-            {loading ? "生成中..." : "生成今日文案"}
-          </button>
-          <button className="secondary-button" onClick={handleGenerateBatch} disabled={loading}>
-            批量准备 7 条
-          </button>
-        </div>
       </section>
 
       {error && <div className="error">{error}</div>}
-      {batchHint && <div className="notice">{batchHint}</div>}
 
       {selected && false && activeTab === "publish" && (
         <section className="workflow-guide" aria-labelledby="workflow-heading">
@@ -995,42 +937,17 @@ function App() {
 
       {activeTab === "make" && selected && (
       <section className="workspace" id="content-library">
-        <aside className="post-list">
-          <div className="panel-title">内容池</div>
-          <div className="list-tools">
-            <input
-              aria-label="搜索内容"
-              placeholder="搜索标题、正文、标签"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-            <div className="status-filters" aria-label="内容状态筛选">
-              {statusFilters.map((status) => (
-                <button
-                  className={statusFilter === status ? "active" : ""}
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                >
-                  {status === "all" ? "全部" : statusLabels[status]}
-                </button>
-              ))}
-            </div>
+        <header className="make-toolbar">
+          <div>
+            <p className="eyebrow">MAKE</p>
+            <h2>制作笔记</h2>
+            <p>完成当前笔记的文案、封面和预览后，再保存到发布列表。</p>
           </div>
-          {posts.length === 0 && <p className="empty">还没有草稿，先生成一条。</p>}
-          {posts.length > 0 && filteredPosts.length === 0 && <p className="empty">没有符合条件的内容。</p>}
-          {filteredPosts.map((post) => (
-            <button
-              className={`post-item ${post.id === selected?.id ? "active" : ""}`}
-              key={post.id}
-              onClick={() => { setSelectedId(post.id); setMakeStage(1); }}
-            >
-              <span>{post.title}</span>
-              <small>
-                {statusLabels[post.status]} · {post.topic.style} · ¥{post.estimatedCostCny.toFixed(2)}
-              </small>
-            </button>
-          ))}
-        </aside>
+          <button className="primary-button" onClick={handleGenerate} disabled={loading} type="button">
+            <PenLine aria-hidden="true" size={16} />
+            {loading ? "生成中" : "新建笔记"}
+          </button>
+        </header>
 
         {selected && (
           <section className="editor">
@@ -1147,9 +1064,7 @@ function App() {
         )}
 
         {selected && (
-          <aside className="insights" id="publish-checklist">
-            <div className="panel-title">发布清单</div>
-            <p className="insights-lead">{selected.topic.scene}</p>
+          <section className="make-actions" id="publish-checklist">
             <section className="make-cover-step">
               <strong>第 2 步：制作封面</strong>
               <p>{previewImage ? "已绑定封面，可继续查看预览。" : "请选择生成模板封面，或上传自有图片。"}</p>
@@ -1226,7 +1141,7 @@ function App() {
               </div>
             </details>
             <button className="save-to-publish" disabled={!previewImage} onClick={() => void handleSaveToPublish()} type="button">第 3 步：确认并保存到发布列表</button>
-          </aside>
+          </section>
         )}
       </section>
       )}
