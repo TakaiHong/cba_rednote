@@ -44,6 +44,8 @@
 - `server/src/scheduler.ts`：每日生成定时任务。
 - `server/src/cli/generate.ts`：命令行生成入口。
 - `server/src/cli/status.ts`：命令行状态输出入口。
+- `server/src/generation/officialSources.ts`：NTU 官方来源白名单与可引用事实。
+- `server/src/generation/factSafety.ts`：对未获来源支持的具体校园、时间和活动信息执行拦截。
 
 ## Client
 
@@ -83,6 +85,7 @@
 - `docs/operations-runbook.md`：日常运营、验收和账号验证手册。
 - `docs/model-config.md`：DeepSeek 和 OpenAI-compatible 低成本模型配置说明。
 - `docs/acceptance-checklist.md`：本地验收、DeepSeek、真实账号发布验证和交接证据清单。
+- `docs/fact-safety.md`：来源核验、自动拦截和发布门槛说明。
 
 ## Verification
 

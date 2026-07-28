@@ -229,7 +229,19 @@ function App() {
 
   async function handlePatch(patch: Partial<MarketingPost>) {
     if (!selected) return;
-    return handlePostPatch(selected.id, patch);
+    const contentFields: Array<keyof MarketingPost> = ["title", "body", "tags", "imageIdeas", "callToAction"];
+    const changedContent = contentFields.some((field) => patch[field] !== undefined);
+    const nextPatch =
+      changedContent && selected.factCheck?.status === "verified"
+        ? {
+            ...patch,
+            factCheck: {
+              status: "needs_review" as const,
+              notes: [...selected.factCheck.notes, "Content edited after verification; source review is required again."]
+            }
+          }
+        : patch;
+    return handlePostPatch(selected.id, nextPatch);
   }
 
   async function handleUploadCover(file?: File) {
@@ -257,6 +269,25 @@ function App() {
     }
   }
 
+  async function handleVerifySources() {
+    if (!selected?.sourceReferences?.length) {
+      setError("当前笔记没有可核验的官方来源，请先按来源重新生成文案。");
+      return;
+    }
+    if (selected.factCheck?.status === "blocked") {
+      setError("系统已拦截未获来源支持的具体信息，请修改或按来源重新生成后再核验。");
+      return;
+    }
+    const updated = await handlePatch({
+      factCheck: {
+        status: "verified",
+        checkedAt: new Date().toISOString(),
+        notes: [...(selected.factCheck?.notes ?? []), "Operator confirmed the attached official sources were checked."]
+      }
+    });
+    if (updated) setPublishHint("官方来源已人工核验；仍请在发布前检查具体表述与链接。 ");
+  }
+
   async function handleRegenerateFromFeedback() {
     if (!selected || !revisionNote.trim()) return;
     setRegeneratingCopy(true);
@@ -278,6 +309,10 @@ function App() {
     if (!post) return;
     if (!(post.imageAssets?.length)) {
       setError("请先生成或上传至少一张封面图片，再保存到发布列表。");
+      return;
+    }
+    if (!post.sourceReferences?.length || post.factCheck?.status !== "verified") {
+      setError("请先在第 1 步核验官方来源，未核验的内容不能进入发布列表。");
       return;
     }
     const updated = await handlePostPatch(post.id, { status: "approved" });
@@ -1052,6 +1087,33 @@ function App() {
                 </button>
               </div>
               {(selected.revisionNotes?.length ?? 0) > 0 && <small>最近意见：{selected.revisionNotes?.at(-1)}</small>}
+            </section>
+            <section className="source-check">
+              <div>
+                <strong>来源与事实核验</strong>
+                <span className={`fact-status ${selected.factCheck?.status ?? "blocked"}`}>
+                  {selected.factCheck?.status === "verified" ? "已人工核验" : selected.factCheck?.status === "blocked" ? "已拦截，需改写" : "待人工核验"}
+                </span>
+              </div>
+              <p>AI 只能使用下列官方来源中的事实；具体日期、规则与活动信息仍需逐条打开链接确认。</p>
+              {(selected.sourceReferences ?? []).length > 0 ? (
+                <ul>
+                  {(selected.sourceReferences ?? []).map((source) => (
+                    <li key={source.id}>
+                      <a href={source.url} rel="noreferrer" target="_blank">{source.title}</a>
+                      <small>{source.publisher} · 已访问 {source.accessedAt}</small>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <small>此旧草稿没有来源记录。请用 AI 重新生成后再继续。</small>
+              )}
+              {selected.factCheck?.status === "blocked" && selected.factCheck.notes.length > 0 && (
+                <small>拦截原因：{selected.factCheck.notes.slice(1).join("；") || selected.factCheck.notes[0]}</small>
+              )}
+              <button disabled={selected.factCheck?.status === "verified" || selected.factCheck?.status === "blocked" || !(selected.sourceReferences?.length)} onClick={() => void handleVerifySources()} type="button">
+                {selected.factCheck?.status === "verified" ? "来源已核验" : selected.factCheck?.status === "blocked" ? "请先改写受限内容" : "我已逐条核验来源"}
+              </button>
             </section>
             <button className="advance-step" disabled={makeStage !== 1} onClick={() => setMakeStage(2)} type="button">文案审核通过，进入第 2 步制作封面</button>
 

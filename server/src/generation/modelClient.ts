@@ -1,5 +1,5 @@
 import { config } from "../config.js";
-import type { GeneratedPost, MarketingPost, TopicPlan } from "../types.js";
+import type { GeneratedPost, MarketingPost, SourceReference, TopicPlan } from "../types.js";
 
 interface ChatCompletionResponse {
   choices?: Array<{
@@ -13,7 +13,26 @@ export function canUseModel() {
   return Boolean(config.openAiApiKey) && config.openAiModelCostCnyPerPostEstimate <= config.maxCostCnyPerPost;
 }
 
-export async function generateWithOpenAiCompatibleModel(topic: TopicPlan): Promise<GeneratedPost | undefined> {
+function sourcePack(sources: SourceReference[]) {
+  return sources.map((source) => ({
+    id: source.id,
+    publisher: source.publisher,
+    title: source.title,
+    url: source.url,
+    claims: source.claims
+  }));
+}
+
+function normalizeSourceIds(sourceIds: unknown, sources: SourceReference[]) {
+  if (!Array.isArray(sourceIds)) return [];
+  const allowed = new Set(sources.map((source) => source.id));
+  return [...new Set(sourceIds.filter((id): id is string => typeof id === "string" && allowed.has(id)))];
+}
+
+export async function generateWithOpenAiCompatibleModel(
+  topic: TopicPlan,
+  sources: SourceReference[]
+): Promise<GeneratedPost | undefined> {
   if (!canUseModel()) return undefined;
 
   const response = await fetch(`${config.openAiBaseUrl.replace(/\/$/, "")}/chat/completions`, {
@@ -31,7 +50,7 @@ export async function generateWithOpenAiCompatibleModel(topic: TopicPlan): Promi
         {
           role: "system",
           content:
-            "你是 NTU CBA 华商会的小红书内容运营。面向 NTU/NBS 中国留学生，写校园生活、学习资源、商科成长、求职讨论和社团活动。语言自然、实用、有同学聊天感，避免虚构官方规则、过度营销和夸张承诺。标题必须不超过 20 个字符。只输出 JSON。"
+            "你是 NTU CBA 华商会的小红书内容运营。你必须严格遵守来源包：只能陈述来源包 claims 中明确出现的事实；不确定时只写主观体验、通用建议或提示读者查看官方链接。严禁编造或推断日期、时间、地点开放情况、选课规则、活动信息、服务资格、统计数据、费用和联系方式。每篇必须返回至少一个 sourceIds，且 sourceIds 只能来自来源包。标题必须不超过 20 个字符。只输出 JSON。"
         },
         {
           role: "user",
@@ -42,11 +61,13 @@ export async function generateWithOpenAiCompatibleModel(topic: TopicPlan): Promi
               body: "string with paragraphs",
               tags: ["string"],
               imageIdeas: ["string"],
-              callToAction: "string"
+              callToAction: "string",
+              sourceIds: ["source id used for factual statements"]
             },
             product:
               "NTU CBA 华商会官方账号。账号简介：想了解 NBS、对商科感兴趣、遇到学业或求职困扰，关注华商会；可通过私信加入 NBS 同学交流群。",
-            topic
+            topic,
+            sourcePack: sourcePack(sources)
           })
         }
       ]
@@ -64,18 +85,23 @@ export async function generateWithOpenAiCompatibleModel(topic: TopicPlan): Promi
   const parsed = JSON.parse(content) as Partial<GeneratedPost>;
   if (!parsed.title || !parsed.body || !Array.isArray(parsed.tags)) return undefined;
 
+  const sourceIds = normalizeSourceIds(parsed.sourceIds, sources);
+  if (sourceIds.length === 0) return undefined;
+
   return {
     title: parsed.title,
     body: parsed.body,
     tags: parsed.tags,
     imageIdeas: Array.isArray(parsed.imageIdeas) ? parsed.imageIdeas : [],
-    callToAction: parsed.callToAction ?? "需要短租存放可以私信物品清单，我帮你估空间和价格。"
+    callToAction: parsed.callToAction ?? "想看哪一类 NTU/NBS 内容，欢迎评论或私信告诉我们。",
+    sourceIds
   };
 }
 
 export async function reviseWithOpenAiCompatibleModel(
   post: Pick<MarketingPost, "title" | "body" | "tags" | "imageIdeas" | "callToAction" | "topic">,
-  feedback: string
+  feedback: string,
+  sources: SourceReference[]
 ): Promise<GeneratedPost | undefined> {
   if (!canUseModel()) return undefined;
 
@@ -94,7 +120,7 @@ export async function reviseWithOpenAiCompatibleModel(
         {
           role: "system",
           content:
-            "你是 NTU CBA 华商会的小红书内容运营。根据审核意见改写现有笔记，保留原选题事实和同学聊天感。标题必须不超过 20 个字符；不要虚构官方规则、过度营销或夸张承诺。只输出 JSON。"
+            "你是 NTU CBA 华商会的小红书内容运营。根据审核意见改写现有笔记，但只能陈述来源包 claims 中明确出现的事实。严禁编造或推断日期、时间、地点开放情况、选课规则、活动信息、服务资格、统计数据、费用和联系方式。每篇必须返回至少一个 sourceIds，且 sourceIds 只能来自来源包。标题必须不超过 20 个字符。只输出 JSON。"
         },
         {
           role: "user",
@@ -106,9 +132,11 @@ export async function reviseWithOpenAiCompatibleModel(
               body: "string with paragraphs",
               tags: ["string"],
               imageIdeas: ["string"],
-              callToAction: "string"
+              callToAction: "string",
+              sourceIds: ["source id used for factual statements"]
             },
-            currentPost: post
+            currentPost: post,
+            sourcePack: sourcePack(sources)
           })
         }
       ]
@@ -126,11 +154,15 @@ export async function reviseWithOpenAiCompatibleModel(
   const parsed = JSON.parse(content) as Partial<GeneratedPost>;
   if (!parsed.title || !parsed.body || !Array.isArray(parsed.tags)) return undefined;
 
+  const sourceIds = normalizeSourceIds(parsed.sourceIds, sources);
+  if (sourceIds.length === 0) return undefined;
+
   return {
     title: parsed.title,
     body: parsed.body,
     tags: parsed.tags,
     imageIdeas: Array.isArray(parsed.imageIdeas) ? parsed.imageIdeas : [],
-    callToAction: parsed.callToAction ?? post.callToAction
+    callToAction: parsed.callToAction ?? post.callToAction,
+    sourceIds
   };
 }

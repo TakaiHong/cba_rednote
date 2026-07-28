@@ -15,6 +15,7 @@ import { postStore } from "../storage/postStore.js";
 import { runLogStore } from "../storage/runLogStore.js";
 import { generateCoverImage } from "../../../scripts/generate-cover-image.js";
 import type { MarketingPost } from "../types.js";
+import { officialSources } from "../generation/officialSources.js";
 
 type CoverImageGenerator = typeof generateCoverImage;
 type PostRegenerator = (post: MarketingPost, feedback: string) => Promise<MarketingPost>;
@@ -32,6 +33,21 @@ export interface PostsRouterDependencies {
   finalPublishLauncher?: FinalPublishLauncher;
 }
 
+const sourceReferenceSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  url: z.string().url(),
+  publisher: z.string().min(1),
+  accessedAt: z.string().min(1),
+  claims: z.array(z.string().min(1)).min(1)
+});
+
+const factCheckSchema = z.object({
+  status: z.enum(["needs_review", "verified", "blocked"]),
+  notes: z.array(z.string().min(1)).default([]),
+  checkedAt: z.string().optional()
+});
+
 const postInputSchema = z.object({
   title: z.string().min(1),
   body: z.string().min(1),
@@ -39,6 +55,8 @@ const postInputSchema = z.object({
   imageIdeas: z.array(z.string()).default([]),
   imageAssets: z.array(z.string().min(1)).default([]),
   revisionNotes: z.array(z.string().min(1).max(500)).default([]),
+  sourceReferences: z.array(sourceReferenceSchema).default([]),
+  factCheck: factCheckSchema.optional(),
   callToAction: z.string().default(""),
   status: z.enum(["draft", "approved", "published", "archived"]).optional(),
   metrics: z
@@ -53,7 +71,27 @@ const postInputSchema = z.object({
     .optional()
 });
 
-const updateSchema = postInputSchema.partial().extend({
+const updateSchema = z.object({
+  title: z.string().min(1).optional(),
+  body: z.string().min(1).optional(),
+  tags: z.array(z.string()).optional(),
+  imageIdeas: z.array(z.string()).optional(),
+  imageAssets: z.array(z.string().min(1)).optional(),
+  revisionNotes: z.array(z.string().min(1).max(500)).optional(),
+  sourceReferences: z.array(sourceReferenceSchema).optional(),
+  factCheck: factCheckSchema.optional(),
+  callToAction: z.string().optional(),
+  status: z.enum(["draft", "approved", "published", "archived"]).optional(),
+  metrics: z
+    .object({
+      views: z.number().int().nonnegative().optional(),
+      likes: z.number().int().nonnegative().optional(),
+      saves: z.number().int().nonnegative().optional(),
+      comments: z.number().int().nonnegative().optional(),
+      follows: z.number().int().nonnegative().optional(),
+      inquiries: z.number().int().nonnegative().optional()
+    })
+    .optional(),
   publishedUrl: z.string().optional()
 });
 
@@ -72,6 +110,15 @@ const imageUploadSchema = z.object({
 });
 
 const supportedImageExtensions = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+
+function hasVerifiedOfficialSources(sources: Array<{ id: string; url: string }>, factCheck?: { status: string }) {
+  const approvedUrls = new Map(officialSources.map((source) => [source.id, source.url]));
+  return Boolean(
+    sources.length &&
+      factCheck?.status === "verified" &&
+      sources.every((source) => approvedUrls.get(source.id) === source.url)
+  );
+}
 
 export function createPostsRouter(dependencies: PostsRouterDependencies = {}) {
   const router = Router();
@@ -366,6 +413,9 @@ router.post("/:id/final-publish", async (req, res) => {
 
 router.post("/", async (req, res) => {
   const input = postInputSchema.parse(req.body);
+  if ((input.status === "approved" || input.status === "published") && !hasVerifiedOfficialSources(input.sourceReferences, input.factCheck)) {
+    return res.status(409).json({ error: "Verified official sources are required before a post can enter the publishing list." });
+  }
   const post = await postStore.createManual(input);
   await runLogStore.append({
     action: "api-create-manual",
@@ -433,6 +483,12 @@ router.patch("/:id", async (req, res) => {
   }
 
   const updateInput = input.publishedUrl === undefined ? input : { ...input, publishedUrl: publishedUrlEvidence.publishedUrl };
+  const nextStatus = input.status ?? existing.status;
+  const nextSources = input.sourceReferences ?? existing.sourceReferences ?? [];
+  const nextFactCheck = input.factCheck ?? existing.factCheck;
+  if ((nextStatus === "approved" || nextStatus === "published") && !hasVerifiedOfficialSources(nextSources, nextFactCheck)) {
+    return res.status(409).json({ error: "Verified official sources are required before a post can enter the publishing list." });
+  }
   const post = await postStore.update(req.params.id, updateInput);
   if (!post) return res.status(404).json({ error: "Post not found" });
   if (input.status === "published" || input.publishedUrl) {

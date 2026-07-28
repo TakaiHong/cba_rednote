@@ -15,9 +15,20 @@ process.env.PUBLISH_JOB_DIR = relative(process.cwd(), publishJobDir);
 
 const { createApp } = await import("../server/src/app.js");
 const { postStore } = await import("../server/src/storage/postStore.js");
+const { generateMarketingPost } = await import("../server/src/generation/generator.js");
+const { findUnsupportedFactSignals } = await import("../server/src/generation/factSafety.js");
 
 let server: Server;
 let baseUrl: string;
+
+const verifiedSource = [{
+  id: "ntu-student-life",
+  title: "Student Life | NTU Singapore",
+  url: "https://www.ntu.edu.sg/life-at-ntu/student-life",
+  publisher: "NTU Singapore",
+  accessedAt: "2026-07-29",
+  claims: ["NTU provides student support services."]
+}];
 
 before(async () => {
   server = createApp({
@@ -145,7 +156,9 @@ describe("posts routes", () => {
       tags: ["tag"],
       imageIdeas: ["image"],
       callToAction: "cta",
-      status: "approved"
+      status: "approved",
+      sourceReferences: verifiedSource,
+      factCheck: { status: "verified", notes: ["checked"], checkedAt: "2026-07-29T00:00:00.000Z" }
     });
 
     const response = await fetch(`${baseUrl}/api/posts/${post.id}`, {
@@ -167,7 +180,9 @@ describe("posts routes", () => {
       tags: ["tag"],
       imageIdeas: ["image"],
       callToAction: "cta",
-      status: "approved"
+      status: "approved",
+      sourceReferences: verifiedSource,
+      factCheck: { status: "verified", notes: ["checked"], checkedAt: "2026-07-29T00:00:00.000Z" }
     });
 
     const response = await fetch(`${baseUrl}/api/posts/${post.id}`, {
@@ -183,6 +198,46 @@ describe("posts routes", () => {
     assert.equal(response.status, 200);
     assert.equal(payload.status, "published");
     assert.equal(payload.publishedUrl, "https://www.xiaohongshu.com/explore/example");
+  });
+
+  it("blocks publishing when official sources have not been verified", async () => {
+    const post = await postStore.createManual({
+      title: "unverified source post",
+      body: "body",
+      tags: ["tag"],
+      imageIdeas: ["image"],
+      callToAction: "cta",
+      sourceReferences: verifiedSource,
+      factCheck: { status: "needs_review", notes: ["needs a check"] }
+    });
+
+    const response = await fetch(`${baseUrl}/api/posts/${post.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "approved" })
+    });
+    const payload = (await response.json()) as { error: string };
+
+    assert.equal(response.status, 409);
+    assert.match(payload.error, /Verified official sources/);
+  });
+
+  it("attaches official sources and requires verification for generated drafts", async () => {
+    const post = await generateMarketingPost(7, { useModel: false });
+
+    assert.equal(post.status, "draft");
+    assert.equal(post.factCheck?.status, "needs_review");
+    assert.ok((post.sourceReferences?.length ?? 0) > 0);
+    assert.ok(post.sourceReferences?.every((source) => source.url.includes("ntu.edu.sg")));
+  });
+
+  it("flags unsupported schedules and campus-system claims", () => {
+    const issues = findUnsupportedFactSignals({
+      title: "The Hive 开放时间",
+      body: "BDE 选课报名截止日期是 8 月 1 日。"
+    });
+
+    assert.deepEqual(issues, ["未获来源支持的校内系统或地点", "未获来源支持的日期或时间", "未获来源支持的运营细节"]);
   });
 
   it("generates and attaches a template cover image for a post", async () => {

@@ -51,6 +51,12 @@ function withDefaults(post: MarketingPost): MarketingPost {
     ...post,
     imageAssets: post.imageAssets ?? [],
     revisionNotes: post.revisionNotes ?? [],
+    sourceReferences: post.sourceReferences ?? [],
+    factCheck:
+      post.factCheck ?? {
+        status: "blocked",
+        notes: ["没有附带来源记录。请基于已核验的官方来源重新生成后再发布。"]
+      },
     metrics: {
       ...emptyMetrics,
       ...(post.metrics ?? {})
@@ -91,6 +97,8 @@ export const postStore = {
       imageIdeas: input.imageIdeas,
       imageAssets: input.imageAssets ?? [],
       revisionNotes: [],
+      sourceReferences: input.sourceReferences ?? [],
+      factCheck: input.factCheck ?? { status: "blocked", notes: ["手工草稿需附带官方来源才能发布。"] },
       callToAction: input.callToAction,
       status: input.status ?? "draft",
       topic: manualTopic,

@@ -33,6 +33,22 @@ export interface GeneratedPost {
   imageIdeas: string[];
   imageAssets?: string[];
   callToAction: string;
+  sourceIds?: string[];
+}
+
+export interface SourceReference {
+  id: string;
+  title: string;
+  url: string;
+  publisher: string;
+  accessedAt: string;
+  claims: string[];
+}
+
+export interface FactCheck {
+  status: "needs_review" | "verified" | "blocked";
+  notes: string[];
+  checkedAt?: string;
 }
 
 export interface ReviewResult {
@@ -63,6 +79,8 @@ export interface MarketingPost extends GeneratedPost {
   publishedAt?: string;
   publishedUrl?: string;
   revisionNotes?: string[];
+  sourceReferences?: SourceReference[];
+  factCheck?: FactCheck;
 }
 
 export interface CreatePostInput {
@@ -73,6 +91,8 @@ export interface CreatePostInput {
   imageAssets?: string[];
   callToAction: string;
   status?: PostStatus;
+  sourceReferences?: SourceReference[];
+  factCheck?: FactCheck;
   metrics?: Partial<PostMetrics>;
 }
 
@@ -86,6 +106,8 @@ export interface UpdatePostInput {
   status?: PostStatus;
   publishedUrl?: string;
   revisionNotes?: string[];
+  sourceReferences?: SourceReference[];
+  factCheck?: FactCheck;
   metrics?: Partial<PostMetrics>;
 }
 

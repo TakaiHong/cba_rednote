@@ -32,6 +32,7 @@ No P0, P1, or P2 visual issues remain in the reviewed populated desktop state.
 7. Removed the making content pool, top-level generation controls, and publishing-checklist card to focus each tab on its single job.
 8. Made the three making stages explicit in the workspace, with AI generation for copy and cover images plus an in-place, feedback-driven copy regeneration action.
 9. Separated the three making stages into individual glass cards and constrained the preview to a compact phone-like layout.
+10. Added an in-context official-source review panel with verified, pending, and blocked states before a note can enter the publishing list.
 
 ## Final Result
 

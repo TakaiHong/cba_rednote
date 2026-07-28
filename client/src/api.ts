@@ -1,5 +1,20 @@
 export type PostStatus = "draft" | "approved" | "published" | "archived";
 
+export interface SourceReference {
+  id: string;
+  title: string;
+  url: string;
+  publisher: string;
+  accessedAt: string;
+  claims: string[];
+}
+
+export interface FactCheck {
+  status: "needs_review" | "verified" | "blocked";
+  notes: string[];
+  checkedAt?: string;
+}
+
 export interface MarketingPost {
   id: string;
   title: string;
@@ -36,6 +51,8 @@ export interface MarketingPost {
   updatedAt: string;
   publishedUrl?: string;
   revisionNotes?: string[];
+  sourceReferences?: SourceReference[];
+  factCheck?: FactCheck;
 }
 
 export interface XhsPublishPackage {
