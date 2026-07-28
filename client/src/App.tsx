@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, ClipboardCheck, FileText, GraduationCap, LayoutDashboard, PenLine } from "lucide-react";
 import {
   backupRuntimeData,
   exportMarkdownPackage,
@@ -511,6 +512,27 @@ function App() {
 
   return (
     <main className="app-shell">
+      <aside className="app-nav" aria-label="运营导航">
+        <div className="nav-brand">
+          <GraduationCap aria-hidden="true" size={22} strokeWidth={1.8} />
+          <div>
+            <strong>NTU CBA</strong>
+            <span>华商会运营</span>
+          </div>
+        </div>
+        <button className="nav-create" onClick={handleGenerate} disabled={loading}>
+          <PenLine aria-hidden="true" size={17} />
+          {loading ? "生成中" : "新建笔记"}
+        </button>
+        <nav className="nav-links">
+          <a className="active" href="#today-workspace"><LayoutDashboard aria-hidden="true" size={17} />内容工作台</a>
+          <a href="#content-library"><FileText aria-hidden="true" size={17} />内容库</a>
+          <a href="#content-calendar"><CalendarDays aria-hidden="true" size={17} />内容日历</a>
+          <a href="#publish-checklist"><ClipboardCheck aria-hidden="true" size={17} />发布清单</a>
+        </nav>
+        <p className="nav-note">每天自动备稿，发布由账号管理员完成。</p>
+      </aside>
+      <div className="dashboard-main">
       <section className="topbar">
         <div>
           <p className="eyebrow">NTU CBA CHINESE BUSINESS ASSOCIATION</p>
@@ -530,7 +552,7 @@ function App() {
       {batchHint && <div className="notice">{batchHint}</div>}
 
       {selected && (
-        <section className="operator-focus">
+        <section className="operator-focus" id="today-workspace">
           <div className="focus-summary">
             <span>今日发布工作台</span>
             <h2>{publishPreview?.title ?? selected.title}</h2>
@@ -576,7 +598,7 @@ function App() {
         </section>
       )}
 
-      <section className="scoreboard">
+      <section className="scoreboard" id="performance-summary">
         <div>
           <span>总曝光</span>
           <strong>{performance.views}</strong>
@@ -779,7 +801,7 @@ function App() {
         </div>
       </section>
 
-      <section className="calendar-panel">
+      <section className="calendar-panel" id="content-calendar">
         <div className="calendar-header">
           <div>
             <span>内容排期</span>
@@ -818,7 +840,7 @@ function App() {
         ))}
       </section>
 
-      <section className="workspace">
+      <section className="workspace" id="content-library">
         <aside className="post-list">
           <div className="panel-title">内容池</div>
           <div className="list-tools">
@@ -968,7 +990,7 @@ function App() {
         )}
 
         {selected && (
-          <aside className="insights">
+          <aside className="insights" id="publish-checklist">
             <div className="panel-title">选题逻辑</div>
             <p>{selected.topic.scene}</p>
             <dl>
@@ -1024,6 +1046,7 @@ function App() {
           </aside>
         )}
       </section>
+      </div>
     </main>
   );
 }

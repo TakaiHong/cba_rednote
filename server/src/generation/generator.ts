@@ -29,6 +29,7 @@ export async function generateMarketingPost(
     }
   }
 
+  generated = normalizeGeneratedPost(generated, topic);
   const review = reviewAgent(generated);
   const now = new Date().toISOString();
 
@@ -43,6 +44,18 @@ export async function generateMarketingPost(
     generator,
     createdAt: now,
     updatedAt: now
+  };
+}
+
+function normalizeGeneratedPost(generated: ReturnType<typeof copyAgent>, topic: ReturnType<typeof topicAgent>) {
+  const fallback = copyAgent(topic);
+  const tags = [...new Set([...generated.tags, ...fallback.tags].map((tag) => tag.trim()).filter(Boolean))].slice(0, 9);
+
+  return {
+    ...generated,
+    tags,
+    imageIdeas: generated.imageIdeas.length > 0 ? generated.imageIdeas : fallback.imageIdeas,
+    callToAction: generated.callToAction.trim() || fallback.callToAction
   };
 }
 
