@@ -34,6 +34,11 @@
     "schedule:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1",
     "schedule:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -Uninstall",
     "gcp:migrate": "tsx scripts/migrate-json-to-firestore.ts",
+    "worker:dev": "wrangler dev --config worker/wrangler.toml",
+    "worker:deploy": "wrangler deploy --config worker/wrangler.toml",
+    "worker:typecheck": "tsc -p worker/tsconfig.json --noEmit",
+    "firebase:build": "vite build client --outDir dist --emptyOutDir",
+    "firebase:deploy": "npm run firebase:build && firebase deploy --only hosting",
     "secrets:scan": "tsx scripts/check-secrets.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
@@ -45,7 +50,9 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "firebase": "^12.1.0",
     "firebase-admin": "^14.2.0",
+    "jose": "^6.1.0",
     "lucide-react": "^1.27.0",
     "node-cron": "^4.2.1",
     "playwright": "^1.55.0",
@@ -56,12 +63,14 @@
     "zod": "^4.1.8"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260702.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.3.1",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
     "typescript": "^5.9.2",
-    "vite": "^7.1.4"
+    "vite": "^7.1.4",
+    "wrangler": "^4.27.0"
   }
 }

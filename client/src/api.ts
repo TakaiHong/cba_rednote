@@ -1,3 +1,5 @@
+import { getFirebaseIdToken } from "./firebase.js";
+
 export type PostStatus = "draft" | "approved" | "published" | "archived";
 
 export interface SourceReference {
@@ -280,9 +282,18 @@ export interface PublishPreflightLaunchResult {
   reportPath: string;
 }
 
-const apiBase = window.location.hostname === "127.0.0.1" && window.location.port === "5173"
-  ? "http://127.0.0.1:8787/api"
-  : "/api";
+const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/$/, "");
+const apiBase = configuredApiBase || (window.location.hostname === "127.0.0.1" && window.location.port === "5173" ? "http://127.0.0.1:8787/api" : "/api");
+const nativeFetch = window.fetch.bind(window);
+
+async function apiFetch(input: RequestInfo | URL, init?: RequestInit) {
+  const token = await getFirebaseIdToken();
+  const headers = new Headers(init?.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  return nativeFetch(input, { ...init, headers });
+}
+
+const fetch = apiFetch;
 
 export async function listPosts() {
   const response = await fetch(`${apiBase}/posts`);
