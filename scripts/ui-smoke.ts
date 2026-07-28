@@ -46,7 +46,7 @@ try {
   const status = response?.status() ?? 0;
   const title = await page.title();
   const h1 = await page.locator("h1").first().textContent({ timeout: 10000 });
-  await page.getByTestId("nav-make").click();
+  await page.getByTestId("nav-guide").click();
   const makeStepCount = await page.locator(".make-guide li").count();
   await page.getByTestId("nav-publish").click();
   const publishPostCount = await page.locator(".publish-post").count();
@@ -54,7 +54,7 @@ try {
   const fillOnlyButtonCount = await page.getByTestId("assisted-publish").count();
   await page.getByTestId("nav-calendar").click();
   const calendarItemCount = await page.locator(".calendar-view .calendar-item").count();
-  await page.getByTestId("nav-make").click();
+  await page.getByTestId("nav-guide").click();
   const bodyText = await page.locator("body").innerText({ timeout: 10000 });
   const issues: string[] = [];
 

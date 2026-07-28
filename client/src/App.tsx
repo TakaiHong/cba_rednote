@@ -43,7 +43,7 @@ const statusLabels: Record<MarketingPost["status"], string> = {
 
 const statusFilters = ["all", "draft", "approved", "published", "archived"] as const;
 type StatusFilter = (typeof statusFilters)[number];
-type WorkspaceTab = "make" | "publish" | "calendar" | "operations";
+type WorkspaceTab = "guide" | "make" | "publish" | "calendar" | "operations";
 
 const metricLabels: Array<[keyof MarketingPost["metrics"], string]> = [
   ["views", "曝光"],
@@ -107,7 +107,7 @@ function App() {
   const [publishPreview, setPublishPreview] = useState<XhsPublishPackage>();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("make");
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("guide");
   const [revisionNote, setRevisionNote] = useState("");
   const [makeStage, setMakeStage] = useState<1 | 2 | 3>(1);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -593,6 +593,7 @@ function App() {
           {loading ? "生成中" : "新建笔记"}
         </button>
         <nav className="nav-links" aria-label="工作区">
+          <button className={activeTab === "guide" ? "active" : ""} data-testid="nav-guide" onClick={() => setActiveTab("guide")} type="button"><ClipboardCheck aria-hidden="true" size={17} />流程</button>
           <button className={activeTab === "make" ? "active" : ""} data-testid="nav-make" onClick={() => setActiveTab("make")} type="button"><LayoutDashboard aria-hidden="true" size={17} />制作</button>
           <button className={activeTab === "publish" ? "active" : ""} data-testid="nav-publish" onClick={() => setActiveTab("publish")} type="button"><ClipboardCheck aria-hidden="true" size={17} />发布</button>
           <button className={activeTab === "calendar" ? "active" : ""} data-testid="nav-calendar" onClick={() => setActiveTab("calendar")} type="button"><CalendarDays aria-hidden="true" size={17} />内容日历</button>
@@ -977,7 +978,7 @@ function App() {
         </section>
       )}
 
-      {activeTab === "make" && selected && (
+      {activeTab === "guide" && (
         <section className="make-guide" aria-labelledby="make-guide-heading">
           <div>
             <p className="eyebrow">MAKE A POST</p>
@@ -985,9 +986,9 @@ function App() {
             <p>按照下方 3 步完成审核、封面和最终预览；保存后才会进入发布列表。</p>
           </div>
           <ol>
-            <li className={makeStage === 1 ? "active" : ""}><button onClick={() => setMakeStage(1)} type="button"><span>1</span><strong>生成与审核<small>生成文案和标签，修改后保存审核意见</small></strong></button></li>
-            <li className={makeStage === 2 ? "active" : ""}><button onClick={() => setMakeStage(2)} type="button"><span>2</span><strong>制作封面<small>生成模板封面，或上传自己的图片</small></strong></button></li>
-            <li className={makeStage === 3 ? "active" : ""}><button onClick={() => setMakeStage(3)} type="button"><span>3</span><strong>预览并保存<small>确认图文无误，保存到发布列表</small></strong></button></li>
+            <li className={makeStage === 1 ? "active" : ""}><button onClick={() => { setMakeStage(1); setActiveTab("make"); }} type="button"><span>1</span><strong>生成与审核<small>生成文案和标签，修改后保存审核意见</small></strong></button></li>
+            <li className={makeStage === 2 ? "active" : ""}><button onClick={() => { setMakeStage(2); setActiveTab("make"); }} type="button"><span>2</span><strong>制作封面<small>生成模板封面，或上传自己的图片</small></strong></button></li>
+            <li className={makeStage === 3 ? "active" : ""}><button onClick={() => { setMakeStage(3); setActiveTab("make"); }} type="button"><span>3</span><strong>预览并保存<small>确认图文无误，保存到发布列表</small></strong></button></li>
           </ol>
         </section>
       )}
