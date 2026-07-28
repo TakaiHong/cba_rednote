@@ -250,6 +250,10 @@ router.post("/:id/preflight", async (req, res) => {
 });
 
 router.post("/:id/final-publish", async (req, res) => {
+  return res.status(410).json({
+    error: "Final publish is manual-only. Copy the prepared text and publish inside Xiaohongshu."
+  });
+  /*
   const post = await postStore.get(req.params.id);
   if (!post) return res.status(404).json({ error: "Post not found" });
   if (req.body?.confirmation !== "publish") {
@@ -285,6 +289,7 @@ router.post("/:id/final-publish", async (req, res) => {
     });
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
+  */
 });
 
 router.post("/", async (req, res) => {

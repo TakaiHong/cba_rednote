@@ -218,21 +218,21 @@ export function renderCoverHtml(input: {
 <body>
   <main class="cover">
     <div class="top">
-      <div class="brand">新加坡迷你仓</div>
-      <div class="price">短租也划算</div>
+      <div class="brand">NTU CBA 华商会</div>
+      <div class="price">NTU / NBS</div>
     </div>
     <h1>${title}</h1>
     <p class="scene">${scene}</p>
     <section class="board">
       <div class="tape one"></div>
       <div class="tape two"></div>
-      <div class="sticky main">东西没地方放？</div>
+      <div class="sticky main">NTU 同学看这里</div>
       <div class="sticky side">${imageIdea}</div>
-      <div class="sticky small">回国 / 搬家 / 租房断档</div>
+      <div class="sticky small">校园 / 商科 / 求职</div>
       <div class="checklist">
-        <div class="check">便宜短租</div>
-        <div class="check">自己运也行</div>
-        <div class="check">需要可帮运</div>
+        <div class="check">校园实用信息</div>
+        <div class="check">NBS 同学交流</div>
+        <div class="check">留学生生活</div>
       </div>
     </section>
     <div class="tags">${tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
@@ -266,7 +266,7 @@ export async function generateCoverImage(options: CoverImageOptions): Promise<Co
     title: publishPackage.title,
     coverText: publishPackage.coverText,
     scene: post.topic.scene,
-    imageIdea: post.imageIdeas[0] ?? "行李、纸箱和干净迷你仓空间",
+    imageIdea: post.imageIdeas[0] ?? "NTU 校园便利贴信息图",
     tags: post.tags
   });
 

@@ -1,14 +1,9 @@
-export function shouldAttemptFinalPublish(requested: boolean, env: NodeJS.ProcessEnv, preflightReady = false) {
-  return requested && env.XHS_ALLOW_FINAL_PUBLISH === "true" && preflightReady;
+export function shouldAttemptFinalPublish(_requested: boolean, _env: NodeJS.ProcessEnv, _preflightReady = false) {
+  // Platform policy: do not automate the final Xiaohongshu publish click.
+  // It is both safer for the account and avoids presenting an automation pattern as normal operations.
+  return false;
 }
 
-export function finalPublishGuardMessage(requested: boolean, env: NodeJS.ProcessEnv = {}, preflightReady = false) {
-  if (!requested) return "Final publish click not requested.";
-  if (env.XHS_ALLOW_FINAL_PUBLISH !== "true") {
-    return "Final publish click requested but blocked. Set XHS_ALLOW_FINAL_PUBLISH=true to enable it.";
-  }
-  if (!preflightReady) {
-    return "Final publish click requested but blocked. Run npm.cmd run publish:preflight and confirm selector evidence first.";
-  }
-  return "Final publish click enabled.";
+export function finalPublishGuardMessage(_requested: boolean, _env: NodeJS.ProcessEnv = {}, _preflightReady = false) {
+  return "Final publish is intentionally manual. Copy the prepared package and publish in Xiaohongshu yourself.";
 }

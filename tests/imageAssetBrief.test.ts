@@ -45,7 +45,7 @@ describe("prepareImageAssetBrief", () => {
     assert.match(markdown, /图片素材包/);
     assert.match(markdown, /AI 出图 Prompt/);
     assert.match(markdown, /npm\.cmd run publish/);
-    assert.match(prompt, /Singapore mini storage/);
+    assert.match(prompt, /NTU Chinese students/);
     assert.equal(json.coverText, "回国两个月，行李先放哪里");
     assert.equal(json.imagePrompt, prompt.trim());
     assert.deepEqual(json.imageAssets, ["C:\\assets\\xhs\\cover.png"]);

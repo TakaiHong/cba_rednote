@@ -183,7 +183,7 @@ function App() {
       setDailyTask({
         ok: false,
         installed: false,
-        taskName: "XHS Mini Storage Daily Draft",
+        taskName: "NTU CBA Daily Draft",
         detail: "每日任务状态暂时无法读取，请运行 npm.cmd run schedule:status。",
         checkedAt: new Date().toISOString(),
         command: "npm.cmd run schedule:status",
@@ -449,50 +449,16 @@ function App() {
     if (!selected) return;
     if (!previewImage) {
       await handleGenerateCoverImage();
-      setPublishHint("封面已准备。下一步点击账号预检，确认小红书页面可自动填写。");
+      setPublishHint("封面已准备。请检查预览，随后复制图文并由账号管理员在小红书内人工发布。");
       return;
     }
-    if (!preflight?.ok) {
-      await handleStartPublishPreflight();
-      return;
-    }
-    const confirmed = window.confirm(
-      `确认发布《${publishPreview?.title ?? selected.title}》？\n\n系统将自动上传封面、填写文案并点击小红书发布按钮。`
-    );
-    if (!confirmed) return;
-
-    setFinalPublishLoading(true);
-    setError("");
-    try {
-      const job = await startFinalPublish(selected.id);
-      setPublishHint("正在打开小红书、上传封面并填写文案，请勿重复点击。");
-      for (let attempt = 0; attempt < 75; attempt += 1) {
-        await new Promise((resolve) => window.setTimeout(resolve, 2000));
-        const result = await getPublishJob(job.jobId);
-        if (result.status === "clicked") {
-          setPublishSubmittedPostId(selected.id);
-          setPublishHint("小红书发布按钮已自动点击。发布成功后复制笔记链接，再点击“粘贴链接并标记已发布”。");
-          return;
-        }
-        if (result.status === "failed") throw new Error(result.detail);
-      }
-      setPublishHint("发布任务仍在运行，请查看弹出的小红书窗口；不要重复点击发布。");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "一键发布失败");
-    } finally {
-      setFinalPublishLoading(false);
-    }
+    await handleCopyPublishText();
+    setPublishHint("图文已复制。请在小红书创作中心上传封面、粘贴文案并由账号管理员人工点击发布；发布后回到这里粘贴笔记链接。");
   }
 
-  const primaryPublishLabel = publishSubmittedPostId === selected?.id
-    ? "已点击，等待链接"
-    : !previewImage
+  const primaryPublishLabel = !previewImage
     ? "1. 生成封面"
-    : !preflight?.ok
-      ? preflight?.stale
-        ? "2. 重新账号预检"
-        : "2. 账号预检"
-      : "3. 确认并发布";
+    : "2. 复制图文，人工发布";
 
   function updateMetric(name: keyof MarketingPost["metrics"], value: string) {
     if (!selected) return;
@@ -547,7 +513,7 @@ function App() {
     <main className="app-shell">
       <section className="topbar">
         <div>
-          <p className="eyebrow">Singapore Mini Storage</p>
+          <p className="eyebrow">NTU CBA CHINESE BUSINESS ASSOCIATION</p>
           <h1>小红书运营台</h1>
         </div>
         <div className="topbar-actions">
@@ -577,22 +543,18 @@ function App() {
                 onClick={handlePrimaryPublishAction}
                 disabled={
                   coverLoading ||
-                  preflightLoading ||
-                  finalPublishLoading ||
-                  publishSubmittedPostId === selected.id
+                  preflightLoading
                 }
               >
                 {coverLoading
                   ? "生成封面中..."
-                  : preflightLoading
-                    ? "预检中..."
-                    : finalPublishLoading
-                      ? "发布中..."
+                    : preflightLoading
+                      ? "预检中..."
                       : primaryPublishLabel}
               </button>
               <button onClick={handleCopyPublishText}>复制发布文案</button>
               <button onClick={handleStartAssistedPublish} disabled={publishLoading}>
-                {publishLoading ? "打开中..." : "只填充，不发布"}
+                {publishLoading ? "打开中..." : "辅助填充（可选）"}
               </button>
             </div>
           </div>
@@ -606,7 +568,7 @@ function App() {
           <div className="focus-checklist">
             <strong>发布前确认</strong>
             <span className={previewImage ? "ok" : "todo"}>{previewImage ? "封面已绑定" : "先生成便利贴封面"}</span>
-            <span className={preflight?.ok ? "ok" : "todo"}>{preflight?.ok ? "账号预检通过" : "需跑账号预检"}</span>
+            <span className="ok">最终发布由账号管理员人工完成</span>
             <span className={selected.publishedUrl ? "ok" : "todo"}>
               {selected.publishedUrl ? "已回填发布链接" : "发布后回填链接"}
             </span>

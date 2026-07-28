@@ -1,5 +1,5 @@
 param(
-  [string]$TaskName = "XHS Mini Storage Daily Draft"
+  [string]$TaskName = "NTU CBA Daily Draft"
 )
 
 $ErrorActionPreference = "Stop"

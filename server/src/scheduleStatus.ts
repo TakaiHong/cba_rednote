@@ -43,7 +43,7 @@ export function parseDailyTaskStatusOutput(output: string, command = "npm.cmd ru
   return {
     ok: installed,
     installed,
-    taskName: values.get("TaskName") ?? "XHS Mini Storage Daily Draft",
+    taskName: values.get("TaskName") ?? "NTU CBA Daily Draft",
     state: values.get("State"),
     lastRunTime: values.get("LastRunTime"),
     lastTaskResult: values.get("LastTaskResult"),
@@ -71,7 +71,7 @@ export async function getDailyTaskStatus(): Promise<DailyTaskStatus> {
     return {
       ok: false,
       installed: false,
-      taskName: "XHS Mini Storage Daily Draft",
+      taskName: "NTU CBA Daily Draft",
       detail,
       checkedAt: new Date().toISOString(),
       command,

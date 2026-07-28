@@ -21,7 +21,7 @@ export async function getSystemStatus() {
   const paidModelPosts = posts.filter((post) => post.generator === "openai-compatible").length;
 
   return {
-    service: "xhs-mini-storage-platform",
+    service: "ntu-cba-xhs-platform",
     ok: true,
     generatedAt: new Date().toISOString(),
     counts,

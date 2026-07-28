@@ -47,7 +47,7 @@ try {
   const title = await page.title();
   const h1 = await page.locator("h1").first().textContent({ timeout: 10000 });
   const primaryPublishLabel = await page.locator(".operator-focus .publish-primary").textContent({ timeout: 10000 });
-  const fillOnlyButtonCount = await page.getByRole("button", { name: "只填充，不发布" }).count();
+  const fillOnlyButtonCount = await page.getByRole("button", { name: "辅助填充（可选）" }).count();
   await page.waitForFunction(
     () =>
       Array.from(document.querySelectorAll<HTMLImageElement>(".focus-preview img, .xhs-preview-card img")).every(
@@ -68,9 +68,9 @@ try {
   const issues: string[] = [];
 
   if (status !== 200) issues.push(`Expected HTTP 200, got ${status}.`);
-  if (title !== "新加坡迷你仓小红书运营台") issues.push(`Unexpected page title: ${title}`);
+  if (title !== "NTU CBA 华商会小红书运营台") issues.push(`Unexpected page title: ${title}`);
   if (h1 !== "小红书运营台") issues.push(`Unexpected h1: ${h1}`);
-  if (!primaryPublishLabel || !/^(1\. 生成封面|2\. (重新)?账号预检|3\. 确认并发布|已点击，等待链接)$/.test(primaryPublishLabel.trim())) {
+  if (!primaryPublishLabel || !/^(1\. 生成封面|2\. 复制图文，人工发布)$/.test(primaryPublishLabel.trim())) {
     issues.push(`Unexpected primary publish action: ${primaryPublishLabel}`);
   }
   if (fillOnlyButtonCount < 1) issues.push("Missing fill-only publish action.");

@@ -162,3 +162,6 @@ npm.cmd run publish -- --post latest --images-dir .\assets\xhs --click-publish
 - 内容尽量讲真实场景和解决方案，少用夸张承诺。
 - 不要把最终发布点击作为默认行为。
 - 小红书页面变化后，先跑 `publish:preflight`，再更新选择器配置。
+# Current Publishing Policy
+
+For NTU CBA, the platform prepares the title, body, tags and cover image. The account operator uploads the cover, pastes the text and presses the final Xiaohongshu publish button manually. This is intentional: it avoids treating platform-risk controls as something to bypass and gives the operator one last content check. After publishing, paste the note URL into the dashboard to record the result.

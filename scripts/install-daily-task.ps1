@@ -1,5 +1,5 @@
 param(
-  [string]$TaskName = "XHS Mini Storage Daily Draft",
+  [string]$TaskName = "NTU CBA Daily Draft",
   [string]$Time = "09:15",
   [switch]$DryRun,
   [switch]$Uninstall
@@ -51,7 +51,7 @@ $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $argument
 $trigger = New-ScheduledTaskTrigger -Daily -At $Time
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
 
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Description "Generate one Xiaohongshu mini-storage draft every day." -Force | Out-Null
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Description "Generate one NTU CBA Xiaohongshu draft every day." -Force | Out-Null
 
 Write-Output "Scheduled task installed."
 Write-Output "Use scripts/install-daily-task.ps1 -Uninstall to remove it."

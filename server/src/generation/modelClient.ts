@@ -31,7 +31,7 @@ export async function generateWithOpenAiCompatibleModel(topic: TopicPlan): Promi
         {
           role: "system",
           content:
-            "你是小红书内容运营，负责新加坡迷你仓营销。语言自然、直白、多样，避免夸张承诺和硬广堆砌。只输出 JSON。"
+            "你是 NTU CBA 华商会的小红书内容运营。面向 NTU/NBS 中国留学生，写校园生活、学习资源、商科成长、求职讨论和社团活动。语言自然、实用、有同学聊天感，避免虚构官方规则、过度营销和夸张承诺。标题必须不超过 20 个字符。只输出 JSON。"
         },
         {
           role: "user",
@@ -45,7 +45,7 @@ export async function generateWithOpenAiCompatibleModel(topic: TopicPlan): Promi
               callToAction: "string"
             },
             product:
-              "新加坡便宜迷你仓，支持自己运和帮运，适合短期回国、租房断档、搬家延迟、大件存放。",
+              "NTU CBA 华商会官方账号。账号简介：想了解 NBS、对商科感兴趣、遇到学业或求职困扰，关注华商会；可通过私信加入 NBS 同学交流群。",
             topic
           })
         }

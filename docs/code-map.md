@@ -1,5 +1,13 @@
 # Code Map
 
+## Active Account: NTU CBA 华商会
+
+- `data/ntu-cba/posts.json`：社团账号独立草稿和发布记录。原迷你仓数据仍在 `data/posts.json`，暂不参与社团运营。
+- `server/src/generation/agents.ts`：NTU/NBS 校园攻略、商科成长、求职交流、活动和互动选题的本地多 agent 模板。
+- `server/src/generation/modelClient.ts`：DeepSeek/OpenAI-compatible 模型的社团账号提示词，并要求标题不超过 20 字。
+- `scripts/generate-cover-image.ts`：生成不依赖真实照片的 NTU CBA 便利贴式 3:4 封面。
+- `server/src/publishing/finalPublish.ts`：强制最终发布为人工步骤；不允许脚本点击小红书发布按钮。
+
 ## Root
 
 - `package.json`：脚本、依赖和项目入口。

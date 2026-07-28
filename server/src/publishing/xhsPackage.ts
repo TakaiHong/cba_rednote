@@ -55,19 +55,19 @@ export function createXhsPublishPackage(post: MarketingPost): XhsPublishPackage 
   const visualBrief = [
     `封面文字：${coverText}`,
     `场景：${post.topic.scene}`,
-    `画面方向：${post.imageIdeas[0] ?? "真实行李和纸箱场景"}`,
-    "构图：竖版 3:4，小红书封面，文字留白明显，主体是行李箱、纸箱或干净仓储空间。",
-    "风格：真实、明亮、生活化，避免过度广告感。"
+    `画面方向：${post.imageIdeas[0] ?? "一张清晰的校园信息便利贴"}`,
+    "构图：竖版 3:4，小红书封面；大标题不超过两行，辅以 3 个短信息点。",
+    "风格：NTU 校园便利贴，深蓝、红色、米白，信息清楚，有同学间分享感。"
   ].join("\n");
   const imagePrompt = [
-    "A realistic vertical lifestyle photo for Xiaohongshu, Singapore mini storage service,",
-    `${post.topic.scene}, luggage boxes and compact furniture, clean storage room,`,
-    "bright natural light, practical and trustworthy, no brand logo, leave clear space for Chinese cover text."
+    "A vertical Xiaohongshu cover for NTU Chinese students, campus sticky-note editorial design,",
+    `${post.topic.scene}, NTU and NBS study-life context,`,
+    "deep navy, warm red and paper white, clear Chinese headline space, no photo required, no logo imitation."
   ].join(" ");
   const assetChecklist = [
-    "封面图 1 张：突出行李/纸箱/大件暂存场景",
-    "细节图 1 张：纸箱标签、显示器、自行车或小家具",
-    "空间图 1 张：干净迷你仓或整齐堆放效果",
+    "封面图 1 张：大标题 + 3 条可读信息的便利贴版式",
+    "信息图 1 张：时间、地点、步骤或报名信息",
+    "互动图 1 张：一个问题，邀请 NTU/NBS 同学留言",
     "发布前确认封面文字不挡主体"
   ];
 

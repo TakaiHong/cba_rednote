@@ -45,7 +45,7 @@ export function createApp(dependencies: AppDependencies = {}) {
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, service: "xhs-mini-storage-platform" });
+    res.json({ ok: true, service: "ntu-cba-xhs-platform" });
   });
 
   app.get("/api/status", async (_req, res) => {

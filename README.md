@@ -1,6 +1,8 @@
-# Singapore Mini Storage XHS Platform
+# NTU CBA XHS Platform
 
-新加坡迷你仓小红书营销平台：每天自动生成自然、多样的标题、正文、标签和图片建议，并提供后台编辑、状态管理和半自动发布脚本。
+NTU CBA 华商会小红书运营平台：每天生成校园、NBS 商科成长、求职讨论和社团活动内容，支持批量备稿、便利贴封面、预览、人工发布回填和复盘。
+
+原迷你仓内容仍保留在 `data/posts.json`；社团账号使用独立的 `data/ntu-cba/posts.json` 内容池。
 
 ## 快速启动
 

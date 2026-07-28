@@ -65,7 +65,7 @@ describe("createXhsPublishPackage", () => {
     assert.equal(pkg.coverText, "新加坡租房断档，东西可以这样先过渡");
     assert.ok(pkg.visualBrief.includes("封面文字"));
     assert.ok(pkg.visualBrief.includes("构图：竖版 3:4"));
-    assert.ok(pkg.imagePrompt.includes("Singapore mini storage"));
+    assert.ok(pkg.imagePrompt.includes("NTU Chinese students"));
     assert.deepEqual(pkg.imageAssets, ["C:\\assets\\cover.png", "C:\\assets\\detail.webp"]);
     assert.equal(pkg.assetChecklist.length >= 3, true);
     assert.ok(pkg.fullText.includes("旧房到期"));

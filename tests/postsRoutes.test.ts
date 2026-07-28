@@ -255,7 +255,7 @@ describe("posts routes", () => {
     assert.equal(payload.reportPath, ".tmp/xhs-preflight-report.json");
   });
 
-  it("starts a confirmed final publish only with fresh preflight evidence and an image", async () => {
+  it("rejects automatic final publish so an operator must publish manually", async () => {
     const post = await postStore.createManual({
       title: "final publish route post",
       body: "body",
@@ -277,25 +277,15 @@ describe("posts routes", () => {
       "utf8"
     );
 
-    const missingConfirmation = await fetch(`${baseUrl}/api/posts/${post.id}/final-publish`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({})
-    });
-    assert.equal(missingConfirmation.status, 400);
-
     const response = await fetch(`${baseUrl}/api/posts/${post.id}/final-publish`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ confirmation: "publish" })
     });
-    const payload = (await response.json()) as { postId: string; command: string; pid: number };
+    const payload = (await response.json()) as { error: string };
 
-    assert.equal(response.status, 202);
-    assert.equal(payload.postId, post.id);
-    assert.match(payload.command, /--click-publish --no-pause/);
-    assert.equal(payload.pid, 12347);
-    assert.equal(payload.jobId, "11111111-1111-4111-8111-111111111111");
+    assert.equal(response.status, 410);
+    assert.match(payload.error, /manual/i);
     await rm(preflightReportPath, { force: true });
   });
 

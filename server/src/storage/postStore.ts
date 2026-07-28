@@ -3,7 +3,8 @@ import { dirname, join } from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import type { CreatePostInput, MarketingPost, TopicPlan, UpdatePostInput } from "../types.js";
 
-const dataDir = process.env.DATA_DIR ? join(process.cwd(), process.env.DATA_DIR) : join(process.cwd(), "data");
+// The mini-storage workspace remains in data/posts.json. Keep CBA content isolated.
+const dataDir = process.env.DATA_DIR ? join(process.cwd(), process.env.DATA_DIR) : join(process.cwd(), "data", "ntu-cba");
 const dataFile = join(dataDir, "posts.json");
 
 async function ensureDataFile() {
@@ -40,7 +41,7 @@ const manualTopic: TopicPlan = {
   scene: "manual draft",
   angle: "operator edited",
   hook: "manual",
-  localSignals: ["Singapore", "mini storage"]
+  localSignals: ["NTU", "NBS"]
 };
 
 const emptyMetrics = { views: 0, likes: 0, saves: 0, comments: 0, follows: 0, inquiries: 0 };
