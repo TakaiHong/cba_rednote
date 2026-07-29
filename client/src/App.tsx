@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, ClipboardCheck, GraduationCap, LayoutDashboard, PenLine, Settings2 } from "lucide-react";
+import { BookOpen, CalendarDays, ClipboardCheck, GraduationCap, LayoutDashboard, PenLine, Settings2 } from "lucide-react";
 import {
+  addResearchSignal,
   backupRuntimeData,
+  deleteResearchSignal,
   exportMarkdownPackage,
   exportPerformanceReport,
   generatePost,
@@ -12,6 +14,7 @@ import {
   getDailyTaskStatus,
   getImageAssetUrl,
   getGoLiveStatus,
+  getKnowledgeBase,
   getPreflightEvidence,
   getPublishJob,
   getStatus,
@@ -27,6 +30,7 @@ import {
   type ContentStrategySummary,
   type DailyTaskStatus,
   type GoLiveCheckResult,
+  type KnowledgeBase,
   type MarketingPost,
   type PreflightEvidenceResult,
   type SystemStatus,
@@ -41,7 +45,7 @@ const statusLabels: Record<MarketingPost["status"], string> = {
   archived: "归档"
 };
 
-type WorkspaceTab = "guide" | "make" | "publish" | "calendar" | "operations";
+type WorkspaceTab = "guide" | "knowledge" | "make" | "publish" | "calendar" | "operations";
 
 const metricLabels: Array<[keyof MarketingPost["metrics"], string]> = [
   ["views", "曝光"],
@@ -108,6 +112,9 @@ function App() {
   const [makeStage, setMakeStage] = useState<1 | 2 | 3>(1);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [publishUrlDrafts, setPublishUrlDrafts] = useState<Record<string, string>>({});
+  const [knowledge, setKnowledge] = useState<KnowledgeBase>();
+  const [researchLoading, setResearchLoading] = useState(false);
+  const [researchForm, setResearchForm] = useState({ sourceUrl: "", theme: "", audience: "NTU 中国学生", insight: "" });
 
   const selected = useMemo(
     () => posts.find((post) => post.id === selectedId) ?? posts[0],
@@ -154,6 +161,7 @@ function App() {
       const nextGoLive = await getGoLiveStatus();
       const nextPreflight = await getPreflightEvidence();
       const nextCalendar = await getContentCalendar(7);
+      const nextKnowledge = await getKnowledgeBase();
       setPosts(nextPosts);
       setStrategy(status.strategy);
       setGoLive(nextGoLive);
@@ -162,6 +170,7 @@ function App() {
       setCommands(status.commands ?? {});
       setRecentRuns(status.recentRuns ?? []);
       setCalendar(nextCalendar);
+      setKnowledge(nextKnowledge);
       if (!selectedId && nextPosts[0]) setSelectedId(nextPosts[0].id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载失败");
@@ -212,6 +221,31 @@ function App() {
       setError(err instanceof Error ? err.message : "生成失败");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSaveResearchSignal() {
+    setResearchLoading(true);
+    setError("");
+    try {
+      const saved = await addResearchSignal(researchForm);
+      setKnowledge((current) => current ? { ...current, researchSignals: [saved, ...current.researchSignals] } : current);
+      setResearchForm({ sourceUrl: "", theme: "", audience: "NTU 中国学生", insight: "" });
+      setPublishHint("公开参考洞察已进入知识库。之后 AI 会把它当作选题与表达灵感，不会把它当事实或照抄原文。");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存公开参考洞察失败");
+    } finally {
+      setResearchLoading(false);
+    }
+  }
+
+  async function handleDeleteResearchSignal(id: string) {
+    setError("");
+    try {
+      await deleteResearchSignal(id);
+      setKnowledge((current) => current ? { ...current, researchSignals: current.researchSignals.filter((signal) => signal.id !== id) } : current);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "删除公开参考洞察失败");
     }
   }
 
@@ -599,6 +633,7 @@ function App() {
         </div>
         <nav className="nav-links" aria-label="工作区">
           <button className={activeTab === "guide" ? "active" : ""} data-testid="nav-guide" onClick={() => setActiveTab("guide")} type="button"><ClipboardCheck aria-hidden="true" size={17} />流程</button>
+          <button className={activeTab === "knowledge" ? "active" : ""} data-testid="nav-knowledge" onClick={() => setActiveTab("knowledge")} type="button"><BookOpen aria-hidden="true" size={17} />知识库</button>
           <button className={activeTab === "make" ? "active" : ""} data-testid="nav-make" onClick={() => setActiveTab("make")} type="button"><LayoutDashboard aria-hidden="true" size={17} />制作</button>
           <button className={activeTab === "publish" ? "active" : ""} data-testid="nav-publish" onClick={() => setActiveTab("publish")} type="button"><ClipboardCheck aria-hidden="true" size={17} />发布</button>
           <button className={activeTab === "calendar" ? "active" : ""} data-testid="nav-calendar" onClick={() => setActiveTab("calendar")} type="button"><CalendarDays aria-hidden="true" size={17} />内容日历</button>
@@ -986,6 +1021,64 @@ function App() {
             <li className={makeStage === 2 ? "active" : ""}><button onClick={() => { setMakeStage(2); setActiveTab("make"); }} type="button"><span>2</span><strong>制作封面<small>生成模板封面，或上传自己的图片</small></strong></button></li>
             <li className={makeStage === 3 ? "active" : ""}><button onClick={() => { setMakeStage(3); setActiveTab("make"); }} type="button"><span>3</span><strong>预览并保存<small>确认图文无误，保存到发布列表</small></strong></button></li>
           </ol>
+        </section>
+      )}
+
+      {activeTab === "knowledge" && (
+        <section className="knowledge-workspace" aria-labelledby="knowledge-heading">
+          <header className="knowledge-header">
+            <div>
+              <p className="eyebrow">SOURCE LIBRARY</p>
+              <h2 id="knowledge-heading">NTU 内容知识库</h2>
+              <p>官方来源保证事实，公开小红书参考只提炼话题、痛点和叙事结构。它们不会被当成事实，也不会被逐句改写。</p>
+            </div>
+            <div className="knowledge-counts">
+              <strong>{knowledge?.officialSources.length ?? 0}</strong><span>官方来源</span>
+              <strong>{knowledge?.researchSignals.length ?? 0}</strong><span>公开洞察</span>
+            </div>
+          </header>
+
+          <section className="knowledge-add-card">
+            <div className="make-step-heading">
+              <div>
+                <span>收录公开参考</span>
+                <h3>把一篇公开笔记转成可复用洞察</h3>
+                <p>只填写公开链接和你的概括。不要粘贴正文、截图、作者昵称或任何私人信息。</p>
+              </div>
+            </div>
+            <div className="knowledge-form-grid">
+              <label>公开小红书链接<input placeholder="https://www.xiaohongshu.com/..." value={researchForm.sourceUrl} onChange={(event) => setResearchForm((form) => ({ ...form, sourceUrl: event.target.value }))} /></label>
+              <label>选题主题<input placeholder="例如：刚入学的信息过载" value={researchForm.theme} onChange={(event) => setResearchForm((form) => ({ ...form, theme: event.target.value }))} /></label>
+              <label>适合谁看<input value={researchForm.audience} onChange={(event) => setResearchForm((form) => ({ ...form, audience: event.target.value }))} /></label>
+              <label className="knowledge-insight">你提炼的洞察<textarea placeholder="例如：新生更需要一个按时间顺序的行动清单，而不是泛泛的校园介绍。请用自己的话概括，不要复制原笔记。" rows={4} value={researchForm.insight} onChange={(event) => setResearchForm((form) => ({ ...form, insight: event.target.value }))} /></label>
+            </div>
+            <button className="primary-button" disabled={researchLoading || !researchForm.sourceUrl.trim() || !researchForm.insight.trim()} onClick={() => void handleSaveResearchSignal()} type="button">
+              <BookOpen aria-hidden="true" size={16} />{researchLoading ? "正在收录..." : "收录为公开洞察"}
+            </button>
+          </section>
+
+          <section className="knowledge-section">
+            <div className="knowledge-section-heading"><h3>公开小红书洞察</h3><span>仅用于选题和表达</span></div>
+            {knowledge?.researchSignals.length ? (
+              <div className="research-signal-grid">
+                {knowledge.researchSignals.map((signal) => (
+                  <article className="research-signal-card" key={signal.id}>
+                    <div><span>{signal.audience}</span><button aria-label="删除该公开洞察" onClick={() => void handleDeleteResearchSignal(signal.id)} type="button">删除</button></div>
+                    <h4>{signal.theme}</h4>
+                    <p>{signal.insight}</p>
+                    <a href={signal.sourceUrl} rel="noreferrer" target="_blank">打开公开参考</a>
+                  </article>
+                ))}
+              </div>
+            ) : <p className="empty">还没有公开洞察。先在小红书手动搜索 NTU、NBS、宿舍、选课、实习或新加坡留学等话题，再把高质量公开链接和你的概括收录进来。</p>}
+          </section>
+
+          <section className="knowledge-section">
+            <div className="knowledge-section-heading"><h3>官方事实来源</h3><span>生成可发布内容时的唯一事实依据</span></div>
+            <div className="official-source-grid">
+              {(knowledge?.officialSources ?? []).map((source) => <a className="official-source-card" href={source.url} key={source.id} rel="noreferrer" target="_blank"><strong>{source.title}</strong><span>{source.publisher}</span><small>{source.claims[0]}</small></a>)}
+            </div>
+          </section>
         </section>
       )}
 

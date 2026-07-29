@@ -22,6 +22,16 @@ interface SourceReference {
   claims: string[];
 }
 
+interface ResearchSignal {
+  id: string;
+  sourceUrl: string;
+  theme: string;
+  audience: string;
+  insight: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface MarketingPost {
   id: string;
   title: string;
@@ -53,7 +63,7 @@ interface RunLog {
   createdAt: string;
 }
 
-const reviewedAt = "2026-07-29";
+const reviewedAt = "2026-07-30";
 const officialSources: SourceReference[] = [
   {
     id: "ntu-student-life",
@@ -102,6 +112,46 @@ const officialSources: SourceReference[] = [
     publisher: "Nanyang Business School, NTU Singapore",
     accessedAt: reviewedAt,
     claims: ["NBS publishes undergraduate student-life resources including student clubs and community information."]
+  },
+  {
+    id: "ntu-international-guide",
+    title: "Our NTU - A Guide for International Students | NTU Singapore",
+    url: "https://www.ntu.edu.sg/about-us/global/students/guide-for-international-students",
+    publisher: "NTU Singapore",
+    accessedAt: reviewedAt,
+    claims: ["NTU publishes an international-student guide covering campus life, accommodation and student associations."]
+  },
+  {
+    id: "ntu-one-stop-sac",
+    title: "One Stop @ SAC | NTU Singapore",
+    url: "https://www.ntu.edu.sg/life-at-ntu/student-life/student-services",
+    publisher: "NTU Singapore",
+    accessedAt: reviewedAt,
+    claims: ["One Stop @ SAC is NTU's central student-service hub for academic, finance, housing, admissions and campus-life matters."]
+  },
+  {
+    id: "nbs-student-clubs",
+    title: "NBS Student Clubs | Nanyang Business School",
+    url: "https://www.ntu.edu.sg/business/admissions/ugadmission/undergraduate-student-life/nbs-student-clubs",
+    publisher: "Nanyang Business School, NTU Singapore",
+    accessedAt: reviewedAt,
+    claims: ["NBS publishes information about student clubs, their communities and their activities."]
+  },
+  {
+    id: "ntu-student-housing-faq",
+    title: "Accommodation FAQ | NTU Singapore",
+    url: "https://www.ntu.edu.sg/life-at-ntu/accommodation/FAQ",
+    publisher: "NTU Singapore",
+    accessedAt: reviewedAt,
+    claims: ["NTU Accommodation publishes official FAQs about student housing applications, allocations and check-in arrangements."]
+  },
+  {
+    id: "ntu-international-freshmen-faq",
+    title: "FAQ for International Freshmen | NTU Singapore",
+    url: "https://www.ntu.edu.sg/admissions/undergraduate/freshmen/freshmen-info/faq-for-international-freshmen",
+    publisher: "NTU Singapore",
+    accessedAt: reviewedAt,
+    claims: ["NTU publishes an FAQ for international freshmen covering arrival and matriculation-related matters."]
   }
 ];
 
@@ -163,6 +213,34 @@ async function route(request: Request, url: URL, env: Env, uid: string, origin: 
   if (method === "GET" && path === "/api/go-live") return respond(goLive(), 200, env, origin);
   if (method === "GET" && path === "/api/preflight-evidence") return respond(preflightEvidence(), 200, env, origin);
   if (method === "GET" && path === "/api/schedule/status") return respond(cloudScheduleStatus(), 200, env, origin);
+  if (method === "GET" && path === "/api/knowledge-base") {
+    return respond({
+      officialSources,
+      researchSignals: await listResearchSignals(env),
+      policy: {
+        purpose: "Use public Xiaohongshu references only for topic selection, audience pain points and presentation structure.",
+        restrictions: [
+          "Do not store post bodies, screenshots, user handles or private information.",
+          "Do not treat a public post as a factual source.",
+          "Every changing NTU fact in a publishable draft must still be supported by an official NTU source."
+        ]
+      }
+    }, 200, env, origin);
+  }
+
+  if (method === "POST" && path === "/api/knowledge-base/research-signals") {
+    const input = await readJson<Partial<ResearchSignal>>(request);
+    const signal = await createResearchSignal(env, input);
+    await appendLog(env, "knowledge-add-public-reference", "ok", `Added research signal ${signal.id}`, { signalId: signal.id, uid });
+    return respond(signal, 201, env, origin);
+  }
+
+  const researchSignalMatch = /^\/api\/knowledge-base\/research-signals\/([^/]+)$/.exec(path);
+  if (method === "DELETE" && researchSignalMatch) {
+    await env.DB.prepare("DELETE FROM knowledge_entries WHERE id = ?").bind(researchSignalMatch[1]).run();
+    await appendLog(env, "knowledge-delete-public-reference", "ok", `Deleted research signal ${researchSignalMatch[1]}`, { signalId: researchSignalMatch[1], uid });
+    return respond({ ok: true }, 200, env, origin);
+  }
 
   if (method === "GET" && path === "/api/assets/image") throw new HttpError(404, "Cloud image uploads are not enabled in this no-card deployment.");
 
@@ -264,8 +342,45 @@ async function ensureSchema(env: Env) {
     env.DB.prepare("CREATE TABLE IF NOT EXISTS posts (id TEXT PRIMARY KEY, payload TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS posts_updated_at ON posts(updated_at DESC)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS run_logs (id TEXT PRIMARY KEY, action TEXT NOT NULL, status TEXT NOT NULL, message TEXT NOT NULL, metadata TEXT, created_at TEXT NOT NULL)"),
-    env.DB.prepare("CREATE INDEX IF NOT EXISTS run_logs_created_at ON run_logs(created_at DESC)")
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS run_logs_created_at ON run_logs(created_at DESC)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS knowledge_entries (id TEXT PRIMARY KEY, payload TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS knowledge_entries_updated_at ON knowledge_entries(updated_at DESC)")
   ]);
+}
+
+async function listResearchSignals(env: Env): Promise<ResearchSignal[]> {
+  const result = await env.DB.prepare("SELECT payload FROM knowledge_entries ORDER BY updated_at DESC LIMIT 80").all<{ payload: string }>();
+  return result.results.map((row) => JSON.parse(row.payload) as ResearchSignal);
+}
+
+async function createResearchSignal(env: Env, input: Partial<ResearchSignal>): Promise<ResearchSignal> {
+  const sourceUrl = String(input.sourceUrl ?? "").trim();
+  const theme = cleanResearchText(input.theme, 64, "Topic");
+  const audience = cleanResearchText(input.audience, 64, "NTU students");
+  const insight = cleanResearchText(input.insight, 420, "");
+  if (!isPublicXhsUrl(sourceUrl)) throw new HttpError(400, "Please provide a public Xiaohongshu post or share URL.");
+  if (insight.length < 12) throw new HttpError(400, "Write a short paraphrased observation of at least 12 characters. Do not paste the post body.");
+
+  const timestamp = now();
+  const signal: ResearchSignal = { id: crypto.randomUUID(), sourceUrl, theme, audience, insight, createdAt: timestamp, updatedAt: timestamp };
+  await env.DB.prepare("INSERT INTO knowledge_entries (id, payload, created_at, updated_at) VALUES (?, ?, ?, ?)")
+    .bind(signal.id, JSON.stringify(signal), signal.createdAt, signal.updatedAt)
+    .run();
+  return signal;
+}
+
+function cleanResearchText(value: unknown, maxLength: number, fallback: string) {
+  const text = String(value ?? "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+  return text || fallback;
+}
+
+function isPublicXhsUrl(value: string) {
+  try {
+    const host = new URL(value).hostname.toLowerCase();
+    return host === "xiaohongshu.com" || host.endsWith(".xiaohongshu.com") || host === "xhslink.com" || host.endsWith(".xhslink.com");
+  } catch {
+    return false;
+  }
 }
 
 async function getPost(env: Env, id: string): Promise<MarketingPost | undefined> {
@@ -316,7 +431,7 @@ async function createGeneratedPost(env: Env, existing: MarketingPost[], offset: 
   const fallback = templatePost(offset);
   if (!useModel || !env.DEEPSEEK_API_KEY || Number(env.MAX_COST_CNY_PER_POST ?? 0.5) < 0.12) return fallback;
   try {
-    const generated = await callDeepSeek(env, fallback, "");
+    const generated = await callDeepSeek(env, fallback, "", await listResearchSignals(env));
     if (generated) return { ...fallback, ...generated, id: crypto.randomUUID(), createdAt: now(), updatedAt: now(), generator: "deepseek-source-constrained", estimatedCostCny: 0.12 };
   } catch {
     // A no-cost template is safer than blocking the operator or inventing a fact.
@@ -325,13 +440,14 @@ async function createGeneratedPost(env: Env, existing: MarketingPost[], offset: 
 }
 
 async function regeneratePost(env: Env, post: MarketingPost, feedback: string): Promise<MarketingPost> {
-  const generated = env.DEEPSEEK_API_KEY ? await callDeepSeek(env, post, feedback).catch(() => undefined) : undefined;
+  const generated = env.DEEPSEEK_API_KEY ? await callDeepSeek(env, post, feedback, await listResearchSignals(env)).catch(() => undefined) : undefined;
   const base = generated ? { ...post, ...generated } : { ...post, title: fitTitle(post.title), body: `${post.body}\n\n补充：${feedback}` };
   return { ...base, id: post.id, revisionNotes: [...post.revisionNotes, feedback], updatedAt: now(), generator: generated ? "deepseek-source-constrained" : "template-revision" };
 }
 
-async function callDeepSeek(env: Env, post: MarketingPost, feedback: string): Promise<Pick<MarketingPost, "title" | "body" | "tags" | "imageIdeas" | "callToAction" | "review"> | undefined> {
+async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, researchSignals: ResearchSignal[]): Promise<Pick<MarketingPost, "title" | "body" | "tags" | "imageIdeas" | "callToAction" | "review"> | undefined> {
   const sourceText = officialSources.map((source) => ({ id: source.id, title: source.title, url: source.url, claims: source.claims })).map((source) => JSON.stringify(source)).join("\n");
+  const signalText = researchSignals.slice(0, 20).map((signal) => JSON.stringify({ theme: signal.theme, audience: signal.audience, insight: signal.insight })).join("\n");
   const response = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: { ...jsonHeaders, Authorization: `Bearer ${env.DEEPSEEK_API_KEY}` },
@@ -341,8 +457,8 @@ async function callDeepSeek(env: Env, post: MarketingPost, feedback: string): Pr
       max_tokens: 1000,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "You write natural Simplified Chinese Xiaohongshu drafts for an NTU Chinese student society. Return JSON only. The title is 20 Chinese characters or fewer. Never invent dates, venues, event names, fees, eligibility, opening hours, deadlines, or services. Any factual statement must be directly supported by the supplied sources. When a detail is unknown, write a general personal suggestion and tell readers to check the linked official page. Avoid hard selling." },
-        { role: "user", content: `Draft to improve:\n${JSON.stringify({ title: post.title, body: post.body, tags: post.tags, feedback })}\n\nApproved source pack:\n${sourceText}\n\nReturn {title,body,tags,imageIdeas,callToAction,review:{score,notes,approved}}.` }
+        { role: "system", content: "You write natural Simplified Chinese Xiaohongshu drafts for an NTU Chinese student society. Return JSON only. The title is 20 Chinese characters or fewer. Never invent dates, venues, event names, fees, eligibility, opening hours, deadlines, or services. Any factual statement must be directly supported by the supplied official sources. When a detail is unknown, write a general personal suggestion and tell readers to check the linked official page. The public-reference signals are NOT facts and MUST NOT be cited, quoted, closely paraphrased, attributed to a creator, or used to name a specific person. Use them only to choose a useful topic, a realistic pain point, or a narrative structure. Avoid hard selling and avoid unsupported certainty." },
+        { role: "user", content: `Draft to improve:\n${JSON.stringify({ title: post.title, body: post.body, tags: post.tags, feedback })}\n\nApproved official source pack:\n${sourceText}\n\nPublic-reference signals (topic inspiration only, never factual evidence):\n${signalText || "No public-reference signals yet."}\n\nReturn {title,body,tags,imageIdeas,callToAction,review:{score,notes,approved}}.` }
       ]
     })
   });

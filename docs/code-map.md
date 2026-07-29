@@ -87,6 +87,8 @@
 - `docs/acceptance-checklist.md`：本地验收、DeepSeek、真实账号发布验证和交接证据清单。
 - `docs/fact-safety.md`：来源核验、自动拦截和发布门槛说明。
 
+- `docs/knowledge-base.md`：Cloudflare D1 公开参考洞察库、官方事实层和文案生成约束。
+
 ## Verification
 
 - `npm.cmd run lint`：TypeScript 类型检查。

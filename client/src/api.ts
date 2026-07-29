@@ -11,6 +11,25 @@ export interface SourceReference {
   claims: string[];
 }
 
+export interface ResearchSignal {
+  id: string;
+  sourceUrl: string;
+  theme: string;
+  audience: string;
+  insight: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KnowledgeBase {
+  officialSources: SourceReference[];
+  researchSignals: ResearchSignal[];
+  policy: {
+    purpose: string;
+    restrictions: string[];
+  };
+}
+
 export interface FactCheck {
   status: "needs_review" | "verified" | "blocked";
   notes: string[];
@@ -299,6 +318,30 @@ export async function listPosts() {
   const response = await fetch(`${apiBase}/posts`);
   if (!response.ok) throw new Error("Failed to load posts");
   return (await response.json()) as MarketingPost[];
+}
+
+export async function getKnowledgeBase() {
+  const response = await fetch(`${apiBase}/knowledge-base`);
+  if (!response.ok) throw new Error("Failed to load knowledge base");
+  return (await response.json()) as KnowledgeBase;
+}
+
+export async function addResearchSignal(input: Pick<ResearchSignal, "sourceUrl" | "theme" | "audience" | "insight">) {
+  const response = await fetch(`${apiBase}/knowledge-base/research-signals`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to save public-reference insight");
+  }
+  return (await response.json()) as ResearchSignal;
+}
+
+export async function deleteResearchSignal(id: string) {
+  const response = await fetch(`${apiBase}/knowledge-base/research-signals/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!response.ok) throw new Error("Failed to remove public-reference insight");
 }
 
 export async function generatePost() {
