@@ -1,6 +1,6 @@
 import { type PropsWithChildren, useEffect, useState } from "react";
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { type Auth, type User, getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { GoogleAuthProvider, type Auth, type User, getAuth, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -30,8 +30,6 @@ export async function getFirebaseIdToken() {
 
 export function FirebaseAuthGate({ children }: PropsWithChildren) {
   const [user, setUser] = useState<User | null | undefined>(undefined);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -54,23 +52,21 @@ export function FirebaseAuthGate({ children }: PropsWithChildren) {
   return <main className="auth-shell"><section className="auth-card">
     <p className="eyebrow">NTU CBA CONTENT DESK</p>
     <h1>运营账号登录</h1>
-    <p>仅已授权的社团运营成员可进入。</p>
+    <p>仅白名单中的社团运营 Gmail 可进入。</p>
     <form onSubmit={async (event) => {
       event.preventDefault();
       setError("");
       setSubmitting(true);
       try {
-        await signInWithEmailAndPassword(firebaseAuth()!, email.trim(), password);
+        await signInWithPopup(firebaseAuth()!, new GoogleAuthProvider());
       } catch {
-        setError("邮箱或密码不正确，或该账号尚未在 Firebase Auth 中创建。");
+        setError("Google 登录未完成，或当前 Gmail 尚未被列入运营白名单。");
       } finally {
         setSubmitting(false);
       }
     }}>
-      <label>运营邮箱<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
-      <label>密码<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label>
       {error ? <p className="auth-error">{error}</p> : null}
-      <button type="submit" disabled={submitting}>{submitting ? "登录中..." : "登录运营台"}</button>
+      <button type="submit" disabled={submitting}>{submitting ? "登录中..." : "使用 Google 登录"}</button>
     </form>
   </section></main>;
 }

@@ -3,6 +3,7 @@ export interface Env {
   FIREBASE_PROJECT_ID: string;
   FIREBASE_WEB_API_KEY: string;
   ALLOWED_FIREBASE_UIDS?: string;
+  ALLOWED_FIREBASE_EMAILS?: string;
   ALLOWED_ORIGIN?: string;
   DEEPSEEK_API_KEY?: string;
   DEEPSEEK_MODEL?: string;
@@ -243,6 +244,8 @@ async function requireOperator(request: Request, env: Env) {
   if (!response.ok || !user?.localId) throw new HttpError(401, "Your Firebase session is invalid or expired.");
   const allowed = (env.ALLOWED_FIREBASE_UIDS ?? "").split(",").map((value) => value.trim()).filter(Boolean);
   if (allowed.length && !allowed.includes(user.localId)) throw new HttpError(403, "This Firebase account is not an approved operator.");
+  const allowedEmails = (env.ALLOWED_FIREBASE_EMAILS ?? "").split(",").map((value) => value.trim().toLowerCase()).filter(Boolean);
+  if (allowedEmails.length && !allowedEmails.includes((user.email ?? "").toLowerCase())) throw new HttpError(403, "This Gmail account is not an approved operator.");
   return { uid: user.localId, email: user.email ?? "" };
 }
 

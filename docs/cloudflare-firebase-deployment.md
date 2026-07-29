@@ -3,7 +3,7 @@
 This is the active public deployment path for the NTU CBA content desk.
 
 - **Firebase Hosting** serves the React dashboard.
-- **Firebase Authentication** protects the dashboard with an operator email and password.
+- **Firebase Authentication** protects the dashboard with an operator Google account.
 - **Cloudflare Worker + D1** stores posts, review history, publishing URLs, and run logs.
 - **DeepSeek** is called only by the Worker and its key is kept as a Cloudflare secret.
 - The Worker creates one draft at **09:15 Singapore time** for human review.
@@ -18,8 +18,7 @@ The public deployment does **not** enable cloud file uploads. It creates a low-c
 1. Open [Firebase Console](https://console.firebase.google.com/) and create a project, or add Firebase to the existing `ntu-cba-rednote` Google Cloud project.
 2. Keep the project on the **Spark** plan. Do not link a Cloud Billing account.
 3. Add a **Web app** and copy the Firebase Web configuration values.
-4. Go to **Authentication > Sign-in method**, enable **Email/Password**.
-5. Go to **Authentication > Users**, add the operator email and a strong password. Copy that user's **UID**.
+4. Go to **Authentication > Sign-in method**, enable **Google**. A user is created automatically the first time that Google account signs in.
 
 The frontend Firebase web API key is not a secret; it identifies the Firebase project. The DeepSeek key remains a Worker secret and must never be placed in the frontend environment file or Git.
 
@@ -47,11 +46,11 @@ Run each command and paste the value only into the terminal prompt:
 ```powershell
 npx wrangler secret put DEEPSEEK_API_KEY
 npx wrangler secret put FIREBASE_WEB_API_KEY
-npx wrangler secret put ALLOWED_FIREBASE_UIDS
+npx wrangler secret put ALLOWED_FIREBASE_EMAILS
 npm.cmd run worker:deploy
 ```
 
-For `ALLOWED_FIREBASE_UIDS`, paste the Firebase operator UID from step 1. This is an allow-list: an otherwise valid Firebase user cannot access the content API unless their UID is listed.
+For `ALLOWED_FIREBASE_EMAILS`, paste the operator Gmail address. This is an allow-list: an otherwise valid Firebase user cannot access the content API unless their Gmail is listed. `ALLOWED_FIREBASE_UIDS` remains available as an optional second allow-list.
 
 Copy the Worker URL printed after deployment, such as `https://ntu-cba-rednote-api.<subdomain>.workers.dev`. Set the following values in `worker/wrangler.toml` and deploy once more:
 
@@ -85,7 +84,7 @@ npx wrangler d1 execute ntu-cba-rednote --remote --file .tmp/d1-migration.sql
 ## Verification checklist
 
 1. `GET https://<worker-domain>/api/health` returns `ok: true`.
-2. The Hosting URL shows the Firebase email/password screen before any dashboard content.
+2. The Hosting URL shows the Firebase Google sign-in screen before any dashboard content.
 3. A non-operator Firebase account receives `403` from the API.
 4. A generated draft persists after a page refresh.
 5. A generated sticky-note cover appears in the preview.
