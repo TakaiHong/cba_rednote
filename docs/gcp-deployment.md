@@ -31,9 +31,9 @@ DAILY_CRON=15 9 * * *
 Map these Secret Manager values:
 
 ```text
-DASHBOARD_PASSWORD=dashboard-password:latest
-DEEPSEEK_API_KEY=deepseek-api-key:latest
-CLOUD_SCHEDULER_TOKEN=scheduler-token:latest
+DASHBOARD_PASSWORD=<Secret Manager dashboard password reference>
+DEEPSEEK_API_KEY=<key>
+CLOUD_SCHEDULER_TOKEN=<Secret Manager scheduler token reference>
 ```
 
 The Cloud Run service is publicly reachable, while the dashboard is protected by `DASHBOARD_USERNAME` and `DASHBOARD_PASSWORD` Basic Auth. Use `/api/health` as the health check.
