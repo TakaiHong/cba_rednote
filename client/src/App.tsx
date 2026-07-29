@@ -161,7 +161,7 @@ function App() {
       const nextGoLive = await getGoLiveStatus();
       const nextPreflight = await getPreflightEvidence();
       const nextCalendar = await getContentCalendar(7);
-      const nextKnowledge = await getKnowledgeBase();
+      const nextKnowledge = await getKnowledgeBase().catch(() => undefined);
       setPosts(nextPosts);
       setStrategy(status.strategy);
       setGoLive(nextGoLive);
@@ -1070,7 +1070,7 @@ function App() {
                   </article>
                 ))}
               </div>
-            ) : <p className="empty">还没有公开洞察。先在小红书手动搜索 NTU、NBS、宿舍、选课、实习或新加坡留学等话题，再把高质量公开链接和你的概括收录进来。</p>}
+            ) : <p className="empty">{knowledge ? "还没有公开洞察。先在小红书手动搜索 NTU、NBS、宿舍、选课、实习或新加坡留学等话题，再把高质量公开链接和你的概括收录进来。" : "知识库服务尚未更新。页面入口已上线，完成 Cloudflare Worker 更新后会自动显示官方来源并可收录公开洞察。"}</p>}
           </section>
 
           <section className="knowledge-section">
