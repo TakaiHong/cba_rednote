@@ -210,6 +210,7 @@ button:disabled { cursor: wait; opacity: .58; }
 .post-item small { color: #778078; font-size: 11px; }
 
 .make-step-card { border-radius: 9px; display: grid; gap: 13px; padding: 16px; }
+.empty-make-state { max-width: 760px; }
 .editor { display: grid; gap: 13px; }
 .meta-row { display: flex; flex-wrap: wrap; gap: 6px; }
 label { color: #3a4942; display: grid; font-size: 13px; font-weight: 800; gap: 6px; }

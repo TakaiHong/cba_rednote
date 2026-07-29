@@ -989,6 +989,22 @@ function App() {
         </section>
       )}
 
+      {activeTab === "make" && !selected && (
+        <section className="editor make-step-card empty-make-state" aria-labelledby="empty-make-heading">
+          <div className="make-step-heading">
+            <div>
+              <span>第一步</span>
+              <h2 id="empty-make-heading">开始制作第一篇笔记</h2>
+              <p>当前发布库为空。先由 AI 生成一篇基于 NTU 官方来源的草稿，随后再审核文案、制作封面并保存到发布列表。</p>
+            </div>
+            <button className="primary-button" onClick={handleGenerate} disabled={loading} type="button">
+              <PenLine aria-hidden="true" size={16} />
+              {loading ? "正在生成..." : "AI 生成首篇文案"}
+            </button>
+          </div>
+        </section>
+      )}
+
       {activeTab === "make" && selected && (
       <section className="workspace" id="content-library">
         <header className="make-toolbar">
