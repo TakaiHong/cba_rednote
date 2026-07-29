@@ -1,6 +1,5 @@
 export interface Env {
   DB: D1Database;
-  ASSETS: R2Bucket;
   FIREBASE_PROJECT_ID: string;
   FIREBASE_WEB_API_KEY: string;
   ALLOWED_FIREBASE_UIDS?: string;
@@ -159,7 +158,7 @@ async function route(request: Request, url: URL, env: Env, uid: string, origin: 
   if (method === "GET" && path === "/api/preflight-evidence") return respond(preflightEvidence(), 200, env, origin);
   if (method === "GET" && path === "/api/schedule/status") return respond(cloudScheduleStatus(), 200, env, origin);
 
-  if (method === "GET" && path === "/api/assets/image") return getAsset(url.searchParams.get("path") ?? "", env, origin);
+  if (method === "GET" && path === "/api/assets/image") throw new HttpError(404, "Cloud image uploads are not enabled in this no-card deployment.");
 
   if (method === "POST" && path === "/api/posts/generate") {
     const post = await createGeneratedPost(env, await listPosts(env), (await listPosts(env)).length);
@@ -197,29 +196,15 @@ async function route(request: Request, url: URL, env: Env, uid: string, origin: 
       return respond(next, 201, env, origin);
     }
     if (method === "POST" && action === "cover-image") {
-      const key = `covers/${post.id}/${Date.now()}-${crypto.randomUUID()}.svg`;
       const svg = coverSvg(post);
-      await env.ASSETS.put(key, svg, { httpMetadata: { contentType: "image/svg+xml", cacheControl: "private, max-age=3600" } });
-      const next = { ...post, imageAssets: [...new Set([...post.imageAssets, `r2://${key}`])], updatedAt: now() };
-      await savePost(env, next);
-      await appendLog(env, "api-generate-cover", "ok", `Generated editable sticky-note cover for ${post.id}`, { postId: post.id, uid });
-      return respond({ postId: post.id, outputPath: `r2://${key}`, attached: true, post: next }, 201, env, origin);
-    }
-    if (method === "POST" && action === "image-upload") {
-      const input = await readJson<{ filename?: string; contentBase64?: string }>(request);
-      if (!input.filename || !input.contentBase64) throw new HttpError(400, "filename and contentBase64 are required");
-      const extension = extensionOf(input.filename);
-      const type = imageType(extension);
-      if (!type) throw new HttpError(400, "Only PNG, JPG, JPEG, and WebP images are supported.");
-      const bytes = decodeBase64(input.contentBase64);
-      if (!bytes.byteLength || bytes.byteLength > 5 * 1024 * 1024) throw new HttpError(400, "Image must be between 1 byte and 5 MB.");
-      const key = `uploads/${post.id}/${Date.now()}-${crypto.randomUUID()}-${safeFilename(input.filename)}`;
-      await env.ASSETS.put(key, bytes, { httpMetadata: { contentType: type, cacheControl: "private, max-age=3600" } });
-      const outputPath = `r2://${key}`;
+      const outputPath = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
       const next = { ...post, imageAssets: [...new Set([...post.imageAssets, outputPath])], updatedAt: now() };
       await savePost(env, next);
-      await appendLog(env, "api-upload-image", "ok", `Uploaded image for ${post.id}`, { postId: post.id, uid });
-      return respond({ post: next, outputPath }, 201, env, origin);
+      await appendLog(env, "api-generate-cover", "ok", `Generated editable sticky-note cover for ${post.id}`, { postId: post.id, uid });
+      return respond({ postId: post.id, outputPath, attached: true, post: next }, 201, env, origin);
+    }
+    if (method === "POST" && action === "image-upload") {
+      return respond({ error: "Cloud image upload is intentionally disabled in the no-card deployment. Use the built-in sticky-note cover, or use the local tool for real images." }, 410, env, origin);
     }
     if (method === "POST" && ["assisted-publish", "preflight", "final-publish"].includes(action ?? "")) {
       return respond({ error: "Cloud workspace prepares content only. Publish manually in Xiaohongshu Creator Center and paste the URL back here." }, 410, env, origin);
@@ -403,16 +388,6 @@ function publishPackage(post: MarketingPost) {
   };
 }
 
-async function getAsset(path: string, env: Env, origin: string | null) {
-  if (!path.startsWith("r2://")) throw new HttpError(404, "Image not found");
-  const object = await env.ASSETS.get(path.slice(5));
-  if (!object) throw new HttpError(404, "Image not found");
-  const headers = new Headers(corsHeaders(env, origin));
-  headers.set("Content-Type", object.httpMetadata?.contentType ?? "application/octet-stream");
-  headers.set("Cache-Control", object.httpMetadata?.cacheControl ?? "private, max-age=3600");
-  return new Response(object.body, { headers });
-}
-
 async function status(env: Env) {
   const posts = await listPosts(env);
   const total = posts.reduce((sum, post) => sum + post.estimatedCostCny, 0);
@@ -465,10 +440,6 @@ function emptyMetrics() { return { views: 0, likes: 0, saves: 0, comments: 0, fo
 function now() { return new Date().toISOString(); }
 function fitTitle(value: string) { return Array.from(value.trim()).slice(0, 20).join("").replace(/[，。；、\s]+$/, ""); }
 function cleanTag(value: string) { return value.replace(/^#/, "").replace(/\s+/g, "").slice(0, 24); }
-function safeFilename(value: string) { return value.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "image"; }
-function extensionOf(value: string) { const match = /\.[a-zA-Z0-9]+$/.exec(value); return match?.[0].toLowerCase() ?? ""; }
-function imageType(extension: string) { return ({ ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp" } as Record<string, string>)[extension]; }
-function decodeBase64(value: string) { const raw = atob(value); return Uint8Array.from(raw, (char) => char.charCodeAt(0)); }
 function validPublishedUrl(value: unknown) { try { const url = new URL(String(value)); return url.hostname.endsWith("xiaohongshu.com"); } catch { return false; } }
 function between(value: number, min: number, max: number) { return Math.max(min, Math.min(max, Number.isFinite(value) ? Math.floor(value) : min)); }
 function escapeXml(value: string) { return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;"); }

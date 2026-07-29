@@ -351,6 +351,7 @@ export async function getPublishPackage(id: string) {
 }
 
 export function getImageAssetUrl(path: string) {
+  if (path.startsWith("data:image/")) return path;
   return `${apiBase}/assets/image?path=${encodeURIComponent(path)}`;
 }
 

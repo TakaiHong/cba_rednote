@@ -11,10 +11,6 @@ binding = "DB"
 database_name = "ntu-cba-rednote"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
 
-[[r2_buckets]]
-binding = "ASSETS"
-bucket_name = "ntu-cba-rednote-assets"
-
 [vars]
 FIREBASE_PROJECT_ID = "REPLACE_WITH_FIREBASE_PROJECT_ID"
 DEEPSEEK_MODEL = "deepseek-chat"

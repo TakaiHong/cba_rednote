@@ -34,6 +34,7 @@
     "schedule:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1",
     "schedule:uninstall": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-daily-task.ps1 -Uninstall",
     "gcp:migrate": "tsx scripts/migrate-json-to-firestore.ts",
+    "d1:migration:export": "tsx scripts/export-d1-migration.ts",
     "worker:dev": "wrangler dev --config worker/wrangler.toml",
     "worker:deploy": "wrangler deploy --config worker/wrangler.toml",
     "worker:typecheck": "tsc -p worker/tsconfig.json --noEmit",

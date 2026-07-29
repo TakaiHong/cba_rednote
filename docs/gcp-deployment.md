@@ -1,4 +1,6 @@
-# GCP Production Deployment
+# GCP Production Deployment (Legacy Reference)
+
+The active deployment path is now [Firebase Hosting + Cloudflare Worker/D1](cloudflare-firebase-deployment.md). This document is retained only as a reference for the earlier Cloud Run design and is not the recommended setup.
 
 Recommended architecture: Cloud Run runs the Docker service; Firestore stores posts and run logs; Cloud Storage stores covers and uploaded images; Cloud Scheduler calls the daily generation endpoint. Xiaohongshu login, preflight, and final publishing remain on the operator's local browser. The cloud deployment never stores a login session or starts publishing automation.
 
