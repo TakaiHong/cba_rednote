@@ -8,6 +8,7 @@ export interface Env {
   DEEPSEEK_API_KEY?: string;
   DEEPSEEK_MODEL?: string;
   MAX_COST_CNY_PER_POST?: string;
+  SITES_MIGRATION_TOKEN?: string;
 }
 
 type PostStatus = "draft" | "approved" | "published" | "archived";
@@ -122,6 +123,10 @@ export default {
       const url = new URL(request.url);
       if (url.pathname === "/api/health") return respond({ ok: true, service: "ntu-cba-rednote-worker" }, 200, env, origin);
 
+      await ensureSchema(env);
+      if (request.method === "POST" && url.pathname === "/api/internal/migrate") {
+        return migrateLocalData(request, env, origin);
+      }
       const user = await requireOperator(request, env);
       return await route(request, url, env, user.uid, origin);
     } catch (error) {
@@ -254,6 +259,15 @@ async function listPosts(env: Env): Promise<MarketingPost[]> {
   return result.results.map((row) => withDefaults(JSON.parse(row.payload) as MarketingPost));
 }
 
+async function ensureSchema(env: Env) {
+  await env.DB.batch([
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS posts (id TEXT PRIMARY KEY, payload TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS posts_updated_at ON posts(updated_at DESC)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS run_logs (id TEXT PRIMARY KEY, action TEXT NOT NULL, status TEXT NOT NULL, message TEXT NOT NULL, metadata TEXT, created_at TEXT NOT NULL)"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS run_logs_created_at ON run_logs(created_at DESC)")
+  ]);
+}
+
 async function getPost(env: Env, id: string): Promise<MarketingPost | undefined> {
   const row = await env.DB.prepare("SELECT payload FROM posts WHERE id = ?").bind(id).first<{ payload: string }>();
   return row ? withDefaults(JSON.parse(row.payload) as MarketingPost) : undefined;
@@ -270,6 +284,27 @@ async function appendLog(env: Env, action: string, status: "ok" | "error", messa
   await env.DB.prepare("INSERT INTO run_logs (id, action, status, message, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)")
     .bind(entry.id, entry.action, entry.status, entry.message, JSON.stringify(entry.metadata ?? {}), entry.createdAt)
     .run();
+}
+
+async function migrateLocalData(request: Request, env: Env, origin: string | null) {
+  const token = request.headers.get("X-Migration-Token") ?? "";
+  if (!env.SITES_MIGRATION_TOKEN || token !== env.SITES_MIGRATION_TOKEN) throw new HttpError(401, "Invalid migration token.");
+  const input = await readJson<{ posts?: MarketingPost[]; logs?: RunLog[] }>(request);
+  const posts = Array.isArray(input.posts) ? input.posts : [];
+  const logs = Array.isArray(input.logs) ? input.logs : [];
+  if (posts.length > 500 || logs.length > 1_000) throw new HttpError(400, "Migration payload is too large.");
+
+  const statements = [
+    ...posts.map((post) => {
+      const normalized = withDefaults(post);
+      return env.DB.prepare("INSERT INTO posts (id, payload, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at")
+        .bind(normalized.id, JSON.stringify(normalized), normalized.createdAt, normalized.updatedAt);
+    }),
+    ...logs.map((log) => env.DB.prepare("INSERT INTO run_logs (id, action, status, message, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET action = excluded.action, status = excluded.status, message = excluded.message, metadata = excluded.metadata, created_at = excluded.created_at")
+      .bind(log.id, log.action, log.status, log.message, JSON.stringify(log.metadata ?? {}), log.createdAt))
+  ];
+  if (statements.length) await env.DB.batch(statements);
+  return respond({ ok: true, posts: posts.length, logs: logs.length }, 201, env, origin);
 }
 
 async function recentLogs(env: Env): Promise<RunLog[]> {

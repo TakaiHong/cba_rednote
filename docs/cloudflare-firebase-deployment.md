@@ -1,17 +1,17 @@
-# Firebase Hosting + Cloudflare Worker Deployment
+# Firebase Hosting + Codex Sites Deployment
 
 This is the active public deployment path for the NTU CBA content desk.
 
 - **Firebase Hosting** serves the React dashboard.
 - **Firebase Authentication** protects the dashboard with an operator Google account.
-- **Cloudflare Worker + D1** stores posts, review history, publishing URLs, and run logs.
+- **Codex Sites Worker + platform-managed D1** stores posts, review history, publishing URLs, and run logs.
 - **DeepSeek** is called only by the Worker and its key is kept as a Cloudflare secret.
 - The Worker creates one draft at **09:15 Singapore time** for human review.
 - Xiaohongshu publishing is manual-only. The cloud application never stores a creator login or clicks Publish.
 
 ## Deliberate v1 boundary
 
-The public deployment does **not** enable cloud file uploads. It creates a low-cost sticky-note cover preview directly in the post record, so the dashboard preview works without Cloudflare R2 or a storage subscription. Use the local workspace when a real PNG/JPG upload or the local PNG cover exporter is needed.
+The public deployment does **not** enable cloud file uploads. It creates a low-cost sticky-note cover preview directly in the post record, so the dashboard preview works without R2. Use the local workspace when a real PNG/JPG upload or the local PNG cover exporter is needed.
 
 ## 1. Create Firebase (no billing account)
 
@@ -22,44 +22,20 @@ The public deployment does **not** enable cloud file uploads. It creates a low-c
 
 The frontend Firebase web API key is not a secret; it identifies the Firebase project. The DeepSeek key remains a Worker secret and must never be placed in the frontend environment file or Git.
 
-## 2. Create Cloudflare D1
+## 2. Deploy the Worker and D1 with Codex Sites
 
-Install no global software. From this repository, log in to the free Cloudflare account:
+Codex Sites provisions the Worker-compatible runtime and the logical D1 binding named `DB`. The schema is created by the Worker on its first authenticated request. Runtime values are set in Sites, not in Git:
 
-```powershell
-npx wrangler login
-npx wrangler d1 create ntu-cba-rednote
+```text
+FIREBASE_PROJECT_ID=ntu-cba-rednote
+FIREBASE_WEB_API_KEY=<Firebase web API key>
+ALLOWED_FIREBASE_EMAILS=<operator Gmail address>
+DEEPSEEK_API_KEY=<key>
 ```
 
-Copy the returned database ID into `worker/wrangler.toml`, replacing `REPLACE_WITH_D1_DATABASE_ID`. Replace `REPLACE_WITH_FIREBASE_PROJECT_ID` with the Firebase project ID.
+The deployment output provides the Worker API URL.
 
-Initialize the schema:
-
-```powershell
-npx wrangler d1 execute ntu-cba-rednote --remote --file worker/schema.sql
-```
-
-## 3. Add Worker secrets and deploy the API
-
-Run each command and paste the value only into the terminal prompt:
-
-```powershell
-npx wrangler secret put DEEPSEEK_API_KEY
-npx wrangler secret put FIREBASE_WEB_API_KEY
-npx wrangler secret put ALLOWED_FIREBASE_EMAILS
-npm.cmd run worker:deploy
-```
-
-For `ALLOWED_FIREBASE_EMAILS`, paste the operator Gmail address. This is an allow-list: an otherwise valid Firebase user cannot access the content API unless their Gmail is listed. `ALLOWED_FIREBASE_UIDS` remains available as an optional second allow-list.
-
-Copy the Worker URL printed after deployment, such as `https://ntu-cba-rednote-api.<subdomain>.workers.dev`. Set the following values in `worker/wrangler.toml` and deploy once more:
-
-```toml
-FIREBASE_PROJECT_ID = "your-project-id"
-ALLOWED_ORIGIN = "https://your-project-id.web.app"
-```
-
-## 4. Deploy Firebase Hosting
+## 3. Deploy Firebase Hosting
 
 Copy `client/.env.production.example` to `client/.env.production.local`. Fill in the Web app configuration and set `VITE_API_BASE` to the Worker URL plus `/api`.
 
@@ -72,14 +48,9 @@ npm.cmd run firebase:deploy
 
 Open `https://your-project-id.web.app`, sign in with the Firebase operator account, generate one draft, create a sticky-note cover, approve it, then save it to the publishing list.
 
-## 5. Migrate existing local posts
+## 4. Migrate existing local posts
 
-The migration never removes local files. First generate a SQL import file:
-
-```powershell
-npm.cmd run d1:migration:export
-npx wrangler d1 execute ntu-cba-rednote --remote --file .tmp/d1-migration.sql
-```
+The one-time migration route is protected by a separate Sites secret and never removes the local JSON files. Codex performs this step after the Worker has been deployed, using the configured migration token. The route is not part of the dashboard API.
 
 ## Verification checklist
 
