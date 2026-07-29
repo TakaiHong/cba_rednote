@@ -5,6 +5,7 @@ client/dist/
 .env.local
 .env.*.local
 .firebaserc
+.firebase/
 .tmp/
 data/posts.json
 data/run-log.json
