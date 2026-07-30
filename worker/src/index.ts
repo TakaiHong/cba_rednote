@@ -41,6 +41,7 @@ interface ResearchSignal {
 interface RedditSyncResult {
   configured: boolean;
   scanned: number;
+  selected: number;
   added: number;
   skipped: number;
   retentionDays: number;
@@ -203,6 +204,14 @@ export default {
 
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
     try {
+      if (redditStatus(env).configured) {
+        try {
+          const reddit = await syncRedditSignals(env);
+          await appendLog(env, "scheduled-reddit-sync", "ok", `Scanned ${reddit.scanned} candidates and added ${reddit.added} trend signals.`, { scanned: reddit.scanned, added: reddit.added, skipped: reddit.skipped });
+        } catch (error) {
+          await appendLog(env, "scheduled-reddit-sync", "error", error instanceof Error ? error.message : String(error));
+        }
+      }
       const posts = await listPosts(env);
       const post = await createGeneratedPost(env, posts, posts.length);
       await savePost(env, post);
@@ -372,7 +381,7 @@ async function ensureSchema(env: Env) {
 
 async function listResearchSignals(env: Env): Promise<ResearchSignal[]> {
   await pruneExpiredResearchSignals(env);
-  const result = await env.DB.prepare("SELECT payload FROM knowledge_entries ORDER BY updated_at DESC LIMIT 80").all<{ payload: string }>();
+  const result = await env.DB.prepare("SELECT payload FROM knowledge_entries ORDER BY updated_at DESC LIMIT 400").all<{ payload: string }>();
   return result.results.map((row) => normalizeResearchSignal(JSON.parse(row.payload) as ResearchSignal));
 }
 
@@ -417,8 +426,8 @@ function redditStatus(env: Env) {
   return {
     configured: Boolean(env.REDDIT_CLIENT_ID && env.REDDIT_CLIENT_SECRET),
     retentionDays: 30,
-    communities: ["r/NTU", "r/SGExams (NTU search only)"],
-    scope: "Read-only public post metadata. No authors, post bodies or comments are retained."
+    communities: ["r/NTU", "r/SGExams", "r/asksingapore", "r/singapore (NTU search only)"],
+    scope: "Up to 500 public API candidates per sync; only high-relevance metadata is retained. No authors, post bodies or comments are retained."
   };
 }
 
@@ -429,15 +438,21 @@ async function syncRedditSignals(env: Env): Promise<RedditSyncResult> {
 
   await pruneExpiredResearchSignals(env);
   const token = await getRedditAccessToken(env);
-  const [ntu, sgExams] = await Promise.all([
-    listRedditPosts("/r/NTU/new?limit=80", token, env),
-    listRedditPosts("/r/SGExams/search?q=NTU&restrict_sr=on&sort=new&t=week&limit=40", token, env)
-  ]);
+  const streams = [
+    "/r/NTU/new?limit=100",
+    "/r/NTU/top?limit=100&t=year",
+    "/r/SGExams/search?q=NTU&restrict_sr=on&sort=new&t=year&limit=100",
+    "/r/asksingapore/search?q=NTU&restrict_sr=on&sort=new&t=year&limit=100",
+    "/r/singapore/search?q=NTU&restrict_sr=on&sort=new&t=year&limit=100"
+  ];
+  const batches = await Promise.all(streams.map((path) => listRedditPosts(path, token, env)));
   const existingUrls = new Set((await listResearchSignals(env)).map((signal) => signal.sourceUrl));
-  // Keep the collection boundary enforceable even if an upstream response ignores its requested limit.
-  const candidates = [...ntu, ...sgExams]
-    .filter((post) => !post.over_18 && !post.stickied && post.permalink && post.id)
-    .slice(0, 120);
+  // Keep this boundary enforceable even if upstream ignores requested limits.
+  const rawCandidates = batches.flat().slice(0, 500);
+  const candidates = [...new Map(rawCandidates.map((post) => [post.id, post])).values()]
+    .filter(isRelevantRedditPost)
+    .sort((left, right) => redditQuality(right) - redditQuality(left))
+    .slice(0, 400);
   let added = 0;
   let skipped = 0;
   const timestamp = now();
@@ -469,15 +484,17 @@ async function syncRedditSignals(env: Env): Promise<RedditSyncResult> {
     added += 1;
   }
 
-  return { configured: true, scanned: candidates.length, added, skipped, retentionDays: 30, communities: ["r/NTU", "r/SGExams (NTU search only)"] };
+  return { configured: true, scanned: rawCandidates.length, selected: candidates.length, added, skipped, retentionDays: 30, communities: redditStatus(env).communities };
 }
 
 interface RedditPost {
   id?: string;
   permalink?: string;
   title?: string;
+  subreddit?: string;
   score?: number;
   num_comments?: number;
+  created_utc?: number;
   over_18?: boolean;
   stickied?: boolean;
 }
@@ -517,6 +534,19 @@ function detectRedditTheme(title: string) {
   return "NTU student questions";
 }
 
+function isRelevantRedditPost(post: RedditPost) {
+  if (post.over_18 || post.stickied || !post.permalink || !post.id) return false;
+  const subreddit = (post.subreddit ?? "").toLowerCase();
+  if (subreddit === "ntu") return true;
+  return /\bntu\b|nanyang|nbs|nanyang business/i.test(post.title ?? "");
+}
+
+function redditQuality(post: RedditPost) {
+  const interactions = Math.max(0, Number(post.score ?? 0)) + Math.max(0, Number(post.num_comments ?? 0));
+  const ageDays = Math.max(0, (Date.now() / 1000 - Number(post.created_utc ?? 0)) / 86_400);
+  return interactions * 8 + Math.max(0, 180 - ageDays);
+}
+
 function redditAudience(theme: string) {
   if (theme === "Internship and career planning") return "NTU students planning internships";
   if (theme === "Accommodation and hall life") return "Incoming NTU students";
@@ -525,7 +555,7 @@ function redditAudience(theme: string) {
 }
 
 async function pruneExpiredResearchSignals(env: Env) {
-  const result = await env.DB.prepare("SELECT id, payload FROM knowledge_entries WHERE created_at < ? LIMIT 160").bind(new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString()).all<{ id: string; payload: string }>();
+  const result = await env.DB.prepare("SELECT id, payload FROM knowledge_entries WHERE created_at < ? LIMIT 500").bind(new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString()).all<{ id: string; payload: string }>();
   const staleIds = result.results
     .map((row) => ({ id: row.id, signal: normalizeResearchSignal(JSON.parse(row.payload) as ResearchSignal) }))
     .filter(({ signal }) => signal.sourceType === "reddit" && signal.expiresAt && new Date(signal.expiresAt).getTime() <= Date.now())

@@ -257,7 +257,7 @@ function App() {
     try {
       const result = await syncRedditSignals();
       await refresh();
-      setPublishHint(`Reddit 趋势同步完成：扫描 ${result.scanned} 条公开帖子，新增 ${result.added} 条匿名化选题信号。`);
+      setPublishHint(`Reddit 趋势同步完成：读取 ${result.scanned} 条候选，筛选 ${result.selected} 条高相关信号，新增 ${result.added} 条。`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Reddit 趋势同步失败");
     } finally {
@@ -1091,7 +1091,7 @@ function App() {
               <div className="research-signal-grid">
                 {knowledge.researchSignals.map((signal) => (
                   <article className="research-signal-card" key={signal.id}>
-                    <div><span>{signal.sourceType === "reddit" ? "Reddit" : "小红书"} · {signal.audience}</span><button aria-label="删除该公开洞察" onClick={() => void handleDeleteResearchSignal(signal.id)} type="button">删除</button></div>
+                    <div><span>{signal.sourceType === "reddit" ? `Reddit · ${signal.audience}${signal.interactionCount !== undefined ? ` · ${signal.interactionCount} 互动` : ""}` : `小红书 · ${signal.audience}`}</span><button aria-label="删除该公开洞察" onClick={() => void handleDeleteResearchSignal(signal.id)} type="button">删除</button></div>
                     <h4>{signal.theme}</h4>
                     <p>{signal.insight}</p>
                     <a href={signal.sourceUrl} rel="noreferrer" target="_blank">打开公开参考</a>

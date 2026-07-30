@@ -361,7 +361,7 @@ export async function syncRedditSignals() {
     const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
     throw new Error(payload?.error ?? "Failed to sync Reddit trend signals");
   }
-  return (await response.json()) as { configured: boolean; scanned: number; added: number; skipped: number; retentionDays: number; communities: string[] };
+  return (await response.json()) as { configured: boolean; scanned: number; selected: number; added: number; skipped: number; retentionDays: number; communities: string[] };
 }
 
 export async function generatePost() {

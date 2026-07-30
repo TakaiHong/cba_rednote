@@ -7,7 +7,7 @@
 - `server/src/generation/modelClient.ts`：DeepSeek/OpenAI-compatible 模型的社团账号提示词，并要求标题不超过 20 字。
 - `scripts/generate-cover-image.ts`：生成不依赖真实照片的 NTU CBA 便利贴式 3:4 封面。
 - `server/src/publishing/finalPublish.ts`：强制最终发布为人工步骤；不允许脚本点击小红书发布按钮。
-- `worker/src/index.ts`：Cloudflare Worker API。用 Firebase ID Token 鉴权，读写 Cloudflare D1 的 `DB` 绑定；提供帖子、知识库、官方来源和 Reddit 受控趋势同步接口。Reddit 同步固定读取 `r/NTU` 和 `r/SGExams` 的 NTU 搜索结果，每次最多 120 条候选，只持久化链接、主题、互动合计和匿名化洞察。
+- `worker/src/index.ts`：Cloudflare Worker API。用 Firebase ID Token 鉴权，读写 Cloudflare D1 的 `DB` 绑定；提供帖子、知识库、官方来源和 Reddit 受控趋势同步接口。Reddit 同步读取 `r/NTU` 及三个新加坡学生社区的 NTU 搜索结果，每次最多 500 条候选、最多保留 400 条高相关信号，只持久化链接、主题、互动合计和匿名化洞察。
 - `worker/wrangler.toml`：Worker 的 D1、Cron 和运行时配置。生产环境还需要在 Cloudflare Secrets 中设置 `REDDIT_CLIENT_ID`、`REDDIT_CLIENT_SECRET`、`REDDIT_USER_AGENT`；它们不进入 Git。
 
 ## Root

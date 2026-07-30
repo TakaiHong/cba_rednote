@@ -11,12 +11,13 @@
 
 ## Reddit 趋势同步
 
-Reddit 仅作为选题趋势来源，不是 NTU 信息源。同步范围固定为 `r/NTU` 和 `r/SGExams` 中的 NTU 搜索结果；Worker 只在内存中读取标题以归类，持久化数据只包含公开链接、互动合计、主题标签和匿名化趋势说明。
+Reddit 仅作为选题趋势来源，不是 NTU 信息源。同步范围为 `r/NTU` 的最新和年度高互动帖子，以及 `r/SGExams`、`r/asksingapore`、`r/singapore` 的 NTU 搜索结果；Worker 只在内存中读取标题以归类和筛选，持久化数据只包含公开链接、互动合计、主题标签和匿名化趋势说明。
 
 - 不保存作者、标题、正文、评论、截图或用户画像；
 - 不把 Reddit 内容发送到文案模型；
-- 每次同步最多读取 120 条候选帖子；
+- 每次同步最多读取 500 条 API 候选帖子，按 NTU 相关度、互动量与新鲜度筛选，最多保留 400 条信号；
 - Reddit 信号保存 30 天后自动删除；
+- Cloudflare 每日生成草稿前会自动同步一次；
 - 使用前需在 Cloudflare Worker Secrets 中配置 `REDDIT_CLIENT_ID` 与 `REDDIT_CLIENT_SECRET`，并设置可识别的 `REDDIT_USER_AGENT`；
 - 同步按钮只有在凭据存在时可用，失败时不会回退到网页抓取。
 
