@@ -1046,11 +1046,11 @@ function App() {
             <div>
               <p className="eyebrow">SOURCE LIBRARY</p>
               <h2 id="knowledge-heading">NTU 内容知识库</h2>
-              <p>官方来源保证事实；公开社区参考只提炼话题、痛点和叙事结构。它们不会被当成事实，也不会被逐句改写。</p>
+              <p>Reddit 优先提供本地学生正在讨论的话题、痛点和叙事角度；官方来源只负责核验可写的事实。社区内容不会被逐句改写，也不会被当成学校事实。</p>
             </div>
             <div className="knowledge-counts">
               <strong>{knowledge?.officialSources.length ?? 0}</strong><span>官方来源</span>
-              <strong>{knowledge?.researchSignals.length ?? 0}</strong><span>公开洞察</span>
+              <strong>{knowledge?.researchSignals.length ?? 0}</strong><span>社区洞察</span>
             </div>
           </header>
 
@@ -1077,11 +1077,11 @@ function App() {
             <div>
               <span>REDDIT TREND SYNC</span>
               <h3>同步 r/NTU 的匿名化选题信号</h3>
-              <p>{knowledge?.reddit.scope ?? "仅抓取公开帖子元数据，不保存作者、标题正文或评论。"}</p>
-              <small>范围：{knowledge?.reddit.communities.join("、") ?? "r/NTU、r/SGExams（仅 NTU 搜索）"}。Reddit 信号 {knowledge?.reddit.retentionDays ?? 30} 天后自动清理。</small>
+              <p>{knowledge?.reddit.scope ?? "仅收录经人工确认的公开帖子元数据，不保存作者、标题正文或评论。"}</p>
+              <small>范围：{knowledge?.reddit.communities.join("、") ?? "r/NTU、r/SGExams（仅 NTU 搜索）"}。浏览器采集与 API 信号均在 {knowledge?.reddit.retentionDays ?? 30} 天后自动清理。</small>
             </div>
             <button className="primary-button" disabled={redditSyncLoading || !knowledge?.reddit.configured} onClick={() => void handleRedditSync()} type="button">
-              <BookOpen aria-hidden="true" size={16} />{redditSyncLoading ? "正在同步..." : knowledge?.reddit.configured ? "同步 Reddit 趋势" : "等待 Reddit API 配置"}
+              <BookOpen aria-hidden="true" size={16} />{redditSyncLoading ? "正在同步..." : knowledge?.reddit.configured ? "同步 Reddit 趋势" : "当前使用浏览器采集样本"}
             </button>
           </section>
 
@@ -1091,14 +1091,14 @@ function App() {
               <div className="research-signal-grid">
                 {knowledge.researchSignals.map((signal) => (
                   <article className="research-signal-card" key={signal.id}>
-                    <div><span>{signal.sourceType === "reddit" ? `Reddit · ${signal.audience}${signal.interactionCount !== undefined ? ` · ${signal.interactionCount} 互动` : ""}` : `小红书 · ${signal.audience}`}</span><button aria-label="删除该公开洞察" onClick={() => void handleDeleteResearchSignal(signal.id)} type="button">删除</button></div>
+                    <div><span>{signal.sourceType === "reddit" ? `Reddit · ${signal.collectionMethod === "browser-curated" ? "浏览器采集" : signal.collectionMethod === "api" ? "API 同步" : "人工收录"} · ${signal.audience}${signal.interactionCount !== undefined ? ` · ${signal.interactionCount} 互动` : ""}` : `小红书 · ${signal.audience}`}</span>{!signal.readOnly && <button aria-label="删除该公开洞察" onClick={() => void handleDeleteResearchSignal(signal.id)} type="button">删除</button>}</div>
                     <h4>{signal.theme}</h4>
                     <p>{signal.insight}</p>
                     <a href={signal.sourceUrl} rel="noreferrer" target="_blank">打开公开参考</a>
                   </article>
                 ))}
               </div>
-            ) : <p className="empty">{knowledge ? "还没有公开洞察。可以手动收录公开链接；完成 Reddit API 配置后，也可同步 r/NTU 和 r/SGExams 的匿名化选题信号。" : "知识库服务尚未更新。页面入口已上线，完成 Cloudflare Worker 更新后会自动显示官方来源并可收录公开洞察。"}</p>}
+            ) : <p className="empty">{knowledge ? "还没有社区洞察。可以手动收录经确认的 Reddit 链接；完成 Reddit API 配置后，也可同步匿名化选题信号。" : "知识库服务尚未更新。完成 Cloudflare Worker 更新后会显示浏览器采集样本并可收录社区洞察。"}</p>}
           </section>
 
           <section className="knowledge-section">

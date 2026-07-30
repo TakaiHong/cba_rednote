@@ -15,6 +15,8 @@ export interface ResearchSignal {
   id: string;
   sourceUrl: string;
   sourceType: "xiaohongshu" | "reddit";
+  collectionMethod?: "manual" | "browser-curated" | "api";
+  readOnly?: boolean;
   theme: string;
   audience: string;
   insight: string;

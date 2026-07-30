@@ -29,6 +29,8 @@ interface ResearchSignal {
   id: string;
   sourceUrl: string;
   sourceType: "xiaohongshu" | "reddit";
+  collectionMethod?: "manual" | "browser-curated" | "api";
+  readOnly?: boolean;
   theme: string;
   audience: string;
   insight: string;
@@ -171,6 +173,68 @@ const officialSources: SourceReference[] = [
   }
 ];
 
+// These are human-reviewed topic signals collected from a logged-in Reddit search
+// session. They are deliberately paraphrased: no author, title, post body or
+// comment is retained, and they expire before they can become stale guidance.
+const browserCuratedRedditSignals: ResearchSignal[] = [
+  {
+    id: "browser-sample-timetable-20260731",
+    sourceUrl: "https://www.reddit.com/r/NTU/comments/1v599xo/cooked_asf_timetable/",
+    sourceType: "reddit",
+    collectionMethod: "browser-curated",
+    readOnly: true,
+    theme: "课程表与日常节奏",
+    audience: "在读 NTU 学生",
+    insight: "近期讨论反映长课表、早晚课与生活安排的冲突。适合写读懂课表、安排通勤与复习节奏的经验；不要把个案当成所有课程的常态。",
+    interactionCount: 159,
+    createdAt: "2026-07-31T00:00:00.000Z",
+    updatedAt: "2026-07-31T00:00:00.000Z",
+    expiresAt: "2026-08-30T23:59:59.999Z"
+  },
+  {
+    id: "browser-sample-admissions-20260731",
+    sourceUrl: "https://www.reddit.com/r/SGExams/comments/1v9r5p7/international_applicant_still_waiting_for_an/",
+    sourceType: "reddit",
+    collectionMethod: "browser-curated",
+    readOnly: true,
+    theme: "国际生申请等待期",
+    audience: "计划申请 NTU 的国际学生",
+    insight: "申请者会在结果未出时寻找时间线和心理支持。适合写等待期能准备什么、去哪里核对状态；录取结果与时间节点只以官方邮件和页面为准。",
+    interactionCount: 24,
+    createdAt: "2026-07-31T00:00:00.000Z",
+    updatedAt: "2026-07-31T00:00:00.000Z",
+    expiresAt: "2026-08-30T23:59:59.999Z"
+  },
+  {
+    id: "browser-sample-convocation-20260731",
+    sourceUrl: "https://www.reddit.com/r/NTU/comments/1v8uma3/did_anyone_regret_not_attending_convocation/",
+    sourceType: "reddit",
+    collectionMethod: "browser-curated",
+    readOnly: true,
+    theme: "毕业与家人参与",
+    audience: "即将毕业的 NTU 学生",
+    insight: "毕业讨论里常见的是家人参与和留念的情感价值。适合做毕业季叙事和准备清单；典礼日期、资格和流程必须回到官方通知核验。",
+    interactionCount: 54,
+    createdAt: "2026-07-31T00:00:00.000Z",
+    updatedAt: "2026-07-31T00:00:00.000Z",
+    expiresAt: "2026-08-30T23:59:59.999Z"
+  },
+  {
+    id: "browser-sample-expectations-20260731",
+    sourceUrl: "https://www.reddit.com/r/SGExams/comments/1lllueu/i_am_starting_to_regret_accepting_ntu/",
+    sourceType: "reddit",
+    collectionMethod: "browser-curated",
+    readOnly: true,
+    theme: "入学后的期待落差",
+    audience: "准新生与转学期学生",
+    insight: "高讨论度内容显示，准新生会担心选择是否适合自己。适合写入学适应、建立支持网络和求助入口；不把单一经历包装成学校整体结论。",
+    interactionCount: 652,
+    createdAt: "2026-07-31T00:00:00.000Z",
+    updatedAt: "2026-07-31T00:00:00.000Z",
+    expiresAt: "2026-08-30T23:59:59.999Z"
+  }
+];
+
 const themes = [
   { title: "NTU新生先做这3件事", style: "checklist", scene: "刚到NTU的第一周", angle: "把不确定的事拆成可执行清单" },
   { title: "NBS同学的校园信息源", style: "guide", scene: "小组作业与社团消息同时涌来", angle: "先确认官方来源，再问同学经验" },
@@ -243,10 +307,11 @@ async function route(request: Request, url: URL, env: Env, uid: string, origin: 
       researchSignals: await listResearchSignals(env),
       reddit: redditStatus(env),
       policy: {
-        purpose: "Use public community references only for topic selection, audience pain points and presentation structure.",
+        purpose: "Use Reddit community signals for topic selection, local student pain points and presentation structure; use NTU/NBS sources only to validate factual claims.",
         restrictions: [
           "Do not store post bodies, screenshots, user handles, comments or private information.",
           "Do not treat a public community post as a factual source.",
+          "Browser-curated Reddit signals are paraphrased, read-only and expire after 30 days.",
           "Every changing NTU fact in a publishable draft must still be supported by an official NTU source."
         ]
       }
@@ -382,7 +447,10 @@ async function ensureSchema(env: Env) {
 async function listResearchSignals(env: Env): Promise<ResearchSignal[]> {
   await pruneExpiredResearchSignals(env);
   const result = await env.DB.prepare("SELECT payload FROM knowledge_entries ORDER BY updated_at DESC LIMIT 400").all<{ payload: string }>();
-  return result.results.map((row) => normalizeResearchSignal(JSON.parse(row.payload) as ResearchSignal));
+  const saved = result.results.map((row) => normalizeResearchSignal(JSON.parse(row.payload) as ResearchSignal));
+  const activeBrowserSignals = browserCuratedRedditSignals.filter((signal) => !signal.expiresAt || new Date(signal.expiresAt).getTime() > Date.now());
+  const savedUrls = new Set(saved.map((signal) => signal.sourceUrl));
+  return [...activeBrowserSignals.filter((signal) => !savedUrls.has(signal.sourceUrl)), ...saved].slice(0, 400);
 }
 
 async function createResearchSignal(env: Env, input: Partial<ResearchSignal>): Promise<ResearchSignal> {
@@ -427,7 +495,7 @@ function redditStatus(env: Env) {
     configured: Boolean(env.REDDIT_CLIENT_ID && env.REDDIT_CLIENT_SECRET),
     retentionDays: 30,
     communities: ["r/NTU", "r/SGExams", "r/asksingapore", "r/singapore (NTU search only)"],
-    scope: "Up to 500 public API candidates per sync; only high-relevance metadata is retained. No authors, post bodies or comments are retained."
+    scope: "Browser-curated samples are available now. If API credentials are approved later, each sync scans up to 500 candidates; only high-relevance metadata is retained. No authors, post bodies or comments are retained."
   };
 }
 
