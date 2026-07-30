@@ -8,6 +8,9 @@ export interface Env {
   DEEPSEEK_API_KEY?: string;
   DEEPSEEK_MODEL?: string;
   MAX_COST_CNY_PER_POST?: string;
+  REDDIT_CLIENT_ID?: string;
+  REDDIT_CLIENT_SECRET?: string;
+  REDDIT_USER_AGENT?: string;
   SITES_MIGRATION_TOKEN?: string;
 }
 
@@ -25,11 +28,23 @@ interface SourceReference {
 interface ResearchSignal {
   id: string;
   sourceUrl: string;
+  sourceType: "xiaohongshu" | "reddit";
   theme: string;
   audience: string;
   insight: string;
+  interactionCount?: number;
+  expiresAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+interface RedditSyncResult {
+  configured: boolean;
+  scanned: number;
+  added: number;
+  skipped: number;
+  retentionDays: number;
+  communities: string[];
 }
 
 interface MarketingPost {
@@ -217,11 +232,12 @@ async function route(request: Request, url: URL, env: Env, uid: string, origin: 
     return respond({
       officialSources,
       researchSignals: await listResearchSignals(env),
+      reddit: redditStatus(env),
       policy: {
-        purpose: "Use public Xiaohongshu references only for topic selection, audience pain points and presentation structure.",
+        purpose: "Use public community references only for topic selection, audience pain points and presentation structure.",
         restrictions: [
-          "Do not store post bodies, screenshots, user handles or private information.",
-          "Do not treat a public post as a factual source.",
+          "Do not store post bodies, screenshots, user handles, comments or private information.",
+          "Do not treat a public community post as a factual source.",
           "Every changing NTU fact in a publishable draft must still be supported by an official NTU source."
         ]
       }
@@ -233,6 +249,12 @@ async function route(request: Request, url: URL, env: Env, uid: string, origin: 
     const signal = await createResearchSignal(env, input);
     await appendLog(env, "knowledge-add-public-reference", "ok", `Added research signal ${signal.id}`, { signalId: signal.id, uid });
     return respond(signal, 201, env, origin);
+  }
+
+  if (method === "POST" && path === "/api/knowledge-base/reddit/sync") {
+    const result = await syncRedditSignals(env);
+    await appendLog(env, "knowledge-reddit-sync", "ok", `Scanned ${result.scanned} Reddit posts and added ${result.added} trend signals.`, { scanned: result.scanned, added: result.added, skipped: result.skipped, uid });
+    return respond(result, 200, env, origin);
   }
 
   const researchSignalMatch = /^\/api\/knowledge-base\/research-signals\/([^/]+)$/.exec(path);
@@ -349,8 +371,9 @@ async function ensureSchema(env: Env) {
 }
 
 async function listResearchSignals(env: Env): Promise<ResearchSignal[]> {
+  await pruneExpiredResearchSignals(env);
   const result = await env.DB.prepare("SELECT payload FROM knowledge_entries ORDER BY updated_at DESC LIMIT 80").all<{ payload: string }>();
-  return result.results.map((row) => JSON.parse(row.payload) as ResearchSignal);
+  return result.results.map((row) => normalizeResearchSignal(JSON.parse(row.payload) as ResearchSignal));
 }
 
 async function createResearchSignal(env: Env, input: Partial<ResearchSignal>): Promise<ResearchSignal> {
@@ -358,11 +381,12 @@ async function createResearchSignal(env: Env, input: Partial<ResearchSignal>): P
   const theme = cleanResearchText(input.theme, 64, "Topic");
   const audience = cleanResearchText(input.audience, 64, "NTU students");
   const insight = cleanResearchText(input.insight, 420, "");
-  if (!isPublicXhsUrl(sourceUrl)) throw new HttpError(400, "Please provide a public Xiaohongshu post or share URL.");
+  const sourceType = publicSourceType(sourceUrl);
+  if (!sourceType) throw new HttpError(400, "Please provide a public Xiaohongshu or Reddit URL.");
   if (insight.length < 12) throw new HttpError(400, "Write a short paraphrased observation of at least 12 characters. Do not paste the post body.");
 
   const timestamp = now();
-  const signal: ResearchSignal = { id: crypto.randomUUID(), sourceUrl, theme, audience, insight, createdAt: timestamp, updatedAt: timestamp };
+  const signal: ResearchSignal = { id: crypto.randomUUID(), sourceUrl, sourceType, theme, audience, insight, createdAt: timestamp, updatedAt: timestamp };
   await env.DB.prepare("INSERT INTO knowledge_entries (id, payload, created_at, updated_at) VALUES (?, ?, ?, ?)")
     .bind(signal.id, JSON.stringify(signal), signal.createdAt, signal.updatedAt)
     .run();
@@ -374,13 +398,139 @@ function cleanResearchText(value: unknown, maxLength: number, fallback: string) 
   return text || fallback;
 }
 
-function isPublicXhsUrl(value: string) {
+function publicSourceType(value: string): ResearchSignal["sourceType"] | undefined {
   try {
     const host = new URL(value).hostname.toLowerCase();
-    return host === "xiaohongshu.com" || host.endsWith(".xiaohongshu.com") || host === "xhslink.com" || host.endsWith(".xhslink.com");
+    if (host === "xiaohongshu.com" || host.endsWith(".xiaohongshu.com") || host === "xhslink.com" || host.endsWith(".xhslink.com")) return "xiaohongshu";
+    if (host === "reddit.com" || host.endsWith(".reddit.com")) return "reddit";
+    return undefined;
   } catch {
-    return false;
+    return undefined;
   }
+}
+
+function normalizeResearchSignal(signal: ResearchSignal): ResearchSignal {
+  return { ...signal, sourceType: signal.sourceType ?? (publicSourceType(signal.sourceUrl) ?? "xiaohongshu") };
+}
+
+function redditStatus(env: Env) {
+  return {
+    configured: Boolean(env.REDDIT_CLIENT_ID && env.REDDIT_CLIENT_SECRET),
+    retentionDays: 30,
+    communities: ["r/NTU", "r/SGExams (NTU search only)"],
+    scope: "Read-only public post metadata. No authors, post bodies or comments are retained."
+  };
+}
+
+async function syncRedditSignals(env: Env): Promise<RedditSyncResult> {
+  if (!env.REDDIT_CLIENT_ID || !env.REDDIT_CLIENT_SECRET) {
+    throw new HttpError(412, "Reddit sync is not configured. Add REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET as Cloudflare Worker secrets first.");
+  }
+
+  await pruneExpiredResearchSignals(env);
+  const token = await getRedditAccessToken(env);
+  const [ntu, sgExams] = await Promise.all([
+    listRedditPosts("/r/NTU/new?limit=80", token, env),
+    listRedditPosts("/r/SGExams/search?q=NTU&restrict_sr=on&sort=new&t=week&limit=40", token, env)
+  ]);
+  const existingUrls = new Set((await listResearchSignals(env)).map((signal) => signal.sourceUrl));
+  // Keep the collection boundary enforceable even if an upstream response ignores its requested limit.
+  const candidates = [...ntu, ...sgExams]
+    .filter((post) => !post.over_18 && !post.stickied && post.permalink && post.id)
+    .slice(0, 120);
+  let added = 0;
+  let skipped = 0;
+  const timestamp = now();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  for (const post of candidates) {
+    const sourceUrl = `https://www.reddit.com${post.permalink}`;
+    if (existingUrls.has(sourceUrl)) {
+      skipped += 1;
+      continue;
+    }
+    const theme = detectRedditTheme(post.title ?? "");
+    const signal: ResearchSignal = {
+      id: `reddit-${post.id}`,
+      sourceUrl,
+      sourceType: "reddit",
+      theme,
+      audience: redditAudience(theme),
+      insight: `A recent public community discussion matched the ${theme} topic. Use it only to prioritize a helpful editorial angle; verify every NTU-specific claim against official sources.`,
+      interactionCount: Math.max(0, Number(post.score ?? 0)) + Math.max(0, Number(post.num_comments ?? 0)),
+      expiresAt,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+    await env.DB.prepare("INSERT INTO knowledge_entries (id, payload, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at")
+      .bind(signal.id, JSON.stringify(signal), signal.createdAt, signal.updatedAt)
+      .run();
+    existingUrls.add(sourceUrl);
+    added += 1;
+  }
+
+  return { configured: true, scanned: candidates.length, added, skipped, retentionDays: 30, communities: ["r/NTU", "r/SGExams (NTU search only)"] };
+}
+
+interface RedditPost {
+  id?: string;
+  permalink?: string;
+  title?: string;
+  score?: number;
+  num_comments?: number;
+  over_18?: boolean;
+  stickied?: boolean;
+}
+
+async function getRedditAccessToken(env: Env) {
+  const credentials = btoa(`${env.REDDIT_CLIENT_ID}:${env.REDDIT_CLIENT_SECRET}`);
+  const response = await fetch("https://www.reddit.com/api/v1/access_token", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${credentials}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": env.REDDIT_USER_AGENT ?? "NTU-CBA-Content-Research/1.0"
+    },
+    body: "grant_type=client_credentials"
+  });
+  const data = await response.json().catch(() => ({})) as { access_token?: string };
+  if (!response.ok || !data.access_token) throw new HttpError(502, "Reddit OAuth token request failed. Check the Worker secrets and approved API access.");
+  return data.access_token;
+}
+
+async function listRedditPosts(path: string, token: string, env: Env): Promise<RedditPost[]> {
+  const response = await fetch(`https://oauth.reddit.com${path}`, {
+    headers: { Authorization: `Bearer ${token}`, "User-Agent": env.REDDIT_USER_AGENT ?? "NTU-CBA-Content-Research/1.0" }
+  });
+  const data = await response.json().catch(() => ({})) as { data?: { children?: Array<{ data?: RedditPost }> } };
+  if (!response.ok) throw new HttpError(502, "Reddit public-post request failed. Check the approved API scope and rate limit.");
+  return (data.data?.children ?? []).map((item) => item.data).filter((post): post is RedditPost => Boolean(post));
+}
+
+function detectRedditTheme(title: string) {
+  const normalized = title.toLowerCase();
+  if (/intern|career|resume|cv|loa|placement/.test(normalized)) return "Internship and career planning";
+  if (/hall|hostel|accommodation|room|housing/.test(normalized)) return "Accommodation and hall life";
+  if (/exchange|international|visa|arrival|freshman/.test(normalized)) return "International student transition";
+  if (/module|course|exam|study|gpa|academic/.test(normalized)) return "Academic planning";
+  if (/social|friend|club|cca|life|boring/.test(normalized)) return "Campus life and belonging";
+  return "NTU student questions";
+}
+
+function redditAudience(theme: string) {
+  if (theme === "Internship and career planning") return "NTU students planning internships";
+  if (theme === "Accommodation and hall life") return "Incoming NTU students";
+  if (theme === "International student transition") return "International and exchange students";
+  return "NTU students";
+}
+
+async function pruneExpiredResearchSignals(env: Env) {
+  const result = await env.DB.prepare("SELECT id, payload FROM knowledge_entries WHERE created_at < ? LIMIT 160").bind(new Date(Date.now() - 31 * 24 * 60 * 60 * 1000).toISOString()).all<{ id: string; payload: string }>();
+  const staleIds = result.results
+    .map((row) => ({ id: row.id, signal: normalizeResearchSignal(JSON.parse(row.payload) as ResearchSignal) }))
+    .filter(({ signal }) => signal.sourceType === "reddit" && signal.expiresAt && new Date(signal.expiresAt).getTime() <= Date.now())
+    .map(({ id }) => id);
+  if (staleIds.length) await env.DB.batch(staleIds.map((id) => env.DB.prepare("DELETE FROM knowledge_entries WHERE id = ?").bind(id)));
 }
 
 async function getPost(env: Env, id: string): Promise<MarketingPost | undefined> {

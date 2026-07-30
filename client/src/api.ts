@@ -14,16 +14,27 @@ export interface SourceReference {
 export interface ResearchSignal {
   id: string;
   sourceUrl: string;
+  sourceType: "xiaohongshu" | "reddit";
   theme: string;
   audience: string;
   insight: string;
+  interactionCount?: number;
+  expiresAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RedditTrendStatus {
+  configured: boolean;
+  retentionDays: number;
+  communities: string[];
+  scope: string;
 }
 
 export interface KnowledgeBase {
   officialSources: SourceReference[];
   researchSignals: ResearchSignal[];
+  reddit: RedditTrendStatus;
   policy: {
     purpose: string;
     restrictions: string[];
@@ -342,6 +353,15 @@ export async function addResearchSignal(input: Pick<ResearchSignal, "sourceUrl" 
 export async function deleteResearchSignal(id: string) {
   const response = await fetch(`${apiBase}/knowledge-base/research-signals/${encodeURIComponent(id)}`, { method: "DELETE" });
   if (!response.ok) throw new Error("Failed to remove public-reference insight");
+}
+
+export async function syncRedditSignals() {
+  const response = await fetch(`${apiBase}/knowledge-base/reddit/sync`, { method: "POST" });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to sync Reddit trend signals");
+  }
+  return (await response.json()) as { configured: boolean; scanned: number; added: number; skipped: number; retentionDays: number; communities: string[] };
 }
 
 export async function generatePost() {

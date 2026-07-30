@@ -24,6 +24,7 @@ import {
   startAssistedPublish,
   startFinalPublish,
   startPublishPreflight,
+  syncRedditSignals,
   uninstallDailyTask,
   uploadImageAsset,
   type CalendarItem,
@@ -114,6 +115,7 @@ function App() {
   const [publishUrlDrafts, setPublishUrlDrafts] = useState<Record<string, string>>({});
   const [knowledge, setKnowledge] = useState<KnowledgeBase>();
   const [researchLoading, setResearchLoading] = useState(false);
+  const [redditSyncLoading, setRedditSyncLoading] = useState(false);
   const [researchForm, setResearchForm] = useState({ sourceUrl: "", theme: "", audience: "NTU 中国学生", insight: "" });
 
   const selected = useMemo(
@@ -246,6 +248,20 @@ function App() {
       setKnowledge((current) => current ? { ...current, researchSignals: current.researchSignals.filter((signal) => signal.id !== id) } : current);
     } catch (err) {
       setError(err instanceof Error ? err.message : "删除公开参考洞察失败");
+    }
+  }
+
+  async function handleRedditSync() {
+    setRedditSyncLoading(true);
+    setError("");
+    try {
+      const result = await syncRedditSignals();
+      await refresh();
+      setPublishHint(`Reddit 趋势同步完成：扫描 ${result.scanned} 条公开帖子，新增 ${result.added} 条匿名化选题信号。`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Reddit 趋势同步失败");
+    } finally {
+      setRedditSyncLoading(false);
     }
   }
 
@@ -1030,7 +1046,7 @@ function App() {
             <div>
               <p className="eyebrow">SOURCE LIBRARY</p>
               <h2 id="knowledge-heading">NTU 内容知识库</h2>
-              <p>官方来源保证事实，公开小红书参考只提炼话题、痛点和叙事结构。它们不会被当成事实，也不会被逐句改写。</p>
+              <p>官方来源保证事实；公开社区参考只提炼话题、痛点和叙事结构。它们不会被当成事实，也不会被逐句改写。</p>
             </div>
             <div className="knowledge-counts">
               <strong>{knowledge?.officialSources.length ?? 0}</strong><span>官方来源</span>
@@ -1043,11 +1059,11 @@ function App() {
               <div>
                 <span>收录公开参考</span>
                 <h3>把一篇公开笔记转成可复用洞察</h3>
-                <p>只填写公开链接和你的概括。不要粘贴正文、截图、作者昵称或任何私人信息。</p>
+                <p>支持小红书或 Reddit 公开链接。只填写链接和你的概括，不要粘贴正文、截图、作者昵称或私人信息。</p>
               </div>
             </div>
             <div className="knowledge-form-grid">
-              <label>公开小红书链接<input placeholder="https://www.xiaohongshu.com/..." value={researchForm.sourceUrl} onChange={(event) => setResearchForm((form) => ({ ...form, sourceUrl: event.target.value }))} /></label>
+              <label>公开链接<input placeholder="https://www.reddit.com/... 或 https://www.xiaohongshu.com/..." value={researchForm.sourceUrl} onChange={(event) => setResearchForm((form) => ({ ...form, sourceUrl: event.target.value }))} /></label>
               <label>选题主题<input placeholder="例如：刚入学的信息过载" value={researchForm.theme} onChange={(event) => setResearchForm((form) => ({ ...form, theme: event.target.value }))} /></label>
               <label>适合谁看<input value={researchForm.audience} onChange={(event) => setResearchForm((form) => ({ ...form, audience: event.target.value }))} /></label>
               <label className="knowledge-insight">你提炼的洞察<textarea placeholder="例如：新生更需要一个按时间顺序的行动清单，而不是泛泛的校园介绍。请用自己的话概括，不要复制原笔记。" rows={4} value={researchForm.insight} onChange={(event) => setResearchForm((form) => ({ ...form, insight: event.target.value }))} /></label>
@@ -1057,20 +1073,32 @@ function App() {
             </button>
           </section>
 
+          <section className="reddit-sync-card">
+            <div>
+              <span>REDDIT TREND SYNC</span>
+              <h3>同步 r/NTU 的匿名化选题信号</h3>
+              <p>{knowledge?.reddit.scope ?? "仅抓取公开帖子元数据，不保存作者、标题正文或评论。"}</p>
+              <small>范围：{knowledge?.reddit.communities.join("、") ?? "r/NTU、r/SGExams（仅 NTU 搜索）"}。Reddit 信号 {knowledge?.reddit.retentionDays ?? 30} 天后自动清理。</small>
+            </div>
+            <button className="primary-button" disabled={redditSyncLoading || !knowledge?.reddit.configured} onClick={() => void handleRedditSync()} type="button">
+              <BookOpen aria-hidden="true" size={16} />{redditSyncLoading ? "正在同步..." : knowledge?.reddit.configured ? "同步 Reddit 趋势" : "等待 Reddit API 配置"}
+            </button>
+          </section>
+
           <section className="knowledge-section">
-            <div className="knowledge-section-heading"><h3>公开小红书洞察</h3><span>仅用于选题和表达</span></div>
+            <div className="knowledge-section-heading"><h3>公开社区洞察</h3><span>仅用于选题和表达</span></div>
             {knowledge?.researchSignals.length ? (
               <div className="research-signal-grid">
                 {knowledge.researchSignals.map((signal) => (
                   <article className="research-signal-card" key={signal.id}>
-                    <div><span>{signal.audience}</span><button aria-label="删除该公开洞察" onClick={() => void handleDeleteResearchSignal(signal.id)} type="button">删除</button></div>
+                    <div><span>{signal.sourceType === "reddit" ? "Reddit" : "小红书"} · {signal.audience}</span><button aria-label="删除该公开洞察" onClick={() => void handleDeleteResearchSignal(signal.id)} type="button">删除</button></div>
                     <h4>{signal.theme}</h4>
                     <p>{signal.insight}</p>
                     <a href={signal.sourceUrl} rel="noreferrer" target="_blank">打开公开参考</a>
                   </article>
                 ))}
               </div>
-            ) : <p className="empty">{knowledge ? "还没有公开洞察。先在小红书手动搜索 NTU、NBS、宿舍、选课、实习或新加坡留学等话题，再把高质量公开链接和你的概括收录进来。" : "知识库服务尚未更新。页面入口已上线，完成 Cloudflare Worker 更新后会自动显示官方来源并可收录公开洞察。"}</p>}
+            ) : <p className="empty">{knowledge ? "还没有公开洞察。可以手动收录公开链接；完成 Reddit API 配置后，也可同步 r/NTU 和 r/SGExams 的匿名化选题信号。" : "知识库服务尚未更新。页面入口已上线，完成 Cloudflare Worker 更新后会自动显示官方来源并可收录公开洞察。"}</p>}
           </section>
 
           <section className="knowledge-section">
