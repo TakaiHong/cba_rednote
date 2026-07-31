@@ -9,10 +9,12 @@ const MAX_LIMIT = 300;
 const DEFAULT_PROFILE = path.resolve(".tmp", "reddit-link-collector-profile");
 const DEFAULT_OUTPUT = path.resolve(".tmp", "reddit-ntu-links.txt");
 const DEFAULT_HISTORY = path.resolve(".tmp", "reddit-ntu-link-history.txt");
+const DEFAULT_CORPUS = path.resolve(".tmp", "reddit-ntu-corpus-links.txt");
 const DEFAULT_WAIT_SECONDS = 45;
 const MAX_SCROLLS_PER_SOURCE = 50;
 const MAX_IDLE_SCROLLS = 6;
-const MAX_HISTORY_LINKS = 5_000;
+const MAX_HISTORY_LINKS = 100_000;
+const MAX_CORPUS_LINKS = 100_000;
 const DEFAULT_SUBREDDITS = ["ntu", "sgexams", "asksingapore", "singapore", "sit_singapore"];
 const DEFAULT_TOPICS = ["course registration", "exchange", "help", "internship", "hall", "housing"];
 
@@ -22,6 +24,7 @@ interface Options {
   profile: string;
   output: string;
   history: string;
+  corpus: string;
   waitMs: number;
   allowedSubreddits: Set<string>;
   topics: string[];
@@ -44,6 +47,7 @@ function parseOptions(args: string[]): Options {
     profile: path.resolve(valueFor("--profile") || DEFAULT_PROFILE),
     output: path.resolve(valueFor("--out") || DEFAULT_OUTPUT),
     history: path.resolve(valueFor("--history") || DEFAULT_HISTORY),
+    corpus: path.resolve(valueFor("--corpus") || DEFAULT_CORPUS),
     waitMs: Number.isFinite(waitSeconds) ? Math.max(0, Math.min(300, waitSeconds)) * 1000 : DEFAULT_WAIT_SECONDS * 1000,
     allowedSubreddits,
     topics
@@ -125,7 +129,9 @@ async function main() {
   await mkdir(path.dirname(options.profile), { recursive: true });
   await mkdir(path.dirname(options.output), { recursive: true });
   await mkdir(path.dirname(options.history), { recursive: true });
+  await mkdir(path.dirname(options.corpus), { recursive: true });
   const history = await readLinkHistory(options.history);
+  const corpus = await readLinkHistory(options.corpus);
 
   const context = await chromium.launchPersistentContext(options.profile, {
     channel: "chrome",
@@ -157,13 +163,15 @@ async function main() {
       let idleScrolls = 0;
       for (let scroll = 0; scroll < MAX_SCROLLS_PER_SOURCE && links.size < options.limit && idleScrolls < MAX_IDLE_SCROLLS; scroll += 1) {
         if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. The collector stopped without saving additional links.");
-        const candidates = onlyNewLinks(await collectVisiblePostLinks(page, new Set([source.subreddit])), history, options.limit);
+        const visibleLinks = await collectVisiblePostLinks(page, new Set([source.subreddit]));
+        const candidates = onlyNewLinks(visibleLinks, history, options.limit);
         const before = links.size;
         for (const href of candidates) {
           links.add(href);
           if (links.size >= options.limit) break;
         }
-        idleScrolls = links.size === before ? idleScrolls + 1 : 0;
+        // Known links still mean this source has more scrollable results; continue past them to reach older unseen posts.
+        idleScrolls = visibleLinks.length === 0 ? idleScrolls + 1 : 0;
         if (links.size >= options.limit || idleScrolls >= MAX_IDLE_SCROLLS) break;
         await page.mouse.wheel(0, 1100);
         await page.waitForTimeout(2200);
@@ -173,7 +181,9 @@ async function main() {
     const result = [...links].slice(0, options.limit);
     await writeFile(options.output, `${result.join("\n")}${result.length ? "\n" : ""}`, "utf8");
     await writeFile(options.history, `${[...history, ...result].slice(-MAX_HISTORY_LINKS).join("\n")}\n`, "utf8");
-    console.log(`Saved ${result.length} new Reddit post links to ${options.output}. History now contains ${Math.min(MAX_HISTORY_LINKS, history.size + result.length)} links.`);
+    const nextCorpus = [...corpus, ...result].slice(-MAX_CORPUS_LINKS);
+    await writeFile(options.corpus, `${nextCorpus.join("\n")}${nextCorpus.length ? "\n" : ""}`, "utf8");
+    console.log(`Saved ${result.length} new Reddit post links to ${options.output}. History now contains ${Math.min(MAX_HISTORY_LINKS, history.size + result.length)} links. Corpus now contains ${nextCorpus.length} allowed-source links at ${options.corpus}.`);
   } finally {
     await context.close();
   }

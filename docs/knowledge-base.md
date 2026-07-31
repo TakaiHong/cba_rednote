@@ -80,3 +80,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-reddit-colle
 ```
 
 全站搜索中的 `NTU` 可能指向同名机构或无关词。采集器会分别浏览 `r/NTU` 的最新帖子，并在 `r/SGExams`、`r/asksingapore`、`r/singapore`、`r/SIT_Singapore` 内限制搜索 `NTU`；它默认只保留这些社区的帖子链接，不读取帖子正文。除基础 `NTU` 搜索外，默认还会加上学生关心的 `course registration`、`exchange`、`help`、`internship`、`hall`、`housing` 主题。单次运行最多可收集 300 条新链接，需要调整范围时可增加 `--subreddits NTU,SGExams,asksingapore` 或 `--topics "course registration,exchange,help"`；链接进入待审核库前仍需人工逐条核对。
+
+每次运行的新增链接写入 `.tmp/reddit-ntu-links.txt`，同时累计到 `.tmp/reddit-ntu-corpus-links.txt`。采集器会继续越过已见链接，以便在同一来源中寻找更早的未见帖子；语料库只保存规范化的链接并最多保留 100,000 条，避免以“1 GB”为目标收集正文、评论、作者或媒体。覆盖度取决于 Reddit 搜索页可见结果与正常验证，不宣称网页端采集能穷尽全站内容。
