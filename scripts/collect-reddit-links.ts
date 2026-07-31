@@ -13,6 +13,7 @@ const DEFAULT_CORPUS = path.resolve(".tmp", "reddit-ntu-corpus-links.txt");
 const DEFAULT_WAIT_SECONDS = 45;
 const MAX_SCROLLS_PER_SOURCE = 50;
 const MAX_IDLE_SCROLLS = 6;
+const NAVIGATION_RETRY_DELAY_MS = 5000;
 const MAX_HISTORY_LINKS = 100_000;
 const MAX_CORPUS_LINKS = 100_000;
 const DEFAULT_SUBREDDITS = ["ntu", "sgexams", "asksingapore", "singapore", "sit_singapore"];
@@ -126,6 +127,20 @@ async function collectVisiblePostLinks(page: Page, allowedSubreddits: Set<string
   return [...new Set(filterAllowedSubredditLinks(canonical, allowedSubreddits))];
 }
 
+async function navigateWithSingleRetry(page: Page, url: string) {
+  try {
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+  } catch (firstError) {
+    console.warn(`Temporary Reddit navigation failure. Retrying once after ${NAVIGATION_RETRY_DELAY_MS / 1000} seconds.`);
+    await page.waitForTimeout(NAVIGATION_RETRY_DELAY_MS);
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+    } catch {
+      throw firstError;
+    }
+  }
+}
+
 async function main() {
   const options = parseOptions(process.argv.slice(2));
   await mkdir(path.dirname(options.profile), { recursive: true });
@@ -143,7 +158,7 @@ async function main() {
 
   try {
     const page = context.pages()[0] ?? await context.newPage();
-    await page.goto(`https://www.reddit.com/search/?q=${encodeURIComponent(options.query)}&sort=new`, { waitUntil: "domcontentloaded" });
+    await navigateWithSingleRetry(page, `https://www.reddit.com/search/?q=${encodeURIComponent(options.query)}&sort=new`);
     await Promise.all(
       context.pages()
         .filter((candidate) => candidate !== page && candidate.url() === "about:blank")
@@ -159,7 +174,7 @@ async function main() {
     const links = new Set<string>();
     for (const source of redditCollectionPlan(options.query, options.allowedSubreddits, options.topics)) {
       if (links.size >= options.limit) break;
-      await page.goto(redditCollectionUrl(source.query, source.subreddit), { waitUntil: "domcontentloaded" });
+      await navigateWithSingleRetry(page, redditCollectionUrl(source.query, source.subreddit));
       if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. The collector stopped without saving additional links.");
 
       let idleScrolls = 0;
