@@ -21,7 +21,9 @@
 
 运行 `npm.cmd run reddit:collect-links -- --query NTU --limit 50` 会打开可见 Chrome 窗口。运营人员在 45 秒内自行处理正常登录或验证码，保持 Reddit 搜索页打开；脚本随后自动开始。可用 `--wait-seconds 90` 延长等待时间。脚本最多滚动 50 次，间隔至少 2.2 秒，只提取 Reddit 帖子链接并写入 `.tmp/reddit-ntu-links.txt`。已收集链接会记录在 `.tmp/reddit-ntu-link-history.txt`，下次运行会自动跳过它们，输出只包含新链接；最终累计链接写入 `.tmp/reddit-ntu-corpus-links.txt`。它不自动登录、不点击互动按钮，也不会读取用户主页或资料；遇到验证码会停止。
 
-运行 `npm.cmd run reddit:collect-content -- --limit 20 --target-posts 10000 --max-bytes 1gb` 会从累计链接中继续处理未读贴文。每个语料单元只保留原帖链接、来源社区、标题、贴文正文和当前页面可见的公开评论正文，写入 `.tmp/reddit-ntu-content-corpus.jsonl`；进度写入 `.tmp/reddit-ntu-content-state.json`，所以可安全重跑并自动跳过已处理贴文。写盘前会移除用户名、个人主页资料、链接、邮箱和电话号码；不保存头像、karma、发帖历史或媒体。达到 10,000 篇贴文或正文语料达到 1 GB 时自动停止。社区内容仅是选题信号，不能作为 NTU 官方事实，也不应原样复制到对外文案。
+运行 `npm.cmd run reddit:collect-content -- --limit 20 --target-posts 10000 --max-bytes 1gb` 会从累计链接中继续处理未读贴文。每个语料单元只保留原帖链接、来源社区、标题、贴文正文和当前页面可见的公开评论正文，写入 `.tmp/reddit-ntu-content-corpus.jsonl`；进度写入 `.tmp/reddit-ntu-content-state.json`，所以可安全重跑并自动跳过已处理贴文。`r/NTU` 的内容可直接作为校园讨论样本；其他社区的条目必须在标题、正文或可见评论中出现 `NTU`、`Nanyang Technological`、`Nanyang Business School` 或 `NBS` 才会入库。写盘前会移除用户名、个人主页资料、链接、邮箱和电话号码；不保存头像、karma、发帖历史或媒体。达到 10,000 篇贴文或正文语料达到 1 GB 时自动停止。社区内容仅是选题信号，不能作为 NTU 官方事实，也不应原样复制到对外文案。
+
+如需按当前相关性规则复查既有本地语料，可运行 `npm.cmd run reddit:prune-content`。它只重写本地 `.tmp` 语料文件，不会访问 Reddit，也不会把已移除的链接重新加入待采集队列。
 
 ### 浏览器人工采集
 

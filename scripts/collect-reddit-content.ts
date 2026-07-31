@@ -1,7 +1,6 @@
 import { createReadStream } from "node:fs";
-import { appendFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, open, readFile, stat, unlink, writeFile, type FileHandle } from "node:fs/promises";
 import path from "node:path";
-import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { chromium, type Page } from "playwright";
 import { canonicalRedditPostUrl, redditSubreddit } from "./collect-reddit-links.js";
@@ -16,12 +15,14 @@ const MAX_BATCH_LIMIT = 100;
 const DEFAULT_TARGET_POSTS = 10_000;
 const MAX_TARGET_POSTS = 10_000;
 const DEFAULT_MAX_BYTES = 1024 * 1024 * 1024;
+const MAX_TRACKED_POSTS = 100_000;
 const REQUEST_DELAY_MS = 2200;
 const MAX_COMMENT_SCROLLS = 8;
 const MAX_BODY_CHARS = 12_000;
 const MAX_COMMENT_CHARS = 4_000;
 const MAX_COMMENTS_PER_POST = 100;
 const ALLOWED_SUBREDDITS = new Set(["ntu", "sgexams", "asksingapore", "singapore", "sit_singapore"]);
+const NTU_RELEVANCE_PATTERN = /\bNTU\b|Nanyang\s+Technological|Nanyang\s+Business\s+School|\bNBS\b/i;
 
 interface Options {
   profile: string;
@@ -62,7 +63,7 @@ export function parseByteLimit(value: string | undefined): number {
 
 export function redactPublicText(value: string, maxChars: number): string {
   const normalized = value
-    .replace(/\r/g, "")
+    .replace(/[\r\u2028\u2029]/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[\t ]{2,}/g, " ")
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[email removed]")
@@ -71,6 +72,11 @@ export function redactPublicText(value: string, maxChars: number): string {
     .replace(/\bu\/[a-z0-9_-]+/gi, "[user removed]")
     .trim();
   return normalized.length > maxChars ? `${normalized.slice(0, Math.max(0, maxChars - 1)).trimEnd()}…` : normalized;
+}
+
+export function isNtuRelatedContent(subreddit: string, title: string, body: string, comments: string[]) {
+  if (subreddit.toLowerCase() === "ntu") return true;
+  return NTU_RELEVANCE_PATTERN.test([title, body, ...comments].join("\n"));
 }
 
 export function parseOptions(args: string[]): Options {
@@ -120,8 +126,7 @@ async function readState(statePath: string): Promise<CollectorState> {
 async function readStoredPostUrls(outputPath: string) {
   const urls = new Set<string>();
   try {
-    const lines = createInterface({ input: createReadStream(outputPath, { encoding: "utf8" }), crlfDelay: Infinity });
-    for await (const line of lines) {
+    for await (const line of streamFileLines(outputPath)) {
       try {
         const record = JSON.parse(line) as { postUrl?: unknown };
         if (typeof record.postUrl !== "string") continue;
@@ -135,6 +140,21 @@ async function readStoredPostUrls(outputPath: string) {
     // No corpus exists yet.
   }
   return urls;
+}
+
+async function* streamFileLines(filePath: string) {
+  let remainder = "";
+  for await (const chunk of createReadStream(filePath, { encoding: "utf8" })) {
+    remainder += chunk;
+    let newlineIndex = remainder.indexOf("\n");
+    while (newlineIndex >= 0) {
+      const line = remainder.slice(0, newlineIndex);
+      yield line.endsWith("\r") ? line.slice(0, -1) : line;
+      remainder = remainder.slice(newlineIndex + 1);
+      newlineIndex = remainder.indexOf("\n");
+    }
+  }
+  if (remainder) yield remainder.endsWith("\r") ? remainder.slice(0, -1) : remainder;
 }
 
 async function fileSize(filePath: string) {
@@ -211,6 +231,30 @@ async function writeState(statePath: string, state: CollectorState) {
   await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
 }
 
+interface CollectorLock {
+  path: string;
+  handle: FileHandle;
+}
+
+async function acquireCollectorLock(outputPath: string): Promise<CollectorLock> {
+  const lockPath = `${outputPath}.lock`;
+  try {
+    const handle = await open(lockPath, "wx");
+    await handle.writeFile(`${process.pid}\n`, "utf8");
+    return { path: lockPath, handle };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+      throw new Error("Another Reddit content collection is already running. Wait for it to finish before starting a new batch.");
+    }
+    throw error;
+  }
+}
+
+async function releaseCollectorLock(lock: CollectorLock) {
+  await lock.handle.close();
+  await unlink(lock.path).catch(() => undefined);
+}
+
 async function main() {
   const options = parseOptions(process.argv.slice(2));
   await Promise.all([options.output, options.state].map((filePath) => mkdir(path.dirname(filePath), { recursive: true })));
@@ -229,21 +273,24 @@ async function main() {
     });
   const candidates = [...new Set(knownLinks)].filter((href) => !processed.has(href));
   let currentSize = await fileSize(options.output);
-  if (processed.size >= options.targetPosts || currentSize >= options.maxBytes || candidates.length === 0) {
-    await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TARGET_POSTS), updatedAt: new Date().toISOString() });
-    console.log(`No collection run needed. Processed posts: ${processed.size}/${options.targetPosts}. Corpus bytes: ${currentSize}/${options.maxBytes}. Eligible unprocessed links: ${candidates.length}.`);
+  let storedCount = storedUrls.size;
+  if (storedCount >= options.targetPosts || currentSize >= options.maxBytes || candidates.length === 0) {
+    await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TRACKED_POSTS), updatedAt: new Date().toISOString() });
+    console.log(`No collection run needed. Stored posts: ${storedCount}/${options.targetPosts}. Corpus bytes: ${currentSize}/${options.maxBytes}. Eligible unprocessed links: ${candidates.length}.`);
     return;
   }
 
-  const context = await chromium.launchPersistentContext(options.profile, {
-    channel: "chrome",
-    headless: false,
-    viewport: { width: 1440, height: 960 }
-  });
+  const lock = await acquireCollectorLock(options.output);
+  let context: Awaited<ReturnType<typeof chromium.launchPersistentContext>> | undefined;
   let stoppedForCaptcha = false;
   let collected = 0;
   let skipped = 0;
   try {
+    context = await chromium.launchPersistentContext(options.profile, {
+      channel: "chrome",
+      headless: false,
+      viewport: { width: 1440, height: 960 }
+    });
     const page = context.pages()[0] ?? await context.newPage();
     await page.goto("https://www.reddit.com/search/?q=NTU&sort=new", { waitUntil: "domcontentloaded" });
     await Promise.all(context.pages().filter((candidate) => candidate !== page && candidate.url() === "about:blank").map((candidate) => candidate.close()));
@@ -253,7 +300,7 @@ async function main() {
     if (await isCaptchaPage(page)) {
       stoppedForCaptcha = true;
     } else {
-      const maxThisRun = Math.min(options.batchLimit, options.targetPosts - processed.size);
+      const maxThisRun = Math.min(options.batchLimit, options.targetPosts - storedCount);
       for (const postUrl of candidates.slice(0, maxThisRun)) {
         if (currentSize >= options.maxBytes) break;
         let record: RedditContentRecord | undefined;
@@ -271,7 +318,13 @@ async function main() {
             break;
           }
           processed.add(postUrl);
-          await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TARGET_POSTS), updatedAt: new Date().toISOString() });
+          await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TRACKED_POSTS), updatedAt: new Date().toISOString() });
+          skipped += 1;
+          continue;
+        }
+        if (!isNtuRelatedContent(record.subreddit, record.title, record.body, record.comments)) {
+          processed.add(record.postUrl);
+          await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TRACKED_POSTS), updatedAt: new Date().toISOString() });
           skipped += 1;
           continue;
         }
@@ -281,16 +334,18 @@ async function main() {
         await appendFile(options.output, line, "utf8");
         currentSize += lineSize;
         processed.add(record.postUrl);
-        await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TARGET_POSTS), updatedAt: new Date().toISOString() });
+        storedCount += 1;
+        await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TRACKED_POSTS), updatedAt: new Date().toISOString() });
         collected += 1;
         await page.waitForTimeout(REQUEST_DELAY_MS);
       }
     }
   } finally {
-    await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TARGET_POSTS), updatedAt: new Date().toISOString() });
-    await context.close();
+    await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TRACKED_POSTS), updatedAt: new Date().toISOString() });
+    await context?.close();
+    await releaseCollectorLock(lock);
   }
-  console.log(`Collected ${collected} post-content records. Skipped ${skipped} unavailable records. Processed posts: ${processed.size}/${options.targetPosts}. Corpus bytes: ${currentSize}/${options.maxBytes}.`);
+  console.log(`Collected ${collected} post-content records. Skipped ${skipped} unavailable or irrelevant records. Stored posts: ${storedCount}/${options.targetPosts}. Corpus bytes: ${currentSize}/${options.maxBytes}.`);
   if (stoppedForCaptcha) {
     console.error("Reddit presented a CAPTCHA or traffic check. Collection stopped after saving any completed records. Complete it normally, then rerun the command.");
     process.exitCode = 2;

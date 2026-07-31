@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { canonicalRedditPostUrl, filterAllowedSubredditLinks, onlyNewLinks, parseOptions, redditCollectionPlan, redditCollectionUrl, redditSubreddit } from "../scripts/collect-reddit-links.js";
-import { parseByteLimit, parseOptions as parseContentOptions, redactPublicText } from "../scripts/collect-reddit-content.js";
+import { isNtuRelatedContent, parseByteLimit, parseOptions as parseContentOptions, redactPublicText } from "../scripts/collect-reddit-content.js";
 
 test("canonicalRedditPostUrl keeps only Reddit post URLs", () => {
   assert.equal(
@@ -78,10 +78,20 @@ test("redacts direct contact and account identifiers from public discussion text
   );
 });
 
+test("normalizes Unicode line separators before JSONL persistence", () => {
+  assert.equal(redactPublicText("First\u2028Second\u2029Third", 500), "First\nSecond\nThird");
+});
+
 test("parses the comment collector limits safely", () => {
   const options = parseContentOptions(["--limit", "30", "--target-posts", "99999", "--max-bytes", "1gb"]);
   assert.equal(options.batchLimit, 30);
   assert.equal(options.targetPosts, 10_000);
   assert.equal(options.maxBytes, 1024 ** 3);
   assert.equal(parseByteLimit("bad-value"), 1024 ** 3);
+});
+
+test("requires NTU context outside the direct NTU community", () => {
+  assert.equal(isNtuRelatedContent("ntu", "Hall fridge procedures", "", []), true);
+  assert.equal(isNtuRelatedContent("sgexams", "Hall fridge procedures", "", []), false);
+  assert.equal(isNtuRelatedContent("sgexams", "Exchange options", "NTU students can apply.", []), true);
 });
