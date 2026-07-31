@@ -30,16 +30,18 @@ interface Options {
   topics: string[];
 }
 
-function parseOptions(args: string[]): Options {
+export function parseOptions(args: string[]): Options {
   const valueFor = (flag: string) => {
     const index = args.indexOf(flag);
-    return index >= 0 ? args[index + 1] : undefined;
+    const value = index >= 0 ? args[index + 1] : undefined;
+    return value && !value.startsWith("--") ? value : undefined;
   };
   const limit = Number(valueFor("--limit") ?? DEFAULT_LIMIT);
   const waitSeconds = Number(valueFor("--wait-seconds") ?? DEFAULT_WAIT_SECONDS);
   const subredditInput = valueFor("--subreddits") ?? DEFAULT_SUBREDDITS.join(",");
   const allowedSubreddits = new Set(subredditInput.split(",").map((value) => value.trim().toLowerCase()).filter(Boolean));
-  const topicInput = valueFor("--topics") ?? DEFAULT_TOPICS.join(",");
+  const topicsWereExplicitlyBlank = args.includes("--no-topics") || (args.includes("--topics") && !valueFor("--topics"));
+  const topicInput = topicsWereExplicitlyBlank ? "" : (valueFor("--topics") ?? DEFAULT_TOPICS.join(","));
   const topics = [...new Set(topicInput.split(",").map((value) => value.trim()).filter(Boolean))];
   return {
     query: valueFor("--query")?.trim() || DEFAULT_QUERY,

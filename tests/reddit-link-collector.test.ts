@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { canonicalRedditPostUrl, filterAllowedSubredditLinks, onlyNewLinks, redditCollectionPlan, redditCollectionUrl, redditSubreddit } from "../scripts/collect-reddit-links.js";
+import { canonicalRedditPostUrl, filterAllowedSubredditLinks, onlyNewLinks, parseOptions, redditCollectionPlan, redditCollectionUrl, redditSubreddit } from "../scripts/collect-reddit-links.js";
 
 test("canonicalRedditPostUrl keeps only Reddit post URLs", () => {
   assert.equal(
@@ -57,4 +57,15 @@ test("adds student-topic searches for related communities", () => {
     { subreddit: "sgexams", query: "NTU course registration" },
     { subreddit: "sgexams", query: "NTU exchange" }
   ]);
+});
+
+test("does not treat another option as a topic value", () => {
+  const options = parseOptions(["--query", "NTU", "--topics", "--limit", "300"]);
+  assert.deepEqual(options.topics, []);
+  assert.equal(options.limit, 300);
+});
+
+test("supports an explicit no-topics flag", () => {
+  const options = parseOptions(["--no-topics"]);
+  assert.deepEqual(options.topics, []);
 });
