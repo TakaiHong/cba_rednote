@@ -31,6 +31,7 @@ interface ResearchSignal {
   sourceType: "xiaohongshu" | "reddit";
   collectionMethod?: "manual" | "browser-curated" | "api";
   readOnly?: boolean;
+  status?: "pending_review" | "approved";
   theme: string;
   audience: string;
   insight: string;
@@ -436,6 +437,13 @@ async function route(request: Request, url: URL, env: Env, uid: string, origin: 
     return respond(signal, 201, env, origin);
   }
 
+  if (method === "POST" && path === "/api/knowledge-base/research-signals/batch") {
+    const input = await readJson<{ sourceUrls?: string[] }>(request);
+    const result = await queueResearchSignals(env, input.sourceUrls ?? []);
+    await appendLog(env, "knowledge-queue-public-references", "ok", `Queued ${result.added.length} public reference links.`, { added: result.added.length, skipped: result.skipped, uid });
+    return respond(result, 201, env, origin);
+  }
+
   if (method === "POST" && path === "/api/knowledge-base/reddit/sync") {
     const result = await syncRedditSignals(env);
     await appendLog(env, "knowledge-reddit-sync", "ok", `Scanned ${result.scanned} Reddit posts and added ${result.added} trend signals.`, { scanned: result.scanned, added: result.added, skipped: result.skipped, uid });
@@ -443,6 +451,12 @@ async function route(request: Request, url: URL, env: Env, uid: string, origin: 
   }
 
   const researchSignalMatch = /^\/api\/knowledge-base\/research-signals\/([^/]+)$/.exec(path);
+  if (method === "PATCH" && researchSignalMatch) {
+    const input = await readJson<Partial<ResearchSignal>>(request);
+    const signal = await approveResearchSignal(env, researchSignalMatch[1], input);
+    await appendLog(env, "knowledge-approve-public-reference", "ok", `Approved research signal ${signal.id}`, { signalId: signal.id, uid });
+    return respond(signal, 200, env, origin);
+  }
   if (method === "DELETE" && researchSignalMatch) {
     await env.DB.prepare("DELETE FROM knowledge_entries WHERE id = ?").bind(researchSignalMatch[1]).run();
     await appendLog(env, "knowledge-delete-public-reference", "ok", `Deleted research signal ${researchSignalMatch[1]}`, { signalId: researchSignalMatch[1], uid });
@@ -574,9 +588,61 @@ async function createResearchSignal(env: Env, input: Partial<ResearchSignal>): P
   if (insight.length < 12) throw new HttpError(400, "Write a short paraphrased observation of at least 12 characters. Do not paste the post body.");
 
   const timestamp = now();
-  const signal: ResearchSignal = { id: crypto.randomUUID(), sourceUrl, sourceType, theme, audience, insight, createdAt: timestamp, updatedAt: timestamp };
+  const signal: ResearchSignal = { id: crypto.randomUUID(), sourceUrl, sourceType, collectionMethod: "manual", status: "approved", theme, audience, insight, createdAt: timestamp, updatedAt: timestamp };
   await env.DB.prepare("INSERT INTO knowledge_entries (id, payload, created_at, updated_at) VALUES (?, ?, ?, ?)")
     .bind(signal.id, JSON.stringify(signal), signal.createdAt, signal.updatedAt)
+    .run();
+  return signal;
+}
+
+async function queueResearchSignals(env: Env, rawUrls: string[]) {
+  const urls = [...new Set(rawUrls.map((value) => value.trim()).filter(Boolean))].slice(0, 100);
+  if (!urls.length) throw new HttpError(400, "Paste at least one public Reddit URL.");
+  const existingUrls = new Set((await listResearchSignals(env)).map((signal) => signal.sourceUrl));
+  const added: ResearchSignal[] = [];
+  let skipped = 0;
+
+  for (const sourceUrl of urls) {
+    if (publicSourceType(sourceUrl) !== "reddit" || existingUrls.has(sourceUrl)) {
+      skipped += 1;
+      continue;
+    }
+    const timestamp = now();
+    const signal: ResearchSignal = {
+      id: crypto.randomUUID(),
+      sourceUrl,
+      sourceType: "reddit",
+      collectionMethod: "manual",
+      status: "pending_review",
+      theme: "Pending NTU discussion review",
+      audience: "NTU Chinese students",
+      insight: "Waiting for an operator to write a paraphrased topic insight. This item is excluded from copy generation until approved.",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+    await env.DB.prepare("INSERT INTO knowledge_entries (id, payload, created_at, updated_at) VALUES (?, ?, ?, ?)")
+      .bind(signal.id, JSON.stringify(signal), signal.createdAt, signal.updatedAt)
+      .run();
+    existingUrls.add(sourceUrl);
+    added.push(signal);
+  }
+  return { added, skipped };
+}
+
+async function approveResearchSignal(env: Env, id: string, input: Partial<ResearchSignal>): Promise<ResearchSignal> {
+  const row = await env.DB.prepare("SELECT payload FROM knowledge_entries WHERE id = ?").bind(id).first<{ payload: string }>();
+  if (!row) throw new HttpError(404, "Research signal not found.");
+  const current = normalizeResearchSignal(JSON.parse(row.payload) as ResearchSignal);
+  if (current.readOnly) throw new HttpError(403, "This curated signal is read-only.");
+  const theme = cleanResearchText(input.theme, 64, "");
+  const audience = cleanResearchText(input.audience, 64, "");
+  const insight = cleanResearchText(input.insight, 420, "");
+  if (!theme || !audience || insight.length < 12) {
+    throw new HttpError(400, "Add a theme, audience, and a paraphrased insight before approving.");
+  }
+  const signal: ResearchSignal = { ...current, theme, audience, insight, status: "approved", updatedAt: now() };
+  await env.DB.prepare("UPDATE knowledge_entries SET payload = ?, updated_at = ? WHERE id = ?")
+    .bind(JSON.stringify(signal), signal.updatedAt, id)
     .run();
   return signal;
 }
@@ -598,7 +664,7 @@ function publicSourceType(value: string): ResearchSignal["sourceType"] | undefin
 }
 
 function normalizeResearchSignal(signal: ResearchSignal): ResearchSignal {
-  return { ...signal, sourceType: signal.sourceType ?? (publicSourceType(signal.sourceUrl) ?? "xiaohongshu") };
+  return { ...signal, sourceType: signal.sourceType ?? (publicSourceType(signal.sourceUrl) ?? "xiaohongshu"), status: signal.status ?? "approved" };
 }
 
 function redditStatus(env: Env) {
@@ -648,6 +714,8 @@ async function syncRedditSignals(env: Env): Promise<RedditSyncResult> {
       id: `reddit-${post.id}`,
       sourceUrl,
       sourceType: "reddit",
+      collectionMethod: "api",
+      status: "approved",
       theme,
       audience: redditAudience(theme),
       insight: `A recent public community discussion matched the ${theme} topic. Use it only to prioritize a helpful editorial angle; verify every NTU-specific claim against official sources.`,
@@ -806,7 +874,7 @@ async function regeneratePost(env: Env, post: MarketingPost, feedback: string): 
 
 async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, researchSignals: ResearchSignal[]): Promise<Pick<MarketingPost, "title" | "body" | "tags" | "imageIdeas" | "callToAction" | "review"> | undefined> {
   const sourceText = officialSources.map((source) => ({ id: source.id, title: source.title, url: source.url, claims: source.claims })).map((source) => JSON.stringify(source)).join("\n");
-  const signalText = researchSignals.slice(0, 20).map((signal) => JSON.stringify({ theme: signal.theme, audience: signal.audience, insight: signal.insight })).join("\n");
+  const signalText = researchSignals.filter((signal) => signal.status !== "pending_review").slice(0, 20).map((signal) => JSON.stringify({ theme: signal.theme, audience: signal.audience, insight: signal.insight })).join("\n");
   const response = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: { ...jsonHeaders, Authorization: `Bearer ${env.DEEPSEEK_API_KEY}` },

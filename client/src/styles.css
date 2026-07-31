@@ -212,7 +212,7 @@ button:disabled { cursor: wait; opacity: .58; }
 .make-step-card { border-radius: 9px; display: grid; gap: 13px; padding: 16px; }
 .empty-make-state { max-width: 760px; }
 .knowledge-workspace { display: grid; gap: 16px; max-width: 1120px; }
-.knowledge-header, .knowledge-add-card, .knowledge-section { background: rgba(255,255,255,.34); border: 1px solid rgba(255,255,255,.58); border-radius: 9px; box-shadow: inset 0 1px 0 rgba(255,255,255,.45); }
+.knowledge-header, .knowledge-add-card, .knowledge-batch-card, .knowledge-pending-card, .knowledge-section { background: rgba(255,255,255,.34); border: 1px solid rgba(255,255,255,.58); border-radius: 9px; box-shadow: inset 0 1px 0 rgba(255,255,255,.45); }
 .knowledge-header { align-items: start; display: flex; gap: 20px; justify-content: space-between; padding: 18px; }
 .knowledge-header > div:first-child { display: grid; gap: 6px; max-width: 680px; }
 .knowledge-header h2 { font-size: 24px; line-height: 1.25; margin: 0; }
@@ -221,6 +221,19 @@ button:disabled { cursor: wait; opacity: .58; }
 .knowledge-counts strong { color: #1b5948; font-size: 22px; }
 .knowledge-counts span { color: #768179; font-size: 12px; font-weight: 800; }
 .knowledge-add-card { display: grid; gap: 14px; padding: 16px; }
+.knowledge-batch-card, .knowledge-pending-card { display: grid; gap: 14px; padding: 16px; }
+.knowledge-batch-card .primary-button { align-items: center; display: inline-flex; gap: 7px; justify-self: start; }
+.batch-url-input { background: rgba(255,255,255,.52); border: 1px solid rgba(33,45,40,.15); border-radius: 6px; color: #283830; font: inherit; line-height: 1.55; min-height: 118px; padding: 10px; resize: vertical; width: 100%; }
+.pending-signal-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pending-signal-card { background: rgba(255,255,255,.44); border: 1px solid rgba(33,45,40,.12); border-radius: 7px; display: grid; gap: 10px; padding: 13px; }
+.pending-signal-card > a { color: #1f6150; font-size: 12px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pending-signal-card label { color: #5a6d62; display: grid; font-size: 12px; font-weight: 800; gap: 5px; }
+.pending-signal-card input, .pending-signal-card textarea { background: rgba(255,255,255,.64); border: 1px solid rgba(33,45,40,.14); border-radius: 5px; color: #25362e; font: inherit; font-size: 13px; padding: 8px; width: 100%; }
+.pending-signal-card textarea { line-height: 1.45; resize: vertical; }
+.pending-signal-actions { display: flex; gap: 8px; }
+.pending-signal-actions button { background: #1f6a56; border: 0; border-radius: 5px; color: #fff; cursor: pointer; font: inherit; font-size: 12px; font-weight: 800; padding: 8px 11px; }
+.pending-signal-actions button:last-child { background: transparent; border: 1px solid rgba(168,77,55,.3); color: #a84d37; }
+.pending-signal-actions button:disabled { cursor: not-allowed; opacity: .55; }
 .reddit-sync-card { align-items: center; background: rgba(34, 82, 70, .09); border: 1px solid rgba(29, 83, 69, .18); border-radius: 9px; display: flex; gap: 18px; justify-content: space-between; padding: 16px; }
 .reddit-sync-card > div { display: grid; gap: 5px; }
 .reddit-sync-card span { color: #39715f; font-size: 11px; font-weight: 900; letter-spacing: .06em; }
@@ -423,5 +436,5 @@ dd { font-size: 13px; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
   .publish-post-actions { grid-template-columns: 1fr; }
   .knowledge-header { align-items: stretch; flex-direction: column; }
   .reddit-sync-card { align-items: stretch; flex-direction: column; }
-  .knowledge-form-grid, .research-signal-grid, .official-source-grid { grid-template-columns: 1fr; }
+  .knowledge-form-grid, .pending-signal-grid, .research-signal-grid, .official-source-grid { grid-template-columns: 1fr; }
 }

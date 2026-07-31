@@ -17,6 +17,7 @@ export interface ResearchSignal {
   sourceType: "xiaohongshu" | "reddit";
   collectionMethod?: "manual" | "browser-curated" | "api";
   readOnly?: boolean;
+  status?: "pending_review" | "approved";
   theme: string;
   audience: string;
   insight: string;
@@ -350,6 +351,32 @@ export async function addResearchSignal(input: Pick<ResearchSignal, "sourceUrl" 
   if (!response.ok) {
     const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
     throw new Error(payload?.error ?? "Failed to save public-reference insight");
+  }
+  return (await response.json()) as ResearchSignal;
+}
+
+export async function queueResearchSignals(sourceUrls: string[]) {
+  const response = await fetch(`${apiBase}/knowledge-base/research-signals/batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sourceUrls })
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to queue public-reference links");
+  }
+  return (await response.json()) as { added: ResearchSignal[]; skipped: number };
+}
+
+export async function approveResearchSignal(id: string, input: Pick<ResearchSignal, "theme" | "audience" | "insight">) {
+  const response = await fetch(`${apiBase}/knowledge-base/research-signals/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to approve public-reference insight");
   }
   return (await response.json()) as ResearchSignal;
 }

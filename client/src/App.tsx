@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { BookOpen, CalendarDays, ClipboardCheck, GraduationCap, LayoutDashboard, PenLine, Settings2 } from "lucide-react";
 import {
   addResearchSignal,
+  approveResearchSignal,
   backupRuntimeData,
   deleteResearchSignal,
   exportMarkdownPackage,
   exportPerformanceReport,
   generatePost,
   regeneratePost,
+  queueResearchSignals,
   generateCoverImage,
   generateHandoffPackage,
   getContentCalendar,
@@ -34,6 +36,7 @@ import {
   type KnowledgeBase,
   type MarketingPost,
   type PreflightEvidenceResult,
+  type ResearchSignal,
   type SystemStatus,
   type XhsPublishPackage,
   updatePost
@@ -115,6 +118,9 @@ function App() {
   const [publishUrlDrafts, setPublishUrlDrafts] = useState<Record<string, string>>({});
   const [knowledge, setKnowledge] = useState<KnowledgeBase>();
   const [researchLoading, setResearchLoading] = useState(false);
+  const [batchUrls, setBatchUrls] = useState("");
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [reviewDrafts, setReviewDrafts] = useState<Record<string, Pick<ResearchSignal, "theme" | "audience" | "insight">>>({});
   const [redditSyncLoading, setRedditSyncLoading] = useState(false);
   const [researchForm, setResearchForm] = useState({ sourceUrl: "", theme: "", audience: "NTU 中国学生", insight: "" });
 
@@ -236,6 +242,42 @@ function App() {
       setPublishHint("公开参考洞察已进入知识库。之后 AI 会把它当作选题与表达灵感，不会把它当事实或照抄原文。");
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存公开参考洞察失败");
+    } finally {
+      setResearchLoading(false);
+    }
+  }
+
+  async function handleQueueResearchSignals() {
+    const sourceUrls = batchUrls.split(/[\r\n,]+/).map((value) => value.trim()).filter(Boolean);
+    setBatchLoading(true);
+    setError("");
+    try {
+      const result = await queueResearchSignals(sourceUrls);
+      setKnowledge((current) => current ? { ...current, researchSignals: [...result.added, ...current.researchSignals] } : current);
+      setBatchUrls("");
+      setPublishHint(`已放入 ${result.added.length} 条待审核链接${result.skipped ? `，跳过 ${result.skipped} 条重复或非 Reddit 链接` : ""}。`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "批量整理链接失败");
+    } finally {
+      setBatchLoading(false);
+    }
+  }
+
+  async function handleApproveResearchSignal(signal: ResearchSignal) {
+    const draft = reviewDrafts[signal.id] ?? { theme: signal.theme, audience: signal.audience, insight: signal.insight };
+    setResearchLoading(true);
+    setError("");
+    try {
+      const approved = await approveResearchSignal(signal.id, draft);
+      setKnowledge((current) => current ? { ...current, researchSignals: current.researchSignals.map((item) => item.id === approved.id ? approved : item) } : current);
+      setReviewDrafts((current) => {
+        const next = { ...current };
+        delete next[signal.id];
+        return next;
+      });
+      setPublishHint("这条公开讨论已核准入库，只会作为选题灵感，不会被当成学校事实。");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "核准公开洞察失败");
     } finally {
       setResearchLoading(false);
     }
@@ -1053,6 +1095,43 @@ function App() {
               <strong>{knowledge?.researchSignals.length ?? 0}</strong><span>社区洞察</span>
             </div>
           </header>
+
+          <section className="knowledge-batch-card">
+            <div className="make-step-heading">
+              <div>
+                <span>第一步：整理链接</span>
+                <h3>批量放入待审核队列</h3>
+                <p>从 Reddit 搜索结果复制公开帖子链接，每行一条。系统只校验、去重和保存链接，不会读取或保存帖子正文。</p>
+              </div>
+            </div>
+            <textarea aria-label="Reddit 公开链接列表" className="batch-url-input" placeholder={"https://www.reddit.com/r/NTU/comments/...\nhttps://www.reddit.com/r/SGExams/comments/..."} rows={5} value={batchUrls} onChange={(event) => setBatchUrls(event.target.value)} />
+            <button className="primary-button" disabled={batchLoading || !batchUrls.trim()} onClick={() => void handleQueueResearchSignals()} type="button">
+              <BookOpen aria-hidden="true" size={16} />{batchLoading ? "正在整理..." : "整理为待审核链接"}
+            </button>
+          </section>
+
+          {(knowledge?.researchSignals ?? []).some((signal) => signal.status === "pending_review") && (
+            <section className="knowledge-pending-card">
+              <div className="knowledge-section-heading"><h3>第二步：人工提炼并核准</h3><span>待审核条目不会用于生成文案</span></div>
+              <div className="pending-signal-grid">
+                {(knowledge?.researchSignals ?? []).filter((signal) => signal.status === "pending_review").map((signal) => {
+                  const draft = reviewDrafts[signal.id] ?? { theme: signal.theme, audience: signal.audience, insight: signal.insight };
+                  return (
+                    <article className="pending-signal-card" key={signal.id}>
+                      <a href={signal.sourceUrl} rel="noreferrer" target="_blank">打开公开链接</a>
+                      <label>选题主题<input value={draft.theme} onChange={(event) => setReviewDrafts((current) => ({ ...current, [signal.id]: { ...draft, theme: event.target.value } }))} /></label>
+                      <label>适合谁看<input value={draft.audience} onChange={(event) => setReviewDrafts((current) => ({ ...current, [signal.id]: { ...draft, audience: event.target.value } }))} /></label>
+                      <label>你的概述<textarea rows={3} value={draft.insight} onChange={(event) => setReviewDrafts((current) => ({ ...current, [signal.id]: { ...draft, insight: event.target.value } }))} /></label>
+                      <div className="pending-signal-actions">
+                        <button disabled={researchLoading} onClick={() => void handleApproveResearchSignal(signal)} type="button">核准入库</button>
+                        <button disabled={researchLoading} onClick={() => void handleDeleteResearchSignal(signal.id)} type="button">移除</button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           <section className="knowledge-add-card">
             <div className="make-step-heading">
