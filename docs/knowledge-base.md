@@ -19,7 +19,7 @@
 
 ### 受控链接收集脚本
 
-运行 `npm.cmd run reddit:collect-links -- --query NTU --limit 50` 会打开可见 Chrome 窗口。运营人员自行处理正常登录或验证码后，在终端按 Enter；脚本最多滚动 12 次，间隔至少 2.2 秒，只提取 Reddit 帖子链接并写入 `.tmp/reddit-ntu-links.txt`。它不自动登录、不点击互动按钮、不读取或保存正文、作者、评论或截图；遇到验证码会停止。将输出文件内容粘贴到知识库的批量链接输入框，再逐条审核。
+运行 `npm.cmd run reddit:collect-links -- --query NTU --limit 50` 会打开可见 Chrome 窗口。运营人员在 45 秒内自行处理正常登录或验证码，保持 Reddit 搜索页打开；脚本随后自动开始。可用 `--wait-seconds 90` 延长等待时间。脚本最多滚动 12 次，间隔至少 2.2 秒，只提取 Reddit 帖子链接并写入 `.tmp/reddit-ntu-links.txt`。它不自动登录、不点击互动按钮、不读取或保存正文、作者、评论或截图；遇到验证码会停止。将输出文件内容粘贴到知识库的批量链接输入框，再逐条审核。
 
 ### 浏览器人工采集
 

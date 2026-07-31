@@ -2,20 +2,20 @@ import { chromium, type Page } from "playwright";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import readline from "node:readline/promises";
-import { stdin as input, stdout as output } from "node:process";
 
 const DEFAULT_QUERY = "NTU";
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 const DEFAULT_PROFILE = path.resolve(".tmp", "reddit-link-collector-profile");
 const DEFAULT_OUTPUT = path.resolve(".tmp", "reddit-ntu-links.txt");
+const DEFAULT_WAIT_SECONDS = 45;
 
 interface Options {
   query: string;
   limit: number;
   profile: string;
   output: string;
+  waitMs: number;
 }
 
 function parseOptions(args: string[]): Options {
@@ -24,11 +24,13 @@ function parseOptions(args: string[]): Options {
     return index >= 0 ? args[index + 1] : undefined;
   };
   const limit = Number(valueFor("--limit") ?? DEFAULT_LIMIT);
+  const waitSeconds = Number(valueFor("--wait-seconds") ?? DEFAULT_WAIT_SECONDS);
   return {
     query: valueFor("--query")?.trim() || DEFAULT_QUERY,
     limit: Number.isFinite(limit) ? Math.max(1, Math.min(MAX_LIMIT, Math.floor(limit))) : DEFAULT_LIMIT,
     profile: path.resolve(valueFor("--profile") || DEFAULT_PROFILE),
-    output: path.resolve(valueFor("--out") || DEFAULT_OUTPUT)
+    output: path.resolve(valueFor("--out") || DEFAULT_OUTPUT),
+    waitMs: Number.isFinite(waitSeconds) ? Math.max(0, Math.min(300, waitSeconds)) * 1000 : DEFAULT_WAIT_SECONDS * 1000
   };
 }
 
@@ -54,12 +56,6 @@ async function collectVisiblePostLinks(page: Page): Promise<string[]> {
   return [...new Set(hrefs.map(canonicalRedditPostUrl).filter((href): href is string => Boolean(href)))];
 }
 
-async function waitForOperator() {
-  const terminal = readline.createInterface({ input, output });
-  await terminal.question("Check the visible Reddit search page, complete any normal login or CAPTCHA yourself, then press Enter to collect links. ");
-  terminal.close();
-}
-
 async function main() {
   const options = parseOptions(process.argv.slice(2));
   await mkdir(path.dirname(options.profile), { recursive: true });
@@ -79,7 +75,9 @@ async function main() {
         .filter((candidate) => candidate !== page && candidate.url() === "about:blank")
         .map((candidate) => candidate.close())
     );
-    await waitForOperator();
+    console.log(`Chrome is open on the Reddit search page. Complete any normal login or CAPTCHA in the next ${Math.round(options.waitMs / 1000)} seconds. Do not close the window; collection starts automatically.`);
+    await page.waitForTimeout(options.waitMs);
+    if (page.isClosed()) throw new Error("The Chrome search page was closed before collection started. Keep the Reddit tab open and rerun the command.");
     if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. Complete it manually, then rerun the command.");
 
     const links = new Set<string>();
