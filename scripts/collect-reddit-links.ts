@@ -1,5 +1,5 @@
 import { chromium, type Page } from "playwright";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,13 +8,17 @@ const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 const DEFAULT_PROFILE = path.resolve(".tmp", "reddit-link-collector-profile");
 const DEFAULT_OUTPUT = path.resolve(".tmp", "reddit-ntu-links.txt");
+const DEFAULT_HISTORY = path.resolve(".tmp", "reddit-ntu-link-history.txt");
 const DEFAULT_WAIT_SECONDS = 45;
+const MAX_SCROLLS = 30;
+const MAX_HISTORY_LINKS = 5_000;
 
 interface Options {
   query: string;
   limit: number;
   profile: string;
   output: string;
+  history: string;
   waitMs: number;
 }
 
@@ -30,6 +34,7 @@ function parseOptions(args: string[]): Options {
     limit: Number.isFinite(limit) ? Math.max(1, Math.min(MAX_LIMIT, Math.floor(limit))) : DEFAULT_LIMIT,
     profile: path.resolve(valueFor("--profile") || DEFAULT_PROFILE),
     output: path.resolve(valueFor("--out") || DEFAULT_OUTPUT),
+    history: path.resolve(valueFor("--history") || DEFAULT_HISTORY),
     waitMs: Number.isFinite(waitSeconds) ? Math.max(0, Math.min(300, waitSeconds)) * 1000 : DEFAULT_WAIT_SECONDS * 1000
   };
 }
@@ -42,6 +47,19 @@ export function canonicalRedditPostUrl(href: string): string | undefined {
     return match ? `https://www.reddit.com${match[0]}` : undefined;
   } catch {
     return undefined;
+  }
+}
+
+export function onlyNewLinks(candidates: string[], history: Set<string>, limit: number) {
+  return [...new Set(candidates)].filter((href) => !history.has(href)).slice(0, limit);
+}
+
+async function readLinkHistory(historyPath: string) {
+  try {
+    const contents = await readFile(historyPath, "utf8");
+    return new Set(contents.split(/\r?\n/).map((value) => value.trim()).filter(Boolean));
+  } catch {
+    return new Set<string>();
   }
 }
 
@@ -60,6 +78,8 @@ async function main() {
   const options = parseOptions(process.argv.slice(2));
   await mkdir(path.dirname(options.profile), { recursive: true });
   await mkdir(path.dirname(options.output), { recursive: true });
+  await mkdir(path.dirname(options.history), { recursive: true });
+  const history = await readLinkHistory(options.history);
 
   const context = await chromium.launchPersistentContext(options.profile, {
     channel: "chrome",
@@ -81,9 +101,9 @@ async function main() {
     if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. Complete it manually, then rerun the command.");
 
     const links = new Set<string>();
-    for (let scroll = 0; scroll < 12 && links.size < options.limit; scroll += 1) {
+    for (let scroll = 0; scroll < MAX_SCROLLS && links.size < options.limit; scroll += 1) {
       if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. The collector stopped without saving additional links.");
-      for (const href of await collectVisiblePostLinks(page)) {
+      for (const href of onlyNewLinks(await collectVisiblePostLinks(page), history, options.limit)) {
         links.add(href);
         if (links.size >= options.limit) break;
       }
@@ -94,7 +114,8 @@ async function main() {
 
     const result = [...links].slice(0, options.limit);
     await writeFile(options.output, `${result.join("\n")}${result.length ? "\n" : ""}`, "utf8");
-    console.log(`Saved ${result.length} Reddit post links to ${options.output}`);
+    await writeFile(options.history, `${[...history, ...result].slice(-MAX_HISTORY_LINKS).join("\n")}\n`, "utf8");
+    console.log(`Saved ${result.length} new Reddit post links to ${options.output}. History now contains ${Math.min(MAX_HISTORY_LINKS, history.size + result.length)} links.`);
   } finally {
     await context.close();
   }
