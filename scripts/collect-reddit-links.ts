@@ -74,6 +74,11 @@ async function main() {
   try {
     const page = context.pages()[0] ?? await context.newPage();
     await page.goto(`https://www.reddit.com/search/?q=${encodeURIComponent(options.query)}&sort=new`, { waitUntil: "domcontentloaded" });
+    await Promise.all(
+      context.pages()
+        .filter((candidate) => candidate !== page && candidate.url() === "about:blank")
+        .map((candidate) => candidate.close())
+    );
     await waitForOperator();
     if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. Complete it manually, then rerun the command.");
 
