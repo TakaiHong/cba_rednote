@@ -5,14 +5,16 @@ import { fileURLToPath } from "node:url";
 
 const DEFAULT_QUERY = "NTU";
 const DEFAULT_LIMIT = 50;
-const MAX_LIMIT = 100;
+const MAX_LIMIT = 300;
 const DEFAULT_PROFILE = path.resolve(".tmp", "reddit-link-collector-profile");
 const DEFAULT_OUTPUT = path.resolve(".tmp", "reddit-ntu-links.txt");
 const DEFAULT_HISTORY = path.resolve(".tmp", "reddit-ntu-link-history.txt");
 const DEFAULT_WAIT_SECONDS = 45;
-const MAX_SCROLLS = 30;
+const MAX_SCROLLS_PER_SOURCE = 50;
+const MAX_IDLE_SCROLLS = 6;
 const MAX_HISTORY_LINKS = 5_000;
 const DEFAULT_SUBREDDITS = ["ntu", "sgexams", "asksingapore", "singapore", "sit_singapore"];
+const DEFAULT_TOPICS = ["course registration", "exchange", "help", "internship", "hall", "housing"];
 
 interface Options {
   query: string;
@@ -22,6 +24,7 @@ interface Options {
   history: string;
   waitMs: number;
   allowedSubreddits: Set<string>;
+  topics: string[];
 }
 
 function parseOptions(args: string[]): Options {
@@ -33,6 +36,8 @@ function parseOptions(args: string[]): Options {
   const waitSeconds = Number(valueFor("--wait-seconds") ?? DEFAULT_WAIT_SECONDS);
   const subredditInput = valueFor("--subreddits") ?? DEFAULT_SUBREDDITS.join(",");
   const allowedSubreddits = new Set(subredditInput.split(",").map((value) => value.trim().toLowerCase()).filter(Boolean));
+  const topicInput = valueFor("--topics") ?? DEFAULT_TOPICS.join(",");
+  const topics = [...new Set(topicInput.split(",").map((value) => value.trim()).filter(Boolean))];
   return {
     query: valueFor("--query")?.trim() || DEFAULT_QUERY,
     limit: Number.isFinite(limit) ? Math.max(1, Math.min(MAX_LIMIT, Math.floor(limit))) : DEFAULT_LIMIT,
@@ -40,7 +45,8 @@ function parseOptions(args: string[]): Options {
     output: path.resolve(valueFor("--out") || DEFAULT_OUTPUT),
     history: path.resolve(valueFor("--history") || DEFAULT_HISTORY),
     waitMs: Number.isFinite(waitSeconds) ? Math.max(0, Math.min(300, waitSeconds)) * 1000 : DEFAULT_WAIT_SECONDS * 1000,
-    allowedSubreddits
+    allowedSubreddits,
+    topics
   };
 }
 
@@ -66,6 +72,27 @@ export function filterAllowedSubredditLinks(candidates: string[], allowedSubredd
     const subreddit = redditSubreddit(href);
     return subreddit ? allowedSubreddits.has(subreddit) : false;
   });
+}
+
+export function redditCollectionUrl(query: string, subreddit: string): string {
+  if (subreddit === "ntu" && query.trim().toLowerCase() === "ntu") {
+    return "https://www.reddit.com/r/NTU/new/?sort=new";
+  }
+  const params = new URLSearchParams({ q: query, restrict_sr: "1", sort: "new" });
+  return `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/search/?${params.toString()}`;
+}
+
+export function redditCollectionPlan(query: string, allowedSubreddits: Set<string>, topics: string[]) {
+  const subreddits = [...allowedSubreddits];
+  const plan = subreddits.includes("ntu") && query.trim().toLowerCase() === "ntu"
+    ? [{ subreddit: "ntu", query }]
+    : [];
+  const topicQueries = [query, ...topics.map((topic) => `${query} ${topic}`)];
+  for (const subreddit of subreddits) {
+    if (subreddit === "ntu" && query.trim().toLowerCase() === "ntu") continue;
+    for (const topicQuery of topicQueries) plan.push({ subreddit, query: topicQuery });
+  }
+  return plan;
 }
 
 export function onlyNewLinks(candidates: string[], history: Set<string>, limit: number) {
@@ -116,20 +143,31 @@ async function main() {
     );
     console.log(`Chrome is open on the Reddit search page. Complete any normal login or CAPTCHA in the next ${Math.round(options.waitMs / 1000)} seconds. Do not close the window; collection starts automatically.`);
     console.log(`Allowed communities: ${[...options.allowedSubreddits].join(", ")}.`);
+    console.log(`Topic searches: ${options.topics.join(", ")}.`);
     await page.waitForTimeout(options.waitMs);
     if (page.isClosed()) throw new Error("The Chrome search page was closed before collection started. Keep the Reddit tab open and rerun the command.");
     if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. Complete it manually, then rerun the command.");
 
     const links = new Set<string>();
-    for (let scroll = 0; scroll < MAX_SCROLLS && links.size < options.limit; scroll += 1) {
-      if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. The collector stopped without saving additional links.");
-      for (const href of onlyNewLinks(await collectVisiblePostLinks(page, options.allowedSubreddits), history, options.limit)) {
-        links.add(href);
-        if (links.size >= options.limit) break;
-      }
+    for (const source of redditCollectionPlan(options.query, options.allowedSubreddits, options.topics)) {
       if (links.size >= options.limit) break;
-      await page.mouse.wheel(0, 1100);
-      await page.waitForTimeout(2200);
+      await page.goto(redditCollectionUrl(source.query, source.subreddit), { waitUntil: "domcontentloaded" });
+      if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. The collector stopped without saving additional links.");
+
+      let idleScrolls = 0;
+      for (let scroll = 0; scroll < MAX_SCROLLS_PER_SOURCE && links.size < options.limit && idleScrolls < MAX_IDLE_SCROLLS; scroll += 1) {
+        if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. The collector stopped without saving additional links.");
+        const candidates = onlyNewLinks(await collectVisiblePostLinks(page, new Set([source.subreddit])), history, options.limit);
+        const before = links.size;
+        for (const href of candidates) {
+          links.add(href);
+          if (links.size >= options.limit) break;
+        }
+        idleScrolls = links.size === before ? idleScrolls + 1 : 0;
+        if (links.size >= options.limit || idleScrolls >= MAX_IDLE_SCROLLS) break;
+        await page.mouse.wheel(0, 1100);
+        await page.waitForTimeout(2200);
+      }
     }
 
     const result = [...links].slice(0, options.limit);

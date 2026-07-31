@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { canonicalRedditPostUrl, filterAllowedSubredditLinks, onlyNewLinks, redditSubreddit } from "../scripts/collect-reddit-links.js";
+import { canonicalRedditPostUrl, filterAllowedSubredditLinks, onlyNewLinks, redditCollectionPlan, redditCollectionUrl, redditSubreddit } from "../scripts/collect-reddit-links.js";
 
 test("canonicalRedditPostUrl keeps only Reddit post URLs", () => {
   assert.equal(
@@ -39,4 +39,22 @@ test("filters full-site search results to allowed communities", () => {
     filterAllowedSubredditLinks(links, new Set(["ntu", "sgexams"])),
     links.slice(0, 2)
   );
+});
+
+test("uses a direct new-post feed for r/NTU and restricted search elsewhere", () => {
+  assert.equal(redditCollectionUrl("NTU", "ntu"), "https://www.reddit.com/r/NTU/new/?sort=new");
+  assert.equal(
+    redditCollectionUrl("NTU study tips", "sgexams"),
+    "https://www.reddit.com/r/sgexams/search/?q=NTU+study+tips&restrict_sr=1&sort=new"
+  );
+});
+
+test("adds student-topic searches for related communities", () => {
+  const plan = redditCollectionPlan("NTU", new Set(["ntu", "sgexams"]), ["course registration", "exchange"]);
+  assert.deepEqual(plan, [
+    { subreddit: "ntu", query: "NTU" },
+    { subreddit: "sgexams", query: "NTU" },
+    { subreddit: "sgexams", query: "NTU course registration" },
+    { subreddit: "sgexams", query: "NTU exchange" }
+  ]);
 });
