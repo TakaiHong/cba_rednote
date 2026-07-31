@@ -25,7 +25,15 @@ function firebaseAuth() {
 
 export async function getFirebaseIdToken() {
   const auth = firebaseAuth();
-  return auth?.currentUser ? auth.currentUser.getIdToken() : undefined;
+  if (!auth?.currentUser) return undefined;
+  try {
+    // Refresh before protected Worker calls so a restored browser session cannot
+    // look signed in locally while sending an expired token to the API.
+    return await auth.currentUser.getIdToken(true);
+  } catch {
+    await signOut(auth);
+    return undefined;
+  }
 }
 
 export function FirebaseAuthGate({ children }: PropsWithChildren) {

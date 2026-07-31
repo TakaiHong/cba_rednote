@@ -1,4 +1,4 @@
-import { getFirebaseIdToken } from "./firebase.js";
+import { getFirebaseIdToken, signOutFirebase } from "./firebase.js";
 
 export type PostStatus = "draft" | "approved" | "published" | "archived";
 
@@ -322,7 +322,9 @@ async function apiFetch(input: RequestInfo | URL, init?: RequestInit) {
   const token = await getFirebaseIdToken();
   const headers = new Headers(init?.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  return nativeFetch(input, { ...init, headers });
+  const response = await nativeFetch(input, { ...init, headers });
+  if (response.status === 401) await signOutFirebase();
+  return response;
 }
 
 const fetch = apiFetch;
