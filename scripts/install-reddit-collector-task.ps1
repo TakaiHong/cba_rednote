@@ -4,6 +4,8 @@ param(
   [string]$Query = "NTU",
   [ValidateRange(1, 100)]
   [int]$Limit = 50,
+  [ValidateRange(1, 100)]
+  [int]$ContentLimit = 20,
   [ValidateRange(0, 300)]
   [int]$WaitSeconds = 0,
   [switch]$DryRun,
@@ -27,7 +29,7 @@ function Show-Plan {
   Write-Output "ProjectRoot: $projectRoot"
   Write-Output "User: $userId (interactive logon only)"
   Write-Output "Time: $Time"
-  Write-Output "Command: npm.cmd run reddit:collect-links -- --query $Query --limit $Limit --wait-seconds $WaitSeconds"
+  Write-Output "Commands: reddit:collect-links (limit $Limit), then reddit:collect-content (limit $ContentLimit, target 10000 posts, max 1 GB)"
   Write-Output "Stdout: $outLog"
   Write-Output "Stderr: $errLog"
 }
@@ -53,13 +55,13 @@ if ($DryRun) {
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
 # The task only runs while this Windows user is signed in, so its visible Chrome profile and normal Reddit login state stay available.
-$argument = "-NoProfile -ExecutionPolicy Bypass -Command `"Set-Location -LiteralPath '$projectRoot'; & '$npm' run reddit:collect-links -- --query '$Query' --limit $Limit --wait-seconds $WaitSeconds > '$outLog' 2> '$errLog'`""
+$argument = "-NoProfile -ExecutionPolicy Bypass -Command `"Set-Location -LiteralPath '$projectRoot'; & '$npm' run reddit:collect-links -- --query '$Query' --limit $Limit --wait-seconds $WaitSeconds > '$outLog' 2> '$errLog'; if (`$LASTEXITCODE -eq 0) { & '$npm' run reddit:collect-content -- --limit $ContentLimit --target-posts 10000 --max-bytes 1gb --wait-seconds $WaitSeconds >> '$outLog' 2>> '$errLog' }`""
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $argument
 $trigger = New-ScheduledTaskTrigger -Daily -At $Time
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
 $principal = New-ScheduledTaskPrincipal -UserId $userId -LogonType Interactive -RunLevel Limited
 
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description "Collect new public Reddit NTU post links through the attended Chrome profile." -Force | Out-Null
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description "Collect attended public Reddit NTU post links, then anonymized post and comment text within the local corpus cap." -Force | Out-Null
 
 Write-Output "Scheduled task installed."
 Write-Output "It runs only while $userId is signed in."

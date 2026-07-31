@@ -19,7 +19,9 @@
 
 ### 受控链接收集脚本
 
-运行 `npm.cmd run reddit:collect-links -- --query NTU --limit 50` 会打开可见 Chrome 窗口。运营人员在 45 秒内自行处理正常登录或验证码，保持 Reddit 搜索页打开；脚本随后自动开始。可用 `--wait-seconds 90` 延长等待时间。脚本最多滚动 30 次，间隔至少 2.2 秒，只提取 Reddit 帖子链接并写入 `.tmp/reddit-ntu-links.txt`。已收集链接会记录在 `.tmp/reddit-ntu-link-history.txt`，下次运行会自动跳过它们，输出只包含新链接。它不自动登录、不点击互动按钮、不读取或保存正文、作者、评论或截图；遇到验证码会停止。将输出文件内容粘贴到知识库的批量链接输入框，再逐条审核。
+运行 `npm.cmd run reddit:collect-links -- --query NTU --limit 50` 会打开可见 Chrome 窗口。运营人员在 45 秒内自行处理正常登录或验证码，保持 Reddit 搜索页打开；脚本随后自动开始。可用 `--wait-seconds 90` 延长等待时间。脚本最多滚动 50 次，间隔至少 2.2 秒，只提取 Reddit 帖子链接并写入 `.tmp/reddit-ntu-links.txt`。已收集链接会记录在 `.tmp/reddit-ntu-link-history.txt`，下次运行会自动跳过它们，输出只包含新链接；最终累计链接写入 `.tmp/reddit-ntu-corpus-links.txt`。它不自动登录、不点击互动按钮，也不会读取用户主页或资料；遇到验证码会停止。
+
+运行 `npm.cmd run reddit:collect-content -- --limit 20 --target-posts 10000 --max-bytes 1gb` 会从累计链接中继续处理未读贴文。每个语料单元只保留原帖链接、来源社区、标题、贴文正文和当前页面可见的公开评论正文，写入 `.tmp/reddit-ntu-content-corpus.jsonl`；进度写入 `.tmp/reddit-ntu-content-state.json`，所以可安全重跑并自动跳过已处理贴文。写盘前会移除用户名、个人主页资料、链接、邮箱和电话号码；不保存头像、karma、发帖历史或媒体。达到 10,000 篇贴文或正文语料达到 1 GB 时自动停止。社区内容仅是选题信号，不能作为 NTU 官方事实，也不应原样复制到对外文案。
 
 ### 浏览器人工采集
 
@@ -64,7 +66,7 @@ DeepSeek 会同时看到官方来源和已收录的公开洞察。系统提示�
 
 ## 每日自动采集
 
-`npm.cmd run reddit:schedule:install` 会在这台 Windows 电脑上安装一个独立任务，默认每天 10:00 运行一次，并只收集未进入历史记录的新链接。任务只会在当前 Windows 用户已登录时运行，因此可以使用同一个可见 Chrome 资料夹；它不会在 Cloudflare Worker 内运行，也不会绕过登录或验证码。默认等待时间为 0 秒，若 Reddit 出现验证码，任务会停止并将错误写入 `.tmp/reddit-collector.err.log`，下一次由运营人员正常完成验证后再运行即可。
+`npm.cmd run reddit:schedule:install` 会在这台 Windows 电脑上安装一个独立任务，默认每天 10:00 运行一次：先收集未进入历史记录的新链接，再从累计链接中补一批匿名化的贴文和评论正文。任务只会在当前 Windows 用户已登录时运行，因此可以使用同一个可见 Chrome 资料夹；它不会在 Cloudflare Worker 内运行，也不会绕过登录或验证码。默认等待时间为 0 秒，若 Reddit 出现验证码，任务会停止并将错误写入 `.tmp/reddit-collector.err.log`，下一次由运营人员正常完成验证后再运行即可。
 
 ```powershell
 npm.cmd run reddit:schedule:dry-run
@@ -81,4 +83,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-reddit-colle
 
 全站搜索中的 `NTU` 可能指向同名机构或无关词。采集器会分别浏览 `r/NTU` 的最新帖子，并在 `r/SGExams`、`r/asksingapore`、`r/singapore`、`r/SIT_Singapore` 内限制搜索 `NTU`；它默认只保留这些社区的帖子链接，不读取帖子正文。除基础 `NTU` 搜索外，默认还会加上学生关心的 `course registration`、`exchange`、`help`、`internship`、`hall`、`housing` 主题。单次运行最多可收集 300 条新链接，需要调整范围时可增加 `--subreddits NTU,SGExams,asksingapore` 或 `--topics "course registration,exchange,help"`；链接进入待审核库前仍需人工逐条核对。
 
-每次运行的新增链接写入 `.tmp/reddit-ntu-links.txt`，同时累计到 `.tmp/reddit-ntu-corpus-links.txt`。采集器会继续越过已见链接，以便在同一来源中寻找更早的未见帖子；语料库只保存规范化的链接并最多保留 100,000 条，避免以“1 GB”为目标收集正文、评论、作者或媒体。覆盖度取决于 Reddit 搜索页可见结果与正常验证，不宣称网页端采集能穷尽全站内容。
+每次运行的新增链接写入 `.tmp/reddit-ntu-links.txt`，同时累计到 `.tmp/reddit-ntu-corpus-links.txt`。采集器会继续越过已见链接，以便在同一来源中寻找更早的未见帖子；链接库最多保留 100,000 条。正文采集受 10,000 篇和 1 GB 的双重上限约束。覆盖度取决于 Reddit 搜索页可见结果与正常验证，不宣称网页端采集能穷尽全站内容。
