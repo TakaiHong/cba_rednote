@@ -1,5 +1,7 @@
+import { createReadStream } from "node:fs";
 import { appendFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { chromium, type Page } from "playwright";
 import { canonicalRedditPostUrl, redditSubreddit } from "./collect-reddit-links.js";
@@ -115,6 +117,26 @@ async function readState(statePath: string): Promise<CollectorState> {
   }
 }
 
+async function readStoredPostUrls(outputPath: string) {
+  const urls = new Set<string>();
+  try {
+    const lines = createInterface({ input: createReadStream(outputPath, { encoding: "utf8" }), crlfDelay: Infinity });
+    for await (const line of lines) {
+      try {
+        const record = JSON.parse(line) as { postUrl?: unknown };
+        if (typeof record.postUrl !== "string") continue;
+        const canonical = canonicalRedditPostUrl(record.postUrl);
+        if (canonical) urls.add(canonical);
+      } catch {
+        // Ignore a partially written final line after an unexpected process interruption.
+      }
+    }
+  } catch {
+    // No corpus exists yet.
+  }
+  return urls;
+}
+
 async function fileSize(filePath: string) {
   try {
     return (await stat(filePath)).size;
@@ -193,7 +215,11 @@ async function main() {
   const options = parseOptions(process.argv.slice(2));
   await Promise.all([options.output, options.state].map((filePath) => mkdir(path.dirname(filePath), { recursive: true })));
   const state = await readState(options.state);
-  const processed = new Set(state.processedPostUrls.map(canonicalRedditPostUrl).filter((href): href is string => Boolean(href)));
+  const storedUrls = await readStoredPostUrls(options.output);
+  const processed = new Set([
+    ...state.processedPostUrls.map(canonicalRedditPostUrl).filter((href): href is string => Boolean(href)),
+    ...storedUrls
+  ]);
   const knownLinks = (await readTextLines(options.links))
     .map(canonicalRedditPostUrl)
     .filter((href): href is string => Boolean(href))
@@ -204,6 +230,7 @@ async function main() {
   const candidates = [...new Set(knownLinks)].filter((href) => !processed.has(href));
   let currentSize = await fileSize(options.output);
   if (processed.size >= options.targetPosts || currentSize >= options.maxBytes || candidates.length === 0) {
+    await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TARGET_POSTS), updatedAt: new Date().toISOString() });
     console.log(`No collection run needed. Processed posts: ${processed.size}/${options.targetPosts}. Corpus bytes: ${currentSize}/${options.maxBytes}. Eligible unprocessed links: ${candidates.length}.`);
     return;
   }
@@ -244,6 +271,7 @@ async function main() {
             break;
           }
           processed.add(postUrl);
+          await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TARGET_POSTS), updatedAt: new Date().toISOString() });
           skipped += 1;
           continue;
         }
@@ -253,6 +281,7 @@ async function main() {
         await appendFile(options.output, line, "utf8");
         currentSize += lineSize;
         processed.add(record.postUrl);
+        await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TARGET_POSTS), updatedAt: new Date().toISOString() });
         collected += 1;
         await page.waitForTimeout(REQUEST_DELAY_MS);
       }
