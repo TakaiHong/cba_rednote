@@ -218,7 +218,7 @@ async function main() {
   let skipped = 0;
   try {
     const page = context.pages()[0] ?? await context.newPage();
-    await page.goto(candidates[0], { waitUntil: "domcontentloaded" });
+    await page.goto("https://www.reddit.com/search/?q=NTU&sort=new", { waitUntil: "domcontentloaded" });
     await Promise.all(context.pages().filter((candidate) => candidate !== page && candidate.url() === "about:blank").map((candidate) => candidate.close()));
     console.log(`Chrome is open on a Reddit post. Complete any normal login or CAPTCHA in the next ${Math.round(options.waitMs / 1000)} seconds. Do not close the window; collection starts automatically.`);
     await page.waitForTimeout(options.waitMs);
@@ -229,7 +229,15 @@ async function main() {
       const maxThisRun = Math.min(options.batchLimit, options.targetPosts - processed.size);
       for (const postUrl of candidates.slice(0, maxThisRun)) {
         if (currentSize >= options.maxBytes) break;
-        const record = await collectPostRecord(page, postUrl);
+        let record: RedditContentRecord | undefined;
+        try {
+          record = await collectPostRecord(page, postUrl);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.warn(`Skipping this run after a transient page failure for ${postUrl}: ${message}`);
+          skipped += 1;
+          continue;
+        }
         if (!record) {
           if (await isCaptchaPage(page)) {
             stoppedForCaptcha = true;
