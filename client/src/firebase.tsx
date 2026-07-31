@@ -1,6 +1,6 @@
 import { type PropsWithChildren, useEffect, useState } from "react";
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { GoogleAuthProvider, type Auth, type User, getAuth, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import { GoogleAuthProvider, type Auth, type User, getAuth, onIdTokenChanged, signInWithPopup, signOut } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -47,7 +47,21 @@ export function FirebaseAuthGate({ children }: PropsWithChildren) {
       setUser(null);
       return;
     }
-    return onAuthStateChanged(auth, setUser);
+    return onIdTokenChanged(auth, (nextUser) => {
+      if (!nextUser) {
+        setUser(null);
+        return;
+      }
+
+      // Do not show the dashboard until this restored Firebase session can
+      // produce a token that the protected Worker can actually use.
+      void nextUser.getIdToken(true)
+        .then(() => setUser(nextUser))
+        .catch(async () => {
+          await signOut(auth);
+          setUser(null);
+        });
+    });
   }, []);
 
   if (!authRequired) return <>{children}</>;
