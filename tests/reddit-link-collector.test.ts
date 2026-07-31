@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { canonicalRedditPostUrl, onlyNewLinks } from "../scripts/collect-reddit-links.js";
+import { canonicalRedditPostUrl, filterAllowedSubredditLinks, onlyNewLinks, redditSubreddit } from "../scripts/collect-reddit-links.js";
 
 test("canonicalRedditPostUrl keeps only Reddit post URLs", () => {
   assert.equal(
@@ -25,5 +25,18 @@ test("onlyNewLinks skips history and preserves unique fresh URLs", () => {
       "https://www.reddit.com/r/NTU/comments/another"
     ], known, 50),
     ["https://www.reddit.com/r/NTU/comments/fresh", "https://www.reddit.com/r/NTU/comments/another"]
+  );
+});
+
+test("filters full-site search results to allowed communities", () => {
+  const links = [
+    "https://www.reddit.com/r/NTU/comments/ntupost",
+    "https://www.reddit.com/r/SGExams/comments/sgpost",
+    "https://www.reddit.com/r/GooseBumps/comments/noisepost"
+  ];
+  assert.equal(redditSubreddit(links[0]), "ntu");
+  assert.deepEqual(
+    filterAllowedSubredditLinks(links, new Set(["ntu", "sgexams"])),
+    links.slice(0, 2)
   );
 });

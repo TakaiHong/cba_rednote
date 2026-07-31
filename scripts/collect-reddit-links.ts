@@ -12,6 +12,7 @@ const DEFAULT_HISTORY = path.resolve(".tmp", "reddit-ntu-link-history.txt");
 const DEFAULT_WAIT_SECONDS = 45;
 const MAX_SCROLLS = 30;
 const MAX_HISTORY_LINKS = 5_000;
+const DEFAULT_SUBREDDITS = ["ntu", "sgexams", "asksingapore", "singapore", "sit_singapore"];
 
 interface Options {
   query: string;
@@ -20,6 +21,7 @@ interface Options {
   output: string;
   history: string;
   waitMs: number;
+  allowedSubreddits: Set<string>;
 }
 
 function parseOptions(args: string[]): Options {
@@ -29,13 +31,16 @@ function parseOptions(args: string[]): Options {
   };
   const limit = Number(valueFor("--limit") ?? DEFAULT_LIMIT);
   const waitSeconds = Number(valueFor("--wait-seconds") ?? DEFAULT_WAIT_SECONDS);
+  const subredditInput = valueFor("--subreddits") ?? DEFAULT_SUBREDDITS.join(",");
+  const allowedSubreddits = new Set(subredditInput.split(",").map((value) => value.trim().toLowerCase()).filter(Boolean));
   return {
     query: valueFor("--query")?.trim() || DEFAULT_QUERY,
     limit: Number.isFinite(limit) ? Math.max(1, Math.min(MAX_LIMIT, Math.floor(limit))) : DEFAULT_LIMIT,
     profile: path.resolve(valueFor("--profile") || DEFAULT_PROFILE),
     output: path.resolve(valueFor("--out") || DEFAULT_OUTPUT),
     history: path.resolve(valueFor("--history") || DEFAULT_HISTORY),
-    waitMs: Number.isFinite(waitSeconds) ? Math.max(0, Math.min(300, waitSeconds)) * 1000 : DEFAULT_WAIT_SECONDS * 1000
+    waitMs: Number.isFinite(waitSeconds) ? Math.max(0, Math.min(300, waitSeconds)) * 1000 : DEFAULT_WAIT_SECONDS * 1000,
+    allowedSubreddits
   };
 }
 
@@ -48,6 +53,19 @@ export function canonicalRedditPostUrl(href: string): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+export function redditSubreddit(href: string): string | undefined {
+  const canonical = canonicalRedditPostUrl(href);
+  const match = canonical?.match(/^https:\/\/www\.reddit\.com\/r\/([^/]+)\/comments\//i);
+  return match?.[1].toLowerCase();
+}
+
+export function filterAllowedSubredditLinks(candidates: string[], allowedSubreddits: Set<string>) {
+  return candidates.filter((href) => {
+    const subreddit = redditSubreddit(href);
+    return subreddit ? allowedSubreddits.has(subreddit) : false;
+  });
 }
 
 export function onlyNewLinks(candidates: string[], history: Set<string>, limit: number) {
@@ -69,9 +87,10 @@ async function isCaptchaPage(page: Page) {
   return url.includes("captcha") || text.includes("captcha") || text.includes("unusual traffic");
 }
 
-async function collectVisiblePostLinks(page: Page): Promise<string[]> {
+async function collectVisiblePostLinks(page: Page, allowedSubreddits: Set<string>): Promise<string[]> {
   const hrefs = await page.locator('a[href*="/comments/"]').evaluateAll((links) => links.map((link) => link.getAttribute("href") ?? ""));
-  return [...new Set(hrefs.map(canonicalRedditPostUrl).filter((href): href is string => Boolean(href)))];
+  const canonical = hrefs.map(canonicalRedditPostUrl).filter((href): href is string => Boolean(href));
+  return [...new Set(filterAllowedSubredditLinks(canonical, allowedSubreddits))];
 }
 
 async function main() {
@@ -96,6 +115,7 @@ async function main() {
         .map((candidate) => candidate.close())
     );
     console.log(`Chrome is open on the Reddit search page. Complete any normal login or CAPTCHA in the next ${Math.round(options.waitMs / 1000)} seconds. Do not close the window; collection starts automatically.`);
+    console.log(`Allowed communities: ${[...options.allowedSubreddits].join(", ")}.`);
     await page.waitForTimeout(options.waitMs);
     if (page.isClosed()) throw new Error("The Chrome search page was closed before collection started. Keep the Reddit tab open and rerun the command.");
     if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. Complete it manually, then rerun the command.");
@@ -103,7 +123,7 @@ async function main() {
     const links = new Set<string>();
     for (let scroll = 0; scroll < MAX_SCROLLS && links.size < options.limit; scroll += 1) {
       if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. The collector stopped without saving additional links.");
-      for (const href of onlyNewLinks(await collectVisiblePostLinks(page), history, options.limit)) {
+      for (const href of onlyNewLinks(await collectVisiblePostLinks(page, options.allowedSubreddits), history, options.limit)) {
         links.add(href);
         if (links.size >= options.limit) break;
       }

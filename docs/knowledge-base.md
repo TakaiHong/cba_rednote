@@ -78,3 +78,5 @@ npm.cmd run reddit:schedule:uninstall
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-reddit-collector-task.ps1 -Time "10:00" -Query "NTU" -Limit 50
 ```
+
+全站搜索中的 `NTU` 可能指向同名机构或无关词。采集器默认只保留 `r/NTU`、`r/SGExams`、`r/asksingapore`、`r/singapore`、`r/SIT_Singapore` 的帖子链接，不读取帖子正文。需要调整范围时可增加 `--subreddits NTU,SGExams,asksingapore`；链接进入待审核库前仍需人工逐条核对。
