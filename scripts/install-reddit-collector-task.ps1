@@ -3,9 +3,9 @@ param(
   [string]$Time = "10:00",
   [string]$Query = "NTU",
   [ValidateRange(1, 100)]
-  [int]$Limit = 50,
+  [int]$Limit = 100,
   [ValidateRange(1, 100)]
-  [int]$ContentLimit = 20,
+  [int]$ContentLimit = 100,
   [ValidateSet(1, 2, 3, 4, 6)]
   [int]$RunsPerDay = 4,
   [ValidateRange(0, 300)]
