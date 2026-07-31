@@ -11,6 +11,8 @@ const firebaseConfig = {
 
 const authRequired = import.meta.env.VITE_REQUIRE_FIREBASE_AUTH === "true";
 const configured = Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId && firebaseConfig.appId);
+const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/$/, "");
+const operatorApiBase = configuredApiBase || (window.location.hostname === "127.0.0.1" && window.location.port === "5173" ? "http://127.0.0.1:8787/api" : "/api");
 
 let authInstance: Auth | undefined;
 
@@ -53,14 +55,25 @@ export function FirebaseAuthGate({ children }: PropsWithChildren) {
         return;
       }
 
-      // Do not show the dashboard until this restored Firebase session can
-      // produce a token that the protected Worker can actually use.
-      void nextUser.getIdToken(true)
-        .then(() => setUser(nextUser))
-        .catch(async () => {
+      // Do not show the dashboard until the browser session has both a usable
+      // Firebase token and confirmed access to the protected Worker.
+      void (async () => {
+        try {
+          const token = await nextUser.getIdToken(true);
+          const response = await window.fetch(`${operatorApiBase}/status`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (!response.ok) {
+            const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+            throw new Error(payload?.error ?? `Worker access check failed (${response.status}).`);
+          }
+          setUser(nextUser);
+        } catch (reason) {
           await signOut(auth);
           setUser(null);
-        });
+          setError(reason instanceof Error ? reason.message : "Unable to verify this operator account.");
+        }
+      })();
     });
   }, []);
 
