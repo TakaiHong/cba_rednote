@@ -22,6 +22,10 @@ if ($null -eq $task) {
 
 Write-Output "Installed: true"
 Write-Output "State: $($task.State)"
+Write-Output "DailyTriggers: $($task.Triggers.Count)"
+foreach ($trigger in $task.Triggers) {
+  Write-Output "TriggerStart: $($trigger.StartBoundary)"
+}
 
 try {
   $info = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction Stop

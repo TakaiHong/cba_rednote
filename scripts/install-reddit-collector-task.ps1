@@ -6,6 +6,8 @@ param(
   [int]$Limit = 50,
   [ValidateRange(1, 100)]
   [int]$ContentLimit = 20,
+  [ValidateSet(1, 2, 3, 4, 6)]
+  [int]$RunsPerDay = 4,
   [ValidateRange(0, 300)]
   [int]$WaitSeconds = 0,
   [switch]$DryRun,
@@ -29,6 +31,7 @@ function Show-Plan {
   Write-Output "ProjectRoot: $projectRoot"
   Write-Output "User: $userId (interactive logon only)"
   Write-Output "Time: $Time"
+  Write-Output "RunsPerDay: $RunsPerDay"
   Write-Output "Commands: reddit:collect-links (limit $Limit), then reddit:collect-content (limit $ContentLimit, target 10000 posts, max 1 GB)"
   Write-Output "Stdout: $outLog"
   Write-Output "Stderr: $errLog"
@@ -57,11 +60,16 @@ New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 # The task only runs while this Windows user is signed in, so its visible Chrome profile and normal Reddit login state stay available.
 $argument = "-NoProfile -ExecutionPolicy Bypass -Command `"Set-Location -LiteralPath '$projectRoot'; & '$npm' run reddit:collect-links -- --query '$Query' --limit $Limit --wait-seconds $WaitSeconds > '$outLog' 2> '$errLog'; if (`$LASTEXITCODE -eq 0) { & '$npm' run reddit:collect-content -- --limit $ContentLimit --target-posts 10000 --max-bytes 1gb --wait-seconds $WaitSeconds >> '$outLog' 2>> '$errLog' }`""
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $argument
-$trigger = New-ScheduledTaskTrigger -Daily -At $Time
+$timeOfDay = [DateTime]::ParseExact($Time, "HH:mm", [Globalization.CultureInfo]::InvariantCulture)
+$baseRunAt = (Get-Date).Date.AddHours($timeOfDay.Hour).AddMinutes($timeOfDay.Minute)
+$intervalHours = 24 / $RunsPerDay
+$triggers = for ($run = 0; $run -lt $RunsPerDay; $run += 1) {
+  New-ScheduledTaskTrigger -Daily -At $baseRunAt.AddHours($run * $intervalHours)
+}
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
 $principal = New-ScheduledTaskPrincipal -UserId $userId -LogonType Interactive -RunLevel Limited
 
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description "Collect attended public Reddit NTU post links, then anonymized post and comment text within the local corpus cap." -Force | Out-Null
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $triggers -Settings $settings -Principal $principal -Description "Collect attended public Reddit NTU post links, then anonymized post and comment text within the local corpus cap." -Force | Out-Null
 
 Write-Output "Scheduled task installed."
 Write-Output "It runs only while $userId is signed in."

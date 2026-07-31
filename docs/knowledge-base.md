@@ -66,7 +66,7 @@ DeepSeek 会同时看到官方来源和已收录的公开洞察。系统提示�
 
 ## 每日自动采集
 
-`npm.cmd run reddit:schedule:install` 会在这台 Windows 电脑上安装一个独立任务，默认每天 10:00 运行一次：先收集未进入历史记录的新链接，再从累计链接中补一批匿名化的贴文和评论正文。任务只会在当前 Windows 用户已登录时运行，因此可以使用同一个可见 Chrome 资料夹；它不会在 Cloudflare Worker 内运行，也不会绕过登录或验证码。默认等待时间为 0 秒，若 Reddit 出现验证码，任务会停止并将错误写入 `.tmp/reddit-collector.err.log`，下一次由运营人员正常完成验证后再运行即可。
+`npm.cmd run reddit:schedule:install` 会在这台 Windows 电脑上安装一个独立任务，默认每天运行 4 次，从 10:00 起每 6 小时一次：先收集未进入历史记录的新链接，再从累计链接中补一批匿名化的贴文和评论正文。任务只会在当前 Windows 用户已登录时运行，因此可以使用同一个可见 Chrome 资料夹；它不会在 Cloudflare Worker 内运行，也不会绕过登录或验证码。默认等待时间为 0 秒，若 Reddit 出现验证码，任务会停止并将错误写入 `.tmp/reddit-collector.err.log`，下一次由运营人员正常完成验证后再运行即可。可通过 `-RunsPerDay 1`、`2`、`3`、`4` 或 `6` 调整每日批次数。
 
 ```powershell
 npm.cmd run reddit:schedule:dry-run
