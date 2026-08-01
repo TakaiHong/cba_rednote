@@ -21,6 +21,7 @@ export interface ResearchSignal {
   theme: string;
   audience: string;
   insight: string;
+  tags?: string[];
   interactionCount?: number;
   expiresAt?: string;
   createdAt: string;
@@ -364,6 +365,19 @@ export async function queueResearchSignals(sourceUrls: string[]) {
   if (!response.ok) {
     const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
     throw new Error(payload?.error ?? "Failed to queue public-reference links");
+  }
+  return (await response.json()) as { added: ResearchSignal[]; skipped: number };
+}
+
+export async function importLocalCorpusSignals(signals: Array<Pick<ResearchSignal, "sourceUrl" | "theme" | "audience" | "insight" | "tags">>) {
+  const response = await fetch(`${apiBase}/knowledge-base/research-signals/local-import`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ signals })
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
+    throw new Error(payload?.error ?? "Failed to import local corpus signals");
   }
   return (await response.json()) as { added: ResearchSignal[]; skipped: number };
 }

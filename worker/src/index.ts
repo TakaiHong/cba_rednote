@@ -35,6 +35,7 @@ interface ResearchSignal {
   theme: string;
   audience: string;
   insight: string;
+  tags?: string[];
   interactionCount?: number;
   expiresAt?: string;
   createdAt: string;
@@ -444,6 +445,13 @@ async function route(request: Request, url: URL, env: Env, uid: string, origin: 
     return respond(result, 201, env, origin);
   }
 
+  if (method === "POST" && path === "/api/knowledge-base/research-signals/local-import") {
+    const input = await readJson<{ signals?: Array<Partial<ResearchSignal>> }>(request);
+    const result = await importLocalCorpusSignals(env, input.signals ?? []);
+    await appendLog(env, "knowledge-import-local-corpus", "ok", `Imported ${result.added.length} local Reddit topic signals.`, { added: result.added.length, skipped: result.skipped, uid });
+    return respond(result, 201, env, origin);
+  }
+
   if (method === "POST" && path === "/api/knowledge-base/reddit/sync") {
     const result = await syncRedditSignals(env);
     await appendLog(env, "knowledge-reddit-sync", "ok", `Scanned ${result.scanned} Reddit posts and added ${result.added} trend signals.`, { scanned: result.scanned, added: result.added, skipped: result.skipped, uid });
@@ -629,6 +637,50 @@ async function queueResearchSignals(env: Env, rawUrls: string[]) {
   return { added, skipped };
 }
 
+async function importLocalCorpusSignals(env: Env, inputs: Array<Partial<ResearchSignal>>) {
+  const candidates = inputs.slice(0, 100);
+  if (!candidates.length) throw new HttpError(400, "Select at least one locally classified Reddit signal.");
+  const existingUrls = new Set((await listResearchSignals(env)).map((signal) => signal.sourceUrl));
+  const added: ResearchSignal[] = [];
+  let skipped = 0;
+
+  for (const input of candidates) {
+    const sourceUrl = String(input.sourceUrl ?? "").trim();
+    if (publicSourceType(sourceUrl) !== "reddit" || existingUrls.has(sourceUrl)) {
+      skipped += 1;
+      continue;
+    }
+    const theme = cleanResearchText(input.theme, 64, "Other NTU student discussion");
+    const audience = cleanResearchText(input.audience, 64, "NTU students");
+    const insight = cleanResearchText(input.insight, 420, "");
+    if (insight.length < 12) {
+      skipped += 1;
+      continue;
+    }
+    const tags = cleanResearchTags(input.tags);
+    const timestamp = now();
+    const signal: ResearchSignal = {
+      id: crypto.randomUUID(),
+      sourceUrl,
+      sourceType: "reddit",
+      collectionMethod: "browser-curated",
+      status: "pending_review",
+      theme,
+      audience,
+      insight,
+      tags,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+    await env.DB.prepare("INSERT INTO knowledge_entries (id, payload, created_at, updated_at) VALUES (?, ?, ?, ?)")
+      .bind(signal.id, JSON.stringify(signal), signal.createdAt, signal.updatedAt)
+      .run();
+    existingUrls.add(sourceUrl);
+    added.push(signal);
+  }
+  return { added, skipped };
+}
+
 async function approveResearchSignal(env: Env, id: string, input: Partial<ResearchSignal>): Promise<ResearchSignal> {
   const row = await env.DB.prepare("SELECT payload FROM knowledge_entries WHERE id = ?").bind(id).first<{ payload: string }>();
   if (!row) throw new HttpError(404, "Research signal not found.");
@@ -650,6 +702,11 @@ async function approveResearchSignal(env: Env, id: string, input: Partial<Resear
 function cleanResearchText(value: unknown, maxLength: number, fallback: string) {
   const text = String(value ?? "").replace(/\s+/g, " ").trim().slice(0, maxLength);
   return text || fallback;
+}
+
+function cleanResearchTags(value: unknown) {
+  const values = Array.isArray(value) ? value : [];
+  return [...new Set(values.map((item) => cleanResearchText(item, 32, "")).filter(Boolean))].slice(0, 3);
 }
 
 function publicSourceType(value: string): ResearchSignal["sourceType"] | undefined {

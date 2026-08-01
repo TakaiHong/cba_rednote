@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, CalendarDays, ClipboardCheck, GraduationCap, LayoutDashboard, PenLine, Settings2 } from "lucide-react";
+import { BookOpen, CalendarDays, ClipboardCheck, GraduationCap, LayoutDashboard, PenLine, Settings2, Upload } from "lucide-react";
 import {
   addResearchSignal,
   approveResearchSignal,
@@ -8,6 +8,7 @@ import {
   exportMarkdownPackage,
   exportPerformanceReport,
   generatePost,
+  importLocalCorpusSignals,
   regeneratePost,
   queueResearchSignals,
   generateCoverImage,
@@ -41,6 +42,7 @@ import {
   type XhsPublishPackage,
   updatePost
 } from "./api.js";
+import { parseLocalCorpusSignals } from "./redditTaxonomy.js";
 
 const statusLabels: Record<MarketingPost["status"], string> = {
   draft: "草稿",
@@ -122,6 +124,8 @@ function App() {
   const [batchLoading, setBatchLoading] = useState(false);
   const [reviewDrafts, setReviewDrafts] = useState<Record<string, Pick<ResearchSignal, "theme" | "audience" | "insight">>>({});
   const [redditSyncLoading, setRedditSyncLoading] = useState(false);
+  const [corpusImportLoading, setCorpusImportLoading] = useState(false);
+  const [knowledgeTagFilter, setKnowledgeTagFilter] = useState("all");
   const [researchForm, setResearchForm] = useState({ sourceUrl: "", theme: "", audience: "NTU 中国学生", insight: "" });
 
   const selected = useMemo(
@@ -130,6 +134,14 @@ function App() {
   );
 
   const previewImage = publishPreview?.imageAssets[0] ?? selected?.imageAssets?.[0];
+  const knowledgeTags = useMemo(
+    () => [...new Set((knowledge?.researchSignals ?? []).flatMap((signal) => signal.tags ?? []))].sort(),
+    [knowledge]
+  );
+  const visibleResearchSignals = useMemo(
+    () => (knowledge?.researchSignals ?? []).filter((signal) => knowledgeTagFilter === "all" || signal.tags?.includes(knowledgeTagFilter)),
+    [knowledge, knowledgeTagFilter]
+  );
   const approvedCount = posts.filter((post) => post.status === "approved").length;
   const publishedCount = posts.filter((post) => post.status === "published").length;
   const goLiveGap =
@@ -260,6 +272,29 @@ function App() {
       setError(err instanceof Error ? err.message : "批量整理链接失败");
     } finally {
       setBatchLoading(false);
+    }
+  }
+
+  async function handleLocalCorpusImport(file: File | undefined) {
+    if (!file) return;
+    setCorpusImportLoading(true);
+    setError("");
+    try {
+      const signals = parseLocalCorpusSignals(await file.text());
+      if (!signals.length) throw new Error("No readable Reddit records were found in this local corpus file.");
+      let added = 0;
+      let skipped = 0;
+      for (let index = 0; index < signals.length; index += 100) {
+        const result = await importLocalCorpusSignals(signals.slice(index, index + 100));
+        added += result.added.length;
+        skipped += result.skipped;
+      }
+      await refresh();
+      setPublishHint(`已导入 ${added} 条本地 Reddit 主题信号${skipped ? `，跳过 ${skipped} 条重复记录` : ""}。原贴正文和评论仍只保留在本机。`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to import local Reddit corpus");
+    } finally {
+      setCorpusImportLoading(false);
     }
   }
 
@@ -1096,6 +1131,22 @@ function App() {
             </div>
           </header>
 
+          <section className="knowledge-import-card">
+            <div className="make-step-heading">
+              <div>
+                <span>本地采集包</span>
+                <h3>导入已下载的 Reddit 主题分类</h3>
+                <p>选择本机的 <code>.tmp/reddit-ntu-content-corpus.jsonl</code>。浏览器会先在本机分类，只同步链接、主题标签和去标识化摘要。</p>
+              </div>
+            </div>
+            <label className="corpus-upload-control">
+              <Upload aria-hidden="true" size={16} />
+              <span>{corpusImportLoading ? "正在本地分类并导入..." : "选择本地采集包"}</span>
+              <input accept=".jsonl,application/json" disabled={corpusImportLoading} onChange={(event) => void handleLocalCorpusImport(event.target.files?.[0])} type="file" />
+            </label>
+            <small>原贴正文、评论、用户资料与账号标识不会上传到知识库。</small>
+          </section>
+
           <section className="knowledge-batch-card">
             <div className="make-step-heading">
               <div>
@@ -1165,13 +1216,22 @@ function App() {
           </section>
 
           <section className="knowledge-section">
-            <div className="knowledge-section-heading"><h3>公开社区洞察</h3><span>仅用于选题和表达</span></div>
-            {knowledge?.researchSignals.length ? (
+            <div className="knowledge-section-heading">
+              <h3>公开社区洞察</h3>
+              <label className="knowledge-tag-filter">主题筛选
+                <select onChange={(event) => setKnowledgeTagFilter(event.target.value)} value={knowledgeTagFilter}>
+                  <option value="all">全部主题</option>
+                  {knowledgeTags.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
+                </select>
+              </label>
+            </div>
+            {visibleResearchSignals.length ? (
               <div className="research-signal-grid">
-                {knowledge.researchSignals.map((signal) => (
+                {visibleResearchSignals.map((signal) => (
                   <article className="research-signal-card" key={signal.id}>
                     <div><span>{signal.sourceType === "reddit" ? `Reddit · ${signal.collectionMethod === "browser-curated" ? "浏览器采集" : signal.collectionMethod === "api" ? "API 同步" : "人工收录"} · ${signal.audience}${signal.interactionCount !== undefined ? ` · ${signal.interactionCount} 互动` : ""}` : `小红书 · ${signal.audience}`}</span>{!signal.readOnly && <button aria-label="删除该公开洞察" onClick={() => void handleDeleteResearchSignal(signal.id)} type="button">删除</button>}</div>
                     <h4>{signal.theme}</h4>
+                    {signal.tags?.length ? <div className="research-signal-tags">{signal.tags.map((tag) => <span key={tag}>{tag}</span>)}</div> : null}
                     <p>{signal.insight}</p>
                     <a href={signal.sourceUrl} rel="noreferrer" target="_blank">打开公开参考</a>
                   </article>

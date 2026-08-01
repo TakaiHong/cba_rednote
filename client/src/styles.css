@@ -212,7 +212,7 @@ button:disabled { cursor: wait; opacity: .58; }
 .make-step-card { border-radius: 9px; display: grid; gap: 13px; padding: 16px; }
 .empty-make-state { max-width: 760px; }
 .knowledge-workspace { display: grid; gap: 16px; max-width: 1120px; }
-.knowledge-header, .knowledge-add-card, .knowledge-batch-card, .knowledge-pending-card, .knowledge-section { background: rgba(255,255,255,.34); border: 1px solid rgba(255,255,255,.58); border-radius: 9px; box-shadow: inset 0 1px 0 rgba(255,255,255,.45); }
+.knowledge-header, .knowledge-add-card, .knowledge-batch-card, .knowledge-import-card, .knowledge-pending-card, .knowledge-section { background: rgba(255,255,255,.34); border: 1px solid rgba(255,255,255,.58); border-radius: 9px; box-shadow: inset 0 1px 0 rgba(255,255,255,.45); }
 .knowledge-header { align-items: start; display: flex; gap: 20px; justify-content: space-between; padding: 18px; }
 .knowledge-header > div:first-child { display: grid; gap: 6px; max-width: 680px; }
 .knowledge-header h2 { font-size: 24px; line-height: 1.25; margin: 0; }
@@ -222,6 +222,10 @@ button:disabled { cursor: wait; opacity: .58; }
 .knowledge-counts span { color: #768179; font-size: 12px; font-weight: 800; }
 .knowledge-add-card { display: grid; gap: 14px; padding: 16px; }
 .knowledge-batch-card, .knowledge-pending-card { display: grid; gap: 14px; padding: 16px; }
+.knowledge-import-card { display: grid; gap: 12px; padding: 16px; }
+.knowledge-import-card small { color: #718077; font-size: 12px; line-height: 1.45; }
+.corpus-upload-control { align-items: center; background: rgba(31,97,80,.10); border: 1px dashed rgba(31,97,80,.35); border-radius: 7px; color: #1f6150; cursor: pointer; display: inline-flex; font-size: 13px; font-weight: 800; gap: 8px; justify-self: start; padding: 10px 12px; }
+.corpus-upload-control input { block-size: 1px; clip: rect(0 0 0 0); inline-size: 1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; }
 .knowledge-batch-card .primary-button { align-items: center; display: inline-flex; gap: 7px; justify-self: start; }
 .batch-url-input { background: rgba(255,255,255,.52); border: 1px solid rgba(33,45,40,.15); border-radius: 6px; color: #283830; font: inherit; line-height: 1.55; min-height: 118px; padding: 10px; resize: vertical; width: 100%; }
 .pending-signal-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -254,7 +258,11 @@ button:disabled { cursor: wait; opacity: .58; }
 .research-signal-card span { color: #276148; font-size: 11px; font-weight: 800; }
 .research-signal-card button { background: transparent; border: 0; color: #a84d37; cursor: pointer; font-size: 11px; font-weight: 800; padding: 0; }
 .research-signal-card h4 { color: #25362e; font-size: 14px; line-height: 1.35; margin: 0; }
+.research-signal-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.research-signal-tags span { background: rgba(37,89,72,.10); border: 1px solid rgba(37,89,72,.16); border-radius: 999px; color: #276148; font-size: 11px; font-weight: 800; padding: 3px 7px; }
 .research-signal-card p, .official-source-card small { color: #637169; font-size: 12px; line-height: 1.5; margin: 0; }
+.knowledge-tag-filter { align-items: center; color: #718077; display: inline-flex; font-size: 12px; gap: 7px; white-space: nowrap; }
+.knowledge-tag-filter select { background: rgba(255,255,255,.58); border: 1px solid rgba(33,45,40,.13); border-radius: 6px; color: #25362e; font: inherit; padding: 6px 8px; }
 .research-signal-card a, .official-source-card { color: #1f6150; font-size: 12px; font-weight: 800; text-decoration: none; }
 .official-source-card strong { color: #25362e; font-size: 13px; line-height: 1.35; }
 .official-source-card span { color: #68776f; font-size: 11px; font-weight: 800; }

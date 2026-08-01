@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { canonicalRedditPostUrl, filterAllowedSubredditLinks, onlyNewLinks, parseOptions, redditCollectionPlan, redditCollectionUrl, redditSubreddit } from "../scripts/collect-reddit-links.js";
 import { isNtuRelatedContent, parseByteLimit, parseOptions as parseContentOptions, redactPublicText } from "../scripts/collect-reddit-content.js";
+import { classifyRedditTopics, parseLocalCorpusSignals } from "../client/src/redditTaxonomy.js";
 
 test("canonicalRedditPostUrl keeps only Reddit post URLs", () => {
   assert.equal(
@@ -94,4 +95,17 @@ test("requires NTU context outside the direct NTU community", () => {
   assert.equal(isNtuRelatedContent("ntu", "Hall fridge procedures", "", []), true);
   assert.equal(isNtuRelatedContent("sgexams", "Hall fridge procedures", "", []), false);
   assert.equal(isNtuRelatedContent("sgexams", "Exchange options", "NTU students can apply.", []), true);
+});
+
+test("classifies local Reddit content without returning its raw text", () => {
+  assert.deepEqual(classifyRedditTopics("NTU hall swap and room rental advice"), ["宿舍与住宿"]);
+  const signals = parseLocalCorpusSignals(`${JSON.stringify({
+    postUrl: "https://www.reddit.com/r/NTU/comments/example1",
+    title: "Course registration help",
+    body: "Need timetable and module advice",
+    comments: ["Please share a private phone number"]
+  })}\n`);
+  assert.equal(signals.length, 1);
+  assert.deepEqual(signals[0].tags, ["选课与学业安排"]);
+  assert.equal(signals[0].insight.includes("phone"), false);
 });

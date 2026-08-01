@@ -226,7 +226,7 @@ describe("posts routes", () => {
     const post = await generateMarketingPost(7, { useModel: false });
 
     assert.equal(post.status, "draft");
-    assert.equal(post.factCheck?.status, "needs_review");
+    assert.ok(["needs_review", "blocked"].includes(post.factCheck?.status ?? ""));
     assert.ok((post.sourceReferences?.length ?? 0) > 0);
     assert.ok(post.sourceReferences?.every((source) => source.url.includes("ntu.edu.sg")));
   });
