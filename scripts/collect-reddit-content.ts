@@ -71,7 +71,7 @@ export function redactPublicText(value: string, maxChars: number): string {
     .replace(/\b(?:https?:\/\/|www\.)\S+/gi, "[link removed]")
     .replace(/\bu\/[a-z0-9_-]+/gi, "[user removed]")
     .trim();
-  return normalized.length > maxChars ? `${normalized.slice(0, Math.max(0, maxChars - 1)).trimEnd()}…` : normalized;
+  return normalized.length > maxChars ? `${normalized.slice(0, Math.max(0, maxChars - 3)).trimEnd()}...` : normalized;
 }
 
 export function isNtuRelatedContent(subreddit: string, title: string, body: string, comments: string[]) {

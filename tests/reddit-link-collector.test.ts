@@ -51,10 +51,12 @@ test("uses a direct new-post feed for r/NTU and restricted search elsewhere", ()
   );
 });
 
-test("adds student-topic searches for related communities", () => {
+test("keeps the direct NTU feed while adding topic searches across communities", () => {
   const plan = redditCollectionPlan("NTU", new Set(["ntu", "sgexams"]), ["course registration", "exchange"]);
   assert.deepEqual(plan, [
     { subreddit: "ntu", query: "NTU" },
+    { subreddit: "ntu", query: "NTU course registration" },
+    { subreddit: "ntu", query: "NTU exchange" },
     { subreddit: "sgexams", query: "NTU" },
     { subreddit: "sgexams", query: "NTU course registration" },
     { subreddit: "sgexams", query: "NTU exchange" }
@@ -81,6 +83,10 @@ test("redacts direct contact and account identifiers from public discussion text
 
 test("normalizes Unicode line separators before JSONL persistence", () => {
   assert.equal(redactPublicText("First\u2028Second\u2029Third", 500), "First\nSecond\nThird");
+});
+
+test("uses an ASCII ellipsis when redacting oversized public text", () => {
+  assert.equal(redactPublicText("abcdefghij", 8), "abcde...");
 });
 
 test("parses the comment collector limits safely", () => {

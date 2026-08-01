@@ -29,8 +29,23 @@ const DEFAULT_TOPICS = [
   "matriculation",
   "exchange",
   "internship",
+  "career",
+  "job search",
+  "graduate job",
+  "graduate programme",
+  "career fair",
+  "resume",
+  "interview",
+  "networking",
+  "NBS",
+  "business school",
+  "Chinese student",
+  "international student",
+  "work pass",
+  "employment pass",
   "student pass",
   "visa",
+  "scholarship",
   "convocation",
   "help",
   "housing"
@@ -108,13 +123,16 @@ export function redditCollectionUrl(query: string, subreddit: string): string {
 
 export function redditCollectionPlan(query: string, allowedSubreddits: Set<string>, topics: string[]) {
   const subreddits = [...allowedSubreddits];
-  const plan = subreddits.includes("ntu") && query.trim().toLowerCase() === "ntu"
+  const isNtuSearch = query.trim().toLowerCase() === "ntu";
+  const plan = subreddits.includes("ntu") && isNtuSearch
     ? [{ subreddit: "ntu", query }]
     : [];
-  const topicQueries = [query, ...topics.map((topic) => `${query} ${topic}`)];
+  const baseQueries = [query, ...topics.map((topic) => `${query} ${topic}`)];
   for (const subreddit of subreddits) {
-    if (subreddit === "ntu" && query.trim().toLowerCase() === "ntu") continue;
-    for (const topicQuery of topicQueries) plan.push({ subreddit, query: topicQuery });
+    // The direct r/NTU feed gets the newest posts. Restricted topic searches
+    // still run there so useful older posts are not excluded.
+    const queries = subreddit === "ntu" && isNtuSearch ? baseQueries.slice(1) : baseQueries;
+    for (const topicQuery of queries) plan.push({ subreddit, query: topicQuery });
   }
   return plan;
 }
