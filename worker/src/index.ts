@@ -583,7 +583,9 @@ async function listResearchSignals(env: Env): Promise<ResearchSignal[]> {
   await pruneExpiredResearchSignals(env);
   const result = await env.DB.prepare("SELECT payload FROM knowledge_entries ORDER BY updated_at DESC LIMIT 400").all<{ payload: string }>();
   const saved = result.results.map((row) => normalizeResearchSignal(JSON.parse(row.payload) as ResearchSignal));
-  const activeBrowserSignals = browserCuratedRedditSignals.filter((signal) => !signal.expiresAt || new Date(signal.expiresAt).getTime() > Date.now());
+  const activeBrowserSignals = browserCuratedRedditSignals
+    .map(normalizeResearchSignal)
+    .filter((signal) => !signal.expiresAt || new Date(signal.expiresAt).getTime() > Date.now());
   const savedUrls = new Set(saved.map((signal) => signal.sourceUrl));
   return [...activeBrowserSignals.filter((signal) => !savedUrls.has(signal.sourceUrl)), ...saved].slice(0, 400);
 }
