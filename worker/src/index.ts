@@ -1,3 +1,5 @@
+import { selectRedditInspirationSignals } from "./inspiration.js";
+
 export interface Env {
   DB: D1Database;
   FIREBASE_PROJECT_ID: string;
@@ -915,8 +917,9 @@ async function createGeneratedPost(env: Env, existing: MarketingPost[], offset: 
   const fallback = templatePost(offset);
   if (!useModel || !env.DEEPSEEK_API_KEY || Number(env.MAX_COST_CNY_PER_POST ?? 0.5) < 0.12) return fallback;
   try {
-    const generated = await callDeepSeek(env, fallback, "", await listResearchSignals(env));
-    if (generated) return { ...fallback, ...generated, id: crypto.randomUUID(), createdAt: now(), updatedAt: now(), generator: "deepseek-source-constrained", estimatedCostCny: 0.12 };
+    const inspirationSignals = selectRedditInspirationSignals(await listResearchSignals(env));
+    const generated = await callDeepSeek(env, fallback, "", inspirationSignals);
+    if (generated) return withInspirationMetadata({ ...fallback, ...generated, id: crypto.randomUUID(), createdAt: now(), updatedAt: now(), generator: "deepseek-source-constrained", estimatedCostCny: 0.12 }, inspirationSignals);
   } catch {
     // A no-cost template is safer than blocking the operator or inventing a fact.
   }
@@ -924,14 +927,16 @@ async function createGeneratedPost(env: Env, existing: MarketingPost[], offset: 
 }
 
 async function regeneratePost(env: Env, post: MarketingPost, feedback: string): Promise<MarketingPost> {
-  const generated = env.DEEPSEEK_API_KEY ? await callDeepSeek(env, post, feedback, await listResearchSignals(env)).catch(() => undefined) : undefined;
+  const inspirationSignals = env.DEEPSEEK_API_KEY ? selectRedditInspirationSignals(await listResearchSignals(env)) : [];
+  const generated = env.DEEPSEEK_API_KEY ? await callDeepSeek(env, post, feedback, inspirationSignals).catch(() => undefined) : undefined;
   const base = generated ? { ...post, ...generated } : { ...post, title: fitTitle(post.title), body: `${post.body}\n\n补充：${feedback}` };
-  return { ...base, id: post.id, revisionNotes: [...post.revisionNotes, feedback], updatedAt: now(), generator: generated ? "deepseek-source-constrained" : "template-revision" };
+  const next = { ...base, id: post.id, revisionNotes: [...post.revisionNotes, feedback], updatedAt: now(), generator: generated ? "deepseek-source-constrained" : "template-revision" };
+  return generated ? withInspirationMetadata(next, inspirationSignals) : next;
 }
 
 async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, researchSignals: ResearchSignal[]): Promise<Pick<MarketingPost, "title" | "body" | "tags" | "imageIdeas" | "callToAction" | "review"> | undefined> {
   const sourceText = officialSources.map((source) => ({ id: source.id, title: source.title, url: source.url, claims: source.claims })).map((source) => JSON.stringify(source)).join("\n");
-  const signalText = researchSignals.filter((signal) => signal.status !== "pending_review").slice(0, 20).map((signal) => JSON.stringify({ theme: signal.theme, audience: signal.audience, insight: signal.insight })).join("\n");
+  const signalText = researchSignals.map((signal) => JSON.stringify({ theme: signal.theme, audience: signal.audience, tags: signal.tags ?? [], insight: signal.insight })).join("\n");
   const response = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: { ...jsonHeaders, Authorization: `Bearer ${env.DEEPSEEK_API_KEY}` },
@@ -959,6 +964,19 @@ async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, res
     imageIdeas: Array.isArray(parsed.imageIdeas) ? parsed.imageIdeas.filter((idea): idea is string => typeof idea === "string").slice(0, 3) : post.imageIdeas,
     callToAction: typeof parsed.callToAction === "string" ? parsed.callToAction.trim() : post.callToAction,
     review: { score: 90, notes: ["Source-constrained AI draft. Review before saving to publishing list."], approved: true }
+  };
+}
+
+function withInspirationMetadata(post: MarketingPost, inspirationSignals: ResearchSignal[]): MarketingPost {
+  if (!inspirationSignals.length) return post;
+  const localSignals = inspirationSignals.map((signal) => "社区灵感：" + signal.theme).slice(0, 5);
+  return {
+    ...post,
+    topic: { ...post.topic, localSignals },
+    review: {
+      ...post.review,
+      notes: [...post.review.notes, "本次随机参考 " + inspirationSignals.length + " 条已核准社区选题信号；仅用于选题和叙事，不作为事实依据。"]
+    }
   };
 }
 

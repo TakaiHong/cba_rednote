@@ -98,7 +98,7 @@ test("requires NTU context outside the direct NTU community", () => {
 });
 
 test("classifies local Reddit content without returning its raw text", () => {
-  assert.deepEqual(classifyRedditTopics("NTU hall swap and room rental advice"), ["宿舍与住宿"]);
+  assert.ok(classifyRedditTopics("NTU hall swap and room rental advice").includes("宿舍与住宿"));
   const signals = parseLocalCorpusSignals(`${JSON.stringify({
     postUrl: "https://www.reddit.com/r/NTU/comments/example1",
     title: "Course registration help",
@@ -106,6 +106,10 @@ test("classifies local Reddit content without returning its raw text", () => {
     comments: ["Please share a private phone number"]
   })}\n`);
   assert.equal(signals.length, 1);
-  assert.deepEqual(signals[0].tags, ["选课与学业安排"]);
+  assert.ok(signals[0].tags.includes("选课与学业安排"));
   assert.equal(signals[0].insight.includes("phone"), false);
+});
+
+test("adds a high-timeliness tag to operational student topics", () => {
+  assert.ok(classifyRedditTopics("NTU add drop timetable and hall application").includes("高时效"));
 });

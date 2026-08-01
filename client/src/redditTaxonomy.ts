@@ -24,9 +24,14 @@ const topicRules: Array<{ tag: string; pattern: RegExp }> = [
   { tag: "社团与人际", pattern: /\b(cca|club|society|friend|social|community)\b|社团|朋友|社交/i }
 ];
 
+const highTimelinessPattern = /\b(course registration|add[ .-]?drop|timetable|exam|orientation|matriculation|admission|appeal|offer|hall|accommodation|room swap|exchange|internship|student pass|visa|immigration|convocation|deadline|application)\b|选课|加退选|课表|考试|迎新|入学|宿舍|住宿|交换|实习|签证|截止/i;
+
 export function classifyRedditTopics(text: string) {
   const tags = topicRules.filter((rule) => rule.pattern.test(text)).map((rule) => rule.tag);
-  return tags.length ? tags.slice(0, 3) : ["其他 NTU 学生讨论"];
+  const topicalTags = tags.length ? tags : ["其他 NTU 学生讨论"];
+  return highTimelinessPattern.test(text)
+    ? [...topicalTags.slice(0, 2), "高时效"]
+    : topicalTags.slice(0, 3);
 }
 
 export function parseLocalCorpusSignals(content: string, limit = 400): LocalRedditSignalInput[] {

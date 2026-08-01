@@ -17,7 +17,24 @@ const NAVIGATION_RETRY_DELAY_MS = 5000;
 const MAX_HISTORY_LINKS = 100_000;
 const MAX_CORPUS_LINKS = 100_000;
 const DEFAULT_SUBREDDITS = ["ntu", "sgexams", "asksingapore", "singapore", "sit_singapore"];
-const DEFAULT_TOPICS = ["course registration", "exchange", "help", "internship", "hall", "housing"];
+// Search newest-first for items that can become stale quickly. Broader student
+// life queries remain useful, but these operational topics get collected first.
+const DEFAULT_TOPICS = [
+  "course registration",
+  "add drop",
+  "timetable",
+  "hall",
+  "accommodation",
+  "orientation",
+  "matriculation",
+  "exchange",
+  "internship",
+  "student pass",
+  "visa",
+  "convocation",
+  "help",
+  "housing"
+];
 
 interface Options {
   query: string;
