@@ -1,4 +1,4 @@
-name = "ntu-cba-rednote-api"
+name = "ntu-cba-content-api"
 main = "src/index.ts"
 compatibility_date = "2026-07-29"
 
@@ -12,8 +12,7 @@ database_name = "ntu-cba-rednote"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
 
 [vars]
-FIREBASE_PROJECT_ID = "REPLACE_WITH_FIREBASE_PROJECT_ID"
+FIREBASE_PROJECT_ID = "ntu-cba-rednote"
 DEEPSEEK_MODEL = "deepseek-chat"
 MAX_COST_CNY_PER_POST = "0.5"
-# The Hosting URL is set during deployment, e.g. https://your-project.web.app
-ALLOWED_ORIGIN = "REPLACE_WITH_FIREBASE_HOSTING_ORIGIN"
+ALLOWED_ORIGIN = "https://ntu-cba-rednote.web.app"

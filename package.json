@@ -44,6 +44,7 @@
     "d1:migration:export": "tsx scripts/export-d1-migration.ts",
     "sites:migrate-data": "tsx scripts/migrate-local-data-to-site.ts",
     "worker:typecheck": "tsc -p worker/tsconfig.json --noEmit",
+    "worker:deploy": "wrangler deploy --config worker/wrangler.toml",
     "firebase:build": "node scripts/build-firebase.mjs",
     "firebase:deploy": "npm run firebase:build && firebase deploy --only hosting",
     "sites:build": "npm run firebase:build && node scripts/build-sites.mjs",

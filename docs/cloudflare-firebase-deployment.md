@@ -1,10 +1,10 @@
-# Firebase Hosting + Codex Sites Deployment
+# Firebase Hosting + Cloudflare Worker/D1 Deployment
 
 This is the active public deployment path for the NTU CBA content desk.
 
 - **Firebase Hosting** serves the React dashboard.
 - **Firebase Authentication** protects the dashboard with an operator Google account.
-- **Codex Sites Worker + platform-managed D1** stores posts, review history, publishing URLs, and run logs.
+- **Cloudflare Worker + Cloudflare D1** in the CBA account stores posts, review history, publishing URLs, and run logs.
 - **DeepSeek** is called only by the Worker and its key is kept as a Cloudflare secret.
 - The Worker creates one draft at **09:15 Singapore time** for human review.
 - Xiaohongshu publishing is manual-only. The cloud application never stores a creator login or clicks Publish.
@@ -22,9 +22,23 @@ The public deployment does **not** enable cloud file uploads. It creates a low-c
 
 The frontend Firebase web API key is not a secret; it identifies the Firebase project. The DeepSeek key remains a Worker secret and must never be placed in the frontend environment file or Git.
 
-## 2. Deploy the Worker and D1 with Codex Sites
+## 2. Deploy the Worker and D1 in Cloudflare
 
-Codex Sites provisions the Worker-compatible runtime and the logical D1 binding named `DB`. The schema is created by the Worker on its first authenticated request. Runtime values are set in Sites, not in Git:
+The Worker is `ntu-cba-content-api` and its logical D1 binding is `DB`. The schema is created by the Worker on its first authenticated request. Runtime values are set in the Cloudflare Worker dashboard, never committed to Git.
+
+For command-line deployment, create a scoped Cloudflare API Token in **My Profile > API Tokens** and set it only in the local PowerShell session:
+
+```powershell
+$env:CLOUDFLARE_API_TOKEN = "<token created in the Cloudflare dashboard>"
+```
+
+The token needs **Account > Workers Scripts: Edit** and **Account > D1: Edit** for the CBA Cloudflare account. Do not paste the token into this repository or chat. Once authentication is available, confirm the D1 database ID in `worker/wrangler.toml` and deploy:
+
+```powershell
+npm.cmd run worker:deploy
+```
+
+Set these Worker variables and secrets in the Cloudflare dashboard:
 
 ```text
 FIREBASE_PROJECT_ID=ntu-cba-rednote
@@ -33,7 +47,7 @@ ALLOWED_FIREBASE_EMAILS=<operator Gmail address>
 DEEPSEEK_API_KEY=<key>
 ```
 
-The deployment output provides the Worker API URL.
+The production Worker API base is `https://ntu-cba-content-api.ntucba2025.workers.dev/api`.
 
 ## 3. Deploy Firebase Hosting
 
@@ -42,8 +56,8 @@ Copy `client/.env.production.example` to `client/.env.production.local`. Fill in
 Copy `.firebaserc.example` to `.firebaserc` and replace `YOUR_FIREBASE_PROJECT_ID`.
 
 ```powershell
-npx firebase-tools login
-npm.cmd run firebase:deploy
+npx.cmd firebase-tools login
+npx.cmd firebase-tools deploy --only hosting
 ```
 
 Open `https://your-project-id.web.app`, sign in with the Firebase operator account, generate one draft, create a sticky-note cover, approve it, then save it to the publishing list.
