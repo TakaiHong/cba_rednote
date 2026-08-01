@@ -13,6 +13,8 @@ database_id = "09211257-18c2-43cf-96a0-eb74226f9996"
 
 [vars]
 FIREBASE_PROJECT_ID = "ntu-cba-rednote"
+FIREBASE_WEB_API_KEY = "AIzaSyADDeVorhoqImUAuGCp7bX7Of5BypN3Hio"
+ALLOWED_FIREBASE_EMAILS = "ntucba2025@gmail.com"
 DEEPSEEK_MODEL = "deepseek-chat"
 MAX_COST_CNY_PER_POST = "0.5"
 ALLOWED_ORIGIN = "https://ntu-cba-rednote.web.app"
