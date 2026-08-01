@@ -8,8 +8,8 @@ crons = ["15 1 * * *"]
 
 [[d1_databases]]
 binding = "DB"
-database_name = "ntu-cba-rednote"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_name = "ntu-cba-content-db"
+database_id = "09211257-18c2-43cf-96a0-eb74226f9996"
 
 [vars]
 FIREBASE_PROJECT_ID = "ntu-cba-rednote"
