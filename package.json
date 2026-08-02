@@ -27,6 +27,7 @@
     "reddit:collect-links": "tsx scripts/collect-reddit-links.ts",
     "reddit:collect-content": "tsx scripts/collect-reddit-content.ts",
     "reddit:prune-content": "tsx scripts/prune-reddit-content.ts",
+    "reddit:stats": "tsx scripts/reddit-corpus-stats.ts",
     "reddit:schedule:status": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check-reddit-collector-task.ps1",
     "reddit:schedule:dry-run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-reddit-collector-task.ps1 -DryRun",
     "reddit:schedule:install": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-reddit-collector-task.ps1",

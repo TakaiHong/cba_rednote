@@ -23,6 +23,8 @@
 
 运行 `npm.cmd run reddit:collect-content -- --limit 20 --target-posts 10000 --max-bytes 1gb` 会从累计链接中继续处理未读贴文。每个语料单元只保留原帖链接、来源社区、标题、贴文正文和当前页面可见的公开评论正文，写入 `.tmp/reddit-ntu-content-corpus.jsonl`；进度写入 `.tmp/reddit-ntu-content-state.json`，所以可安全重跑并自动跳过已处理贴文。`r/NTU` 的内容可直接作为校园讨论样本；其他社区的条目必须在标题、正文或可见评论中出现 `NTU`、`Nanyang Technological`、`Nanyang Business School` 或 `NBS` 才会入库。写盘前会移除用户名、个人主页资料、链接、邮箱和电话号码；不保存头像、karma、发帖历史或媒体。达到 10,000 篇贴文或正文语料达到 1 GB 时自动停止。社区内容仅是选题信号，不能作为 NTU 官方事实，也不应原样复制到对外文案。
 
+每次采集后运行 `npm.cmd run reddit:stats` 可输出本地语料的聚合校验：有效/无效 JSONL 行数、来源白名单命中、社区分布、正文与评论覆盖、脱敏标记覆盖、字节数和 10,000 篇 / 1 GB 的停止进度。该命令不会输出或上传贴文、评论正文或用户资料。
+
 如需按当前相关性规则复查既有本地语料，可运行 `npm.cmd run reddit:prune-content`。它只重写本地 `.tmp` 语料文件，不会访问 Reddit，也不会把已移除的链接重新加入待采集队列。
 
 ### 浏览器人工采集

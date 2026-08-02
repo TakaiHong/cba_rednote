@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { canonicalRedditPostUrl, filterAllowedSubredditLinks, onlyNewLinks, parseOptions, redditCollectionPlan, redditCollectionUrl, redditSubreddit } from "../scripts/collect-reddit-links.js";
 import { isNtuRelatedContent, orderCollectionCandidates, parseByteLimit, parseOptions as parseContentOptions, redactPublicText } from "../scripts/collect-reddit-content.js";
+import { summarizeCorpusLines } from "../scripts/reddit-corpus-stats.js";
 import { classifyRedditTopics, parseLocalCorpusSignals } from "../client/src/redditTaxonomy.js";
 
 test("canonicalRedditPostUrl keeps only Reddit post URLs", () => {
@@ -116,6 +117,35 @@ test("prioritizes fresh post URLs and defers repeated navigation failures", () =
     ),
     [fresh, retry]
   );
+});
+
+test("reports corpus quality without emitting raw post or comment text", () => {
+  const stats = summarizeCorpusLines([
+    JSON.stringify({
+      postUrl: "https://www.reddit.com/r/NTU/comments/example1",
+      subreddit: "ntu",
+      title: "Course registration help",
+      body: "Use [link removed] for official details.",
+      comments: ["Check the timetable."]
+    }),
+    JSON.stringify({
+      postUrl: "https://www.reddit.com/r/Other/comments/example2",
+      subreddit: "other",
+      title: "Unrelated",
+      body: "",
+      comments: []
+    }),
+    "not-json"
+  ], ".tmp/test-corpus.jsonl", 123);
+  assert.equal(stats.validRecords, 2);
+  assert.equal(stats.invalidLines, 1);
+  assert.equal(stats.allowedSourceRecords, 1);
+  assert.equal(stats.outsideWhitelistRecords, 1);
+  assert.equal(stats.recordsWithPostBody, 1);
+  assert.equal(stats.recordsWithComments, 1);
+  assert.equal(stats.recordsWithRedactions, 1);
+  assert.equal(stats.communities.ntu, 1);
+  assert.equal(stats.communities.other, 1);
 });
 
 test("classifies local Reddit content without returning its raw text", () => {
