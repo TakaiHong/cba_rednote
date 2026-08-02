@@ -95,7 +95,13 @@ export function orderCollectionCandidates(knownLinks: string[], processed: Set<s
   return [...new Set(knownLinks)]
     .filter((href) => !processed.has(href))
     .filter((href) => (failedAttempts.get(href) ?? 0) < MAX_TRANSIENT_FAILURES)
-    .sort((left, right) => (failedAttempts.get(left) ?? 0) - (failedAttempts.get(right) ?? 0));
+    .sort((left, right) => {
+      const failureDifference = (failedAttempts.get(left) ?? 0) - (failedAttempts.get(right) ?? 0);
+      if (failureDifference !== 0) return failureDifference;
+      const leftPriority = redditSubreddit(left) === "ntu" ? 0 : 1;
+      const rightPriority = redditSubreddit(right) === "ntu" ? 0 : 1;
+      return leftPriority - rightPriority;
+    });
 }
 
 export function parseOptions(args: string[]): Options {

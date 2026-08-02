@@ -119,6 +119,15 @@ test("prioritizes fresh post URLs and defers repeated navigation failures", () =
   );
 });
 
+test("prioritizes direct NTU community posts among equally fresh candidates", () => {
+  const communityPost = "https://www.reddit.com/r/SGExams/comments/community";
+  const ntuPost = "https://www.reddit.com/r/NTU/comments/direct";
+  assert.deepEqual(
+    orderCollectionCandidates([communityPost, ntuPost], new Set<string>(), new Map()),
+    [ntuPost, communityPost]
+  );
+});
+
 test("reports corpus quality without emitting raw post or comment text", () => {
   const stats = summarizeCorpusLines([
     JSON.stringify({
