@@ -17,6 +17,7 @@ const MAX_TARGET_POSTS = 10_000;
 const DEFAULT_MAX_BYTES = 1024 * 1024 * 1024;
 const MAX_TRACKED_POSTS = 100_000;
 const REQUEST_DELAY_MS = 2200;
+const POST_NAVIGATION_TIMEOUT_MS = 20_000;
 const MAX_COMMENT_SCROLLS = 8;
 const MAX_BODY_CHARS = 12_000;
 const MAX_COMMENT_CHARS = 4_000;
@@ -198,7 +199,7 @@ function contentFromPage(page: Page) {
 }
 
 async function collectPostRecord(page: Page, postUrl: string): Promise<RedditContentRecord | undefined> {
-  await page.goto(postUrl, { waitUntil: "domcontentloaded" });
+  await page.goto(postUrl, { waitUntil: "domcontentloaded", timeout: POST_NAVIGATION_TIMEOUT_MS });
   if (await isCaptchaPage(page)) return undefined;
   await page.waitForTimeout(900);
   for (let scroll = 0; scroll < MAX_COMMENT_SCROLLS; scroll += 1) {
@@ -238,16 +239,30 @@ interface CollectorLock {
 
 async function acquireCollectorLock(outputPath: string): Promise<CollectorLock> {
   const lockPath = `${outputPath}.lock`;
-  try {
-    const handle = await open(lockPath, "wx");
-    await handle.writeFile(`${process.pid}\n`, "utf8");
-    return { path: lockPath, handle };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "EEXIST") {
-      throw new Error("Another Reddit content collection is already running. Wait for it to finish before starting a new batch.");
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const handle = await open(lockPath, "wx");
+      await handle.writeFile(`${process.pid}\n`, "utf8");
+      return { path: lockPath, handle };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+
+      const ownerPid = Number.parseInt((await readFile(lockPath, "utf8").catch(() => "")).trim(), 10);
+      let ownerIsRunning = Number.isInteger(ownerPid) && ownerPid > 0;
+      if (ownerIsRunning) {
+        try {
+          process.kill(ownerPid, 0);
+        } catch {
+          ownerIsRunning = false;
+        }
+      }
+      if (ownerIsRunning || attempt === 1) {
+        throw new Error("Another Reddit content collection is already running. Wait for it to finish before starting a new batch.");
+      }
+      await unlink(lockPath).catch(() => undefined);
     }
-    throw error;
   }
+  throw new Error("Unable to acquire the Reddit content collection lock.");
 }
 
 async function releaseCollectorLock(lock: CollectorLock) {
