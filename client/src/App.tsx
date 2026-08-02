@@ -1131,6 +1131,25 @@ function App() {
             </div>
           </header>
 
+          <section className="knowledge-link-card">
+            <div>
+              <p className="eyebrow">IMPORT</p>
+              <h3>导入公开链接</h3>
+              <p>粘贴一条公开 Reddit 或小红书链接，系统只保留脱敏选题信号；不会把社区内容当作事实。</p>
+            </div>
+            <div className="knowledge-link-actions">
+              <input aria-label="公开链接" placeholder="https://www.reddit.com/..." value={researchForm.sourceUrl} onChange={(event) => setResearchForm((form) => ({ ...form, sourceUrl: event.target.value }))} />
+              <button className="primary-button" disabled={researchLoading || !researchForm.sourceUrl.trim()} onClick={() => void handleSaveResearchSignal()} type="button">
+                <Upload aria-hidden="true" size={16} />{researchLoading ? "正在收录..." : "收录链接"}
+              </button>
+            </div>
+            <label className="corpus-upload-control compact-corpus-upload">
+              <Upload aria-hidden="true" size={15} />
+              <span>{corpusImportLoading ? "正在导入本地采集包..." : "导入本地 Reddit 采集包 (.jsonl)"}</span>
+              <input accept=".jsonl,application/json" disabled={corpusImportLoading} onChange={(event) => void handleLocalCorpusImport(event.target.files?.[0])} type="file" />
+            </label>
+          </section>
+
           <section className="knowledge-import-card">
             <div className="make-step-heading">
               <div>

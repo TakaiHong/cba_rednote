@@ -613,11 +613,13 @@ async function createResearchSignal(env: Env, input: Partial<ResearchSignal>): P
   const sourceUrl = String(input.sourceUrl ?? "").trim();
   const theme = cleanResearchText(input.theme, 64, "Topic");
   const audience = cleanResearchText(input.audience, 64, "NTU students");
-  const insight = cleanResearchText(input.insight, 420, "");
+  const insight = cleanResearchText(
+    input.insight,
+    420,
+    "This public link is a topic signal only. Verify all factual content with official NTU or NBS sources before publishing."
+  );
   const sourceType = publicSourceType(sourceUrl);
   if (!sourceType) throw new HttpError(400, "Please provide a public Xiaohongshu or Reddit URL.");
-  if (insight.length < 12) throw new HttpError(400, "Write a short paraphrased observation of at least 12 characters. Do not paste the post body.");
-
   const timestamp = now();
   const signal: ResearchSignal = { id: crypto.randomUUID(), sourceUrl, sourceType, collectionMethod: "manual", status: "approved", theme, audience, insight, createdAt: timestamp, updatedAt: timestamp };
   await env.DB.prepare("INSERT INTO knowledge_entries (id, payload, created_at, updated_at) VALUES (?, ?, ?, ?)")

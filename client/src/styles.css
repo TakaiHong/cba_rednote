@@ -212,7 +212,7 @@ button:disabled { cursor: wait; opacity: .58; }
 .make-step-card { border-radius: 9px; display: grid; gap: 13px; padding: 16px; }
 .empty-make-state { max-width: 760px; }
 .knowledge-workspace { display: grid; gap: 16px; max-width: 1120px; }
-.knowledge-header, .knowledge-add-card, .knowledge-batch-card, .knowledge-import-card, .knowledge-pending-card, .knowledge-section { background: rgba(255,255,255,.34); border: 1px solid rgba(255,255,255,.58); border-radius: 9px; box-shadow: inset 0 1px 0 rgba(255,255,255,.45); }
+.knowledge-header, .knowledge-link-card, .knowledge-add-card, .knowledge-batch-card, .knowledge-import-card, .knowledge-pending-card, .knowledge-section { background: rgba(255,255,255,.34); border: 1px solid rgba(255,255,255,.58); border-radius: 9px; box-shadow: inset 0 1px 0 rgba(255,255,255,.45); }
 .knowledge-header { align-items: start; display: flex; gap: 20px; justify-content: space-between; padding: 18px; }
 .knowledge-header > div:first-child { display: grid; gap: 6px; max-width: 680px; }
 .knowledge-header h2 { font-size: 24px; line-height: 1.25; margin: 0; }
@@ -224,6 +224,15 @@ button:disabled { cursor: wait; opacity: .58; }
 .knowledge-batch-card, .knowledge-pending-card { display: grid; gap: 14px; padding: 16px; }
 .knowledge-import-card { display: grid; gap: 12px; padding: 16px; }
 .knowledge-import-card small { color: #718077; font-size: 12px; line-height: 1.45; }
+.knowledge-link-card { display: grid; gap: 12px; padding: 16px; }
+.knowledge-link-card h3 { color: #25362e; font-size: 16px; margin: 2px 0 4px; }
+.knowledge-link-card p:not(.eyebrow) { color: #607067; font-size: 13px; line-height: 1.5; margin: 0; }
+.knowledge-link-actions { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr) auto; }
+.knowledge-link-actions input { background: rgba(255,255,255,.56); border: 1px solid rgba(33,45,40,.14); border-radius: 6px; color: #25362e; min-width: 0; padding: 10px 11px; }
+.knowledge-link-actions .primary-button { align-items: center; display: inline-flex; gap: 7px; }
+.compact-corpus-upload { justify-self: start; }
+.knowledge-import-card, .knowledge-batch-card, .knowledge-pending-card, .knowledge-add-card, .reddit-sync-card { display: none; }
+.knowledge-tag-filter, .research-signal-card button { display: none; }
 .corpus-upload-control { align-items: center; background: rgba(31,97,80,.10); border: 1px dashed rgba(31,97,80,.35); border-radius: 7px; color: #1f6150; cursor: pointer; display: inline-flex; font-size: 13px; font-weight: 800; gap: 8px; justify-self: start; padding: 10px 12px; }
 .corpus-upload-control input { block-size: 1px; clip: rect(0 0 0 0); inline-size: 1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; }
 .knowledge-batch-card .primary-button { align-items: center; display: inline-flex; gap: 7px; justify-self: start; }
