@@ -158,16 +158,17 @@ async function isCaptchaPage(page: Page) {
 }
 
 async function waitForHumanCaptchaResolution(page: Page) {
-  if (!(await isCaptchaPage(page))) return;
+  if (!(await isCaptchaPage(page))) return true;
 
-  console.warn("Reddit requested a CAPTCHA or traffic check. The browser will remain open for up to 10 minutes: complete it manually, then collection resumes automatically.");
+  console.log("Reddit requested a CAPTCHA or traffic check. The browser will remain open for up to 10 minutes: complete it manually, then collection resumes automatically.");
   const deadline = Date.now() + CAPTCHA_RESOLUTION_TIMEOUT_MS;
   while (Date.now() < deadline) {
     await page.waitForTimeout(2000);
     if (page.isClosed()) throw new Error("The Chrome Reddit page was closed while waiting for CAPTCHA completion.");
-    if (!(await isCaptchaPage(page))) return;
+    if (!(await isCaptchaPage(page))) return true;
   }
-  throw new Error("Reddit CAPTCHA was not completed within 10 minutes. No additional links were saved.");
+  console.log("Reddit CAPTCHA was not completed within 10 minutes. No additional links were saved.");
+  return false;
 }
 
 async function collectVisiblePostLinks(page: Page, allowedSubreddits: Set<string>): Promise<string[]> {
@@ -180,7 +181,7 @@ async function navigateWithSingleRetry(page: Page, url: string) {
   try {
     await page.goto(url, { waitUntil: "domcontentloaded" });
   } catch (firstError) {
-    console.warn(`Temporary Reddit navigation failure. Retrying once after ${NAVIGATION_RETRY_DELAY_MS / 1000} seconds.`);
+    console.log(`Temporary Reddit navigation failure. Retrying once after ${NAVIGATION_RETRY_DELAY_MS / 1000} seconds.`);
     await page.waitForTimeout(NAVIGATION_RETRY_DELAY_MS);
     try {
       await page.goto(url, { waitUntil: "domcontentloaded" });
@@ -218,17 +219,17 @@ async function main() {
     console.log(`Topic searches: ${options.topics.join(", ")}.`);
     await page.waitForTimeout(options.waitMs);
     if (page.isClosed()) throw new Error("The Chrome search page was closed before collection started. Keep the Reddit tab open and rerun the command.");
-    await waitForHumanCaptchaResolution(page);
+    if (!(await waitForHumanCaptchaResolution(page))) return;
 
     const links = new Set<string>();
     for (const source of redditCollectionPlan(options.query, options.allowedSubreddits, options.topics)) {
       if (links.size >= options.limit) break;
       await navigateWithSingleRetry(page, redditCollectionUrl(source.query, source.subreddit));
-      await waitForHumanCaptchaResolution(page);
+      if (!(await waitForHumanCaptchaResolution(page))) return;
 
       let idleScrolls = 0;
       for (let scroll = 0; scroll < MAX_SCROLLS_PER_SOURCE && links.size < options.limit && idleScrolls < MAX_IDLE_SCROLLS; scroll += 1) {
-        await waitForHumanCaptchaResolution(page);
+        if (!(await waitForHumanCaptchaResolution(page))) return;
         const visibleLinks = await collectVisiblePostLinks(page, new Set([source.subreddit]));
         const candidates = onlyNewLinks(visibleLinks, history, options.limit);
         const before = links.size;
