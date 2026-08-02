@@ -235,6 +235,17 @@ button:disabled { cursor: wait; opacity: .58; }
 .knowledge-tag-filter, .research-signal-card button { display: none; }
 .corpus-upload-control { align-items: center; background: rgba(31,97,80,.10); border: 1px dashed rgba(31,97,80,.35); border-radius: 7px; color: #1f6150; cursor: pointer; display: inline-flex; font-size: 13px; font-weight: 800; gap: 8px; justify-self: start; padding: 10px 12px; }
 .corpus-upload-control input { block-size: 1px; clip: rect(0 0 0 0); inline-size: 1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; }
+.knowledge-workspace .knowledge-import-card,
+.knowledge-workspace .knowledge-batch-card,
+.knowledge-workspace .knowledge-pending-card,
+.knowledge-workspace .knowledge-add-card,
+.knowledge-workspace .reddit-sync-card,
+.knowledge-workspace .compact-corpus-upload,
+.knowledge-workspace .knowledge-counts,
+.knowledge-workspace .knowledge-tag-filter { display: none; }
+.knowledge-workspace .knowledge-link-card { align-items: end; grid-template-columns: minmax(0, 1fr) minmax(260px, .8fr); }
+.knowledge-workspace .knowledge-section { background: rgba(255,255,255,.28); border: 1px solid rgba(33,45,40,.10); border-radius: 8px; padding: 16px; }
+.knowledge-workspace .knowledge-section-heading { border-bottom: 1px solid rgba(33,45,40,.10); padding-bottom: 10px; }
 .knowledge-batch-card .primary-button { align-items: center; display: inline-flex; gap: 7px; justify-self: start; }
 .batch-url-input { background: rgba(255,255,255,.52); border: 1px solid rgba(33,45,40,.15); border-radius: 6px; color: #283830; font: inherit; line-height: 1.55; min-height: 118px; padding: 10px; resize: vertical; width: 100%; }
 .pending-signal-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -275,6 +275,23 @@ function App() {
     }
   }
 
+  async function handleUploadPublicLink() {
+    const sourceUrl = researchForm.sourceUrl.trim();
+    if (!sourceUrl) return;
+    setResearchLoading(true);
+    setError("");
+    try {
+      const result = await queueResearchSignals([sourceUrl]);
+      setKnowledge((current) => current ? { ...current, researchSignals: [...result.added, ...current.researchSignals] } : current);
+      setResearchForm((form) => ({ ...form, sourceUrl: "" }));
+      setPublishHint(result.added.length ? "公开链接已加入社区洞察，等待后续整理；它暂不会用于 AI 生成。" : "该链接已存在、不是支持的公开 Reddit 贴文，或无法加入。" );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "上传公开链接失败");
+    } finally {
+      setResearchLoading(false);
+    }
+  }
+
   async function handleLocalCorpusImport(file: File | undefined) {
     if (!file) return;
     setCorpusImportLoading(true);
@@ -1139,7 +1156,7 @@ function App() {
             </div>
             <div className="knowledge-link-actions">
               <input aria-label="公开链接" placeholder="https://www.reddit.com/..." value={researchForm.sourceUrl} onChange={(event) => setResearchForm((form) => ({ ...form, sourceUrl: event.target.value }))} />
-              <button className="primary-button" disabled={researchLoading || !researchForm.sourceUrl.trim()} onClick={() => void handleSaveResearchSignal()} type="button">
+              <button className="primary-button" disabled={researchLoading || !researchForm.sourceUrl.trim()} onClick={() => void handleUploadPublicLink()} type="button">
                 <Upload aria-hidden="true" size={16} />{researchLoading ? "正在收录..." : "收录链接"}
               </button>
             </div>
