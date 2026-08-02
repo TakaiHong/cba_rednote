@@ -1331,6 +1331,18 @@ function App() {
               <span>{selected.generator}</span>
             </div>
 
+            <section className="draft-provenance" aria-label="本篇取材说明">
+              <strong>本篇取材说明</strong>
+              <p>
+                {selected.generator === "deepseek-source-constrained"
+                  ? `AI 已使用 ${selected.topic.localSignals.filter((signal) => signal.startsWith("社区洞察")).length} 条脱敏社区洞察确定选题与结构，并匹配 ${selected.sourceReferences?.length ?? 0} 个官方事实来源。社区内容不作为事实依据。`
+                  : "这是模板或未成功调用模型的兜底稿，尚未完成社区洞察取材，不能直接进入发布列表。"}
+              </p>
+              {selected.generator === "deepseek-source-constrained" && selected.topic.localSignals.length > 0 && (
+                <div className="provenance-signals">{selected.topic.localSignals.map((signal) => <span key={signal}>{signal}</span>)}</div>
+              )}
+            </section>
+
             <label>
               标题
               <input

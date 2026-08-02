@@ -38,7 +38,10 @@ export function selectRedditInspirationSignals<T extends InspirationSignal>(
   );
   if (!candidates.length) return [];
 
-  const target = Math.min(candidates.length, 4 + Math.floor(random() * 3));
+  // A draft should synthesize a meaningful pattern, not borrow the shape of a
+  // single discussion. Keep the set coherent, but use enough signals to make
+  // the editorial angle less generic when the knowledge base is populated.
+  const target = Math.min(candidates.length, 6 + Math.floor(random() * 4));
   const pool = [...candidates];
   const anchor = weightedPick(pool, random, referenceTime);
   const selected = [anchor];

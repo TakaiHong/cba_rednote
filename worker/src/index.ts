@@ -949,7 +949,7 @@ async function createGeneratedPost(env: Env, existing: MarketingPost[], offset: 
     const inspirationSignals = selectRedditInspirationSignals(await listResearchSignals(env));
     const editorialBrief = buildEditorialBrief(inspirationSignals);
     const generated = await callDeepSeek(env, fallback, "", inspirationSignals, editorialBrief);
-    if (generated) return withInspirationMetadata({ ...fallback, ...generated, id: crypto.randomUUID(), createdAt: now(), updatedAt: now(), generator: "deepseek-source-constrained", estimatedCostCny: 0.12 }, inspirationSignals, editorialBrief.angle);
+    if (generated) return withInspirationMetadata({ ...fallback, ...generated, id: crypto.randomUUID(), createdAt: now(), updatedAt: now(), generator: "deepseek-source-constrained", estimatedCostCny: 0.12, sourceReferences: officialSourcesForCluster(editorialBrief.cluster) }, inspirationSignals, editorialBrief.angle);
   } catch {
     return modelUnavailableFallback(fallback, "DeepSeek did not return a usable draft. Check the Worker secret and provider status.");
   }
@@ -973,13 +973,14 @@ async function regeneratePost(env: Env, post: MarketingPost, feedback: string): 
   const editorialBrief = buildEditorialBrief(inspirationSignals);
   const generated = env.DEEPSEEK_API_KEY ? await callDeepSeek(env, post, feedback, inspirationSignals, editorialBrief).catch(() => undefined) : undefined;
   const base = generated ? { ...post, ...generated } : { ...post, title: fitTitle(post.title), body: `${post.body}\n\n补充：${feedback}` };
-  const next = { ...base, id: post.id, revisionNotes: [...post.revisionNotes, feedback], updatedAt: now(), generator: generated ? "deepseek-source-constrained" : "template-revision" };
+  const next = { ...base, id: post.id, revisionNotes: [...post.revisionNotes, feedback], updatedAt: now(), generator: generated ? "deepseek-source-constrained" : "template-revision", sourceReferences: generated ? officialSourcesForCluster(editorialBrief.cluster) : post.sourceReferences };
   return generated ? withInspirationMetadata(next, inspirationSignals, editorialBrief.angle) : next;
 }
 
 async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, researchSignals: ResearchSignal[], editorialBrief: ReturnType<typeof buildEditorialBrief>): Promise<Pick<MarketingPost, "title" | "body" | "tags" | "imageIdeas" | "callToAction" | "review"> | undefined> {
-  const sourceText = officialSources.map((source) => ({ id: source.id, title: source.title, url: source.url, claims: source.claims })).map((source) => JSON.stringify(source)).join("\n");
-  const signalText = researchSignals.map((signal) => JSON.stringify({ theme: signal.theme, audience: signal.audience, tags: signal.tags ?? [], insight: signal.insight })).join("\n");
+  const scopedOfficialSources = officialSourcesForCluster(editorialBrief.cluster);
+  const sourceText = scopedOfficialSources.map((source) => ({ id: source.id, title: source.title, url: source.url, claims: source.claims })).map((source) => JSON.stringify(source)).join("\n");
+  const signalText = researchSignals.map((signal, index) => JSON.stringify({ signal: index + 1, theme: signal.theme, audience: signal.audience, tags: signal.tags ?? [], insight: signal.insight })).join("\n");
   const response = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: { ...jsonHeaders, Authorization: `Bearer ${env.DEEPSEEK_API_KEY}` },
@@ -989,8 +990,8 @@ async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, res
       max_tokens: 1000,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "You write natural Simplified Chinese Xiaohongshu drafts for an NTU Chinese student society. Return JSON only. The title is 20 Chinese characters or fewer. Never invent dates, venues, event names, fees, eligibility, opening hours, deadlines, or services. Any factual statement must be directly supported by the supplied official sources. When a detail is unknown, write a general personal suggestion and tell readers to check the linked official page. The public-reference signals are NOT facts and MUST NOT be cited, quoted, closely paraphrased, attributed to a creator, or used to name a specific person. Never write Reddit, forum, netizen, post, or a similar attribution. Use community signals only to choose a useful topic, a realistic pain point, or a narrative structure. The body must contain a short opening situation, then at least three visibly separated practical steps, then a gentle verification reminder. Do not use generic filler. Avoid hard selling and unsupported certainty." },
-        { role: "user", content: `Draft to improve:\n${JSON.stringify({ title: post.title, body: post.body, tags: post.tags, feedback })}\n\nEditorial brief (follow its audience, angle and action plan; it is not evidence):\n${JSON.stringify(editorialBrief)}\n\nApproved official source pack:\n${sourceText}\n\nPublic-reference signals (topic inspiration only, never factual evidence):\n${signalText || "No public-reference signals yet."}\n\nReturn {title,body,tags,imageIdeas,callToAction,review:{score,notes,approved}}.` }
+        { role: "system", content: "You write natural Simplified Chinese Xiaohongshu drafts for an NTU Chinese student society. Return JSON only. The title is 20 Chinese characters or fewer. Never invent dates, venues, event names, fees, eligibility, opening hours, deadlines, or services. Any factual statement must be directly supported by the supplied official sources. When a detail is unknown, write a general personal suggestion and tell readers to check the linked official page. The public-reference signals are NOT facts and MUST NOT be cited, quoted, closely paraphrased, attributed to a creator, or used to name a specific person. Never write Reddit, forum, netizen, post, or a similar attribution. Use the signals to synthesize one specific student decision or pain point, with at least two distinct considerations reflected in the structure. Do not merely say to check official pages. The body must contain a concrete opening situation, three or four visibly separated practical steps with a decision condition or action object in each, then a gentle verification reminder. Do not use generic filler, hard selling, or unsupported certainty. This is a draft for human review, so set review.approved to false." },
+        { role: "user", content: `Draft to improve:\n${JSON.stringify({ title: post.title, body: post.body, tags: post.tags, feedback })}\n\nEditorial brief (follow its audience, angle and action plan; it is not evidence):\n${JSON.stringify(editorialBrief)}\n\nApproved official source pack, selected for this topic:\n${sourceText}\n\nPublic-reference signals (topic inspiration only, never factual evidence). Use their shared pattern to make the scenario and steps specific; do not mention or quote them:\n${signalText || "No public-reference signals yet."}\n\nReturn {title,body,tags,imageIdeas,callToAction,review:{score,notes,approved:false}}.` }
       ]
     })
   });
@@ -1008,16 +1009,16 @@ async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, res
     imageIdeas: Array.isArray(parsed.imageIdeas) ? parsed.imageIdeas.filter((idea): idea is string => typeof idea === "string").slice(0, 3) : post.imageIdeas,
     callToAction: typeof parsed.callToAction === "string" ? parsed.callToAction.trim() : post.callToAction,
     review: {
-      score: safetyNotes.length ? 72 : 90,
-      notes: ["Source-constrained AI draft. Review before saving to publishing list.", ...safetyNotes],
-      approved: safetyNotes.length === 0
+      score: safetyNotes.length ? 62 : 82,
+      notes: ["AI draft uses a topic-specific community-signal set and scoped official sources. Human editorial and fact review are still required.", ...safetyNotes],
+      approved: false
     }
   };
 }
 
 function withInspirationMetadata(post: MarketingPost, inspirationSignals: ResearchSignal[], editorialAngle: string): MarketingPost {
   if (!inspirationSignals.length) return post;
-  const localSignals = inspirationSignals.map((signal) => "社区灵感：" + signal.theme).slice(0, 5);
+  const localSignals = inspirationSignals.map((signal, index) => `社区洞察 ${index + 1}：${signal.theme}`).slice(0, 9);
   return {
     ...post,
     topic: { ...post.topic, localSignals },
@@ -1041,7 +1042,7 @@ function templatePost(offset: number): MarketingPost {
     callToAction: "你最希望我们整理哪一类 NTU / NBS 校园信息？",
     status: "draft",
     topic: { style: theme.style, targetSegment: "general", scene: theme.scene, angle: theme.angle, hook: theme.title, localSignals: ["NTU", "NBS", "Singapore"] },
-    review: { score: 90, notes: ["All operational facts are kept general and linked to official sources."], approved: true },
+    review: { score: 45, notes: ["Template fallback only. It did not synthesize community signals and cannot enter the publishing list without an AI rewrite and human review."], approved: false },
     metrics: emptyMetrics(),
     estimatedCostCny: 0,
     generator: "source-constrained-template",
@@ -1049,8 +1050,21 @@ function templatePost(offset: number): MarketingPost {
     updatedAt: timestamp,
     revisionNotes: [],
     sourceReferences: officialSources.slice(0, 3),
-    factCheck: { status: "verified", notes: ["Source pack matched to the draft. Specific changing details are intentionally omitted."], checkedAt: timestamp }
+    factCheck: { status: "needs_review", notes: ["Template fallback is intentionally held for human review before any publishing decision."] }
   };
+}
+
+function officialSourcesForCluster(cluster: ReturnType<typeof buildEditorialBrief>["cluster"]): SourceReference[] {
+  const ids = {
+    career: ["nbs-undergraduate-life", "nbs-student-clubs", "ntu-student-life"],
+    international: ["ntu-international-guide", "ntu-international-students", "ntu-international-freshmen-faq", "ntu-one-stop-sac"],
+    academic: ["ntu-academic-calendar", "ntu-library-services", "ntu-one-stop-sac"],
+    housing: ["ntu-accommodation", "ntu-student-housing-faq", "ntu-one-stop-sac"],
+    "campus-life": ["ntu-student-life", "nbs-undergraduate-life", "nbs-student-clubs", "ntu-one-stop-sac"],
+    general: ["ntu-student-life", "ntu-international-students", "ntu-academic-calendar", "nbs-undergraduate-life"]
+  }[cluster];
+  const wanted = new Set(ids);
+  return officialSources.filter((source) => wanted.has(source.id));
 }
 
 function blankPost(): MarketingPost {
