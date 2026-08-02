@@ -90,8 +90,9 @@ test("uses an ASCII ellipsis when redacting oversized public text", () => {
 });
 
 test("parses the comment collector limits safely", () => {
-  const options = parseContentOptions(["--limit", "30", "--target-posts", "99999", "--max-bytes", "1gb"]);
+  const options = parseContentOptions(["--limit", "30", "--request-delay-seconds", "5", "--target-posts", "99999", "--max-bytes", "1gb"]);
   assert.equal(options.batchLimit, 30);
+  assert.equal(options.requestDelayMs, 5000);
   assert.equal(options.targetPosts, 10_000);
   assert.equal(options.maxBytes, 1024 ** 3);
   assert.equal(parseByteLimit("bad-value"), 1024 ** 3);

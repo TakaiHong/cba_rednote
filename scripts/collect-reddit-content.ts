@@ -18,7 +18,8 @@ const DEFAULT_MAX_BYTES = 1024 * 1024 * 1024;
 const MAX_TRACKED_POSTS = 100_000;
 const MAX_FAILED_POSTS = 20_000;
 const MAX_TRANSIENT_FAILURES = 3;
-const REQUEST_DELAY_MS = 2200;
+const DEFAULT_REQUEST_DELAY_MS = 2200;
+const MAX_REQUEST_DELAY_MS = 30_000;
 const POST_NAVIGATION_TIMEOUT_MS = 20_000;
 const MAX_COMMENT_SCROLLS = 8;
 const MAX_BODY_CHARS = 12_000;
@@ -33,6 +34,7 @@ interface Options {
   output: string;
   state: string;
   waitMs: number;
+  requestDelayMs: number;
   batchLimit: number;
   targetPosts: number;
   maxBytes: number;
@@ -107,12 +109,16 @@ export function parseOptions(args: string[]): Options {
     return Number.isFinite(value) ? Math.max(1, Math.min(max, Math.floor(value))) : fallback;
   };
   const waitSeconds = Number(valueFor("--wait-seconds") ?? DEFAULT_WAIT_SECONDS);
+  const requestDelaySeconds = Number(valueFor("--request-delay-seconds") ?? DEFAULT_REQUEST_DELAY_MS / 1000);
   return {
     profile: path.resolve(valueFor("--profile") || DEFAULT_PROFILE),
     links: path.resolve(valueFor("--links") || DEFAULT_LINKS),
     output: path.resolve(valueFor("--out") || DEFAULT_OUTPUT),
     state: path.resolve(valueFor("--state") || DEFAULT_STATE),
     waitMs: Number.isFinite(waitSeconds) ? Math.max(0, Math.min(300, waitSeconds)) * 1000 : DEFAULT_WAIT_SECONDS * 1000,
+    requestDelayMs: Number.isFinite(requestDelaySeconds)
+      ? Math.max(1, Math.min(MAX_REQUEST_DELAY_MS / 1000, requestDelaySeconds)) * 1000
+      : DEFAULT_REQUEST_DELAY_MS,
     batchLimit: numberValue("--limit", DEFAULT_BATCH_LIMIT, MAX_BATCH_LIMIT),
     targetPosts: numberValue("--target-posts", DEFAULT_TARGET_POSTS, MAX_TARGET_POSTS),
     maxBytes: parseByteLimit(valueFor("--max-bytes"))
@@ -406,7 +412,7 @@ async function main() {
         storedCount += 1;
         await writeState(options.state, stateSnapshot(processed, failedAttempts));
         collected += 1;
-        await page.waitForTimeout(REQUEST_DELAY_MS);
+        await page.waitForTimeout(options.requestDelayMs);
       }
     }
   } finally {

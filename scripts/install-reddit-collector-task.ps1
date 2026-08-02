@@ -5,7 +5,9 @@ param(
   [ValidateRange(1, 100)]
   [int]$Limit = 100,
   [ValidateRange(1, 100)]
-  [int]$ContentLimit = 100,
+  [int]$ContentLimit = 25,
+  [ValidateRange(1, 30)]
+  [int]$RequestDelaySeconds = 5,
   [ValidateSet(1, 2, 3, 4, 6)]
   [int]$RunsPerDay = 4,
   [ValidateRange(0, 300)]
@@ -32,7 +34,7 @@ function Show-Plan {
   Write-Output "User: $userId (interactive logon only)"
   Write-Output "Time: $Time"
   Write-Output "RunsPerDay: $RunsPerDay"
-  Write-Output "Commands: reddit:collect-links (limit $Limit), then reddit:collect-content (limit $ContentLimit, target 10000 posts, max 1 GB)"
+  Write-Output "Commands: reddit:collect-links (limit $Limit), then reddit:collect-content (limit $ContentLimit, delay $RequestDelaySeconds seconds, target 10000 posts, max 1 GB)"
   Write-Output "Stdout: $outLog"
   Write-Output "Stderr: $errLog"
 }
@@ -58,7 +60,7 @@ if ($DryRun) {
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
 # The task only runs while this Windows user is signed in, so its visible Chrome profile and normal Reddit login state stay available.
-$argument = "-NoProfile -ExecutionPolicy Bypass -Command `"Set-Location -LiteralPath '$projectRoot'; & '$npm' run reddit:collect-links -- --query '$Query' --limit $Limit --wait-seconds $WaitSeconds > '$outLog' 2> '$errLog'; if (`$LASTEXITCODE -eq 0) { & '$npm' run reddit:collect-content -- --limit $ContentLimit --target-posts 10000 --max-bytes 1gb --wait-seconds $WaitSeconds >> '$outLog' 2>> '$errLog' }`""
+$argument = "-NoProfile -ExecutionPolicy Bypass -Command `"Set-Location -LiteralPath '$projectRoot'; & '$npm' run reddit:collect-links -- --query '$Query' --limit $Limit --wait-seconds $WaitSeconds > '$outLog' 2> '$errLog'; if (`$LASTEXITCODE -eq 0) { & '$npm' run reddit:collect-content -- --limit $ContentLimit --request-delay-seconds $RequestDelaySeconds --target-posts 10000 --max-bytes 1gb --wait-seconds $WaitSeconds >> '$outLog' 2>> '$errLog' }`""
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $argument
 $timeOfDay = [DateTime]::ParseExact($Time, "HH:mm", [Globalization.CultureInfo]::InvariantCulture)
 $baseRunAt = (Get-Date).Date.AddHours($timeOfDay.Hour).AddMinutes($timeOfDay.Minute)
