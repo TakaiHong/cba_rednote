@@ -386,7 +386,9 @@ async function main() {
           const disposition = attempts >= MAX_TRANSIENT_FAILURES
             ? "Deferred after three navigation failures; retained locally for later manual review."
             : `Will retry after unprocessed links are exhausted (${attempts}/${MAX_TRANSIENT_FAILURES}).`;
-          console.warn(`Transient page failure for ${postUrl}: ${message}\n${disposition}`);
+          // A single inaccessible public page is expected to be retried later. Keep it in
+          // the normal run log so PowerShell Scheduled Tasks do not treat the batch as failed.
+          console.log(`Transient page failure for ${postUrl}: ${message}\n${disposition}`);
           skipped += 1;
           continue;
         }
