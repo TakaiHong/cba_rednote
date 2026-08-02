@@ -1,4 +1,4 @@
-import { buildEditorialBrief, draftSafetyNotes, selectRedditInspirationSignals } from "./inspiration.js";
+import { buildEditorialBrief, draftDepthNotes, draftSafetyNotes, selectRedditInspirationSignals } from "./inspiration.js";
 
 export interface Env {
   DB: D1Database;
@@ -42,6 +42,12 @@ interface ResearchSignal {
   expiresAt?: string;
   createdAt: string;
   updatedAt: string;
+  evidence?: {
+    problem: string;
+    considerations: string[];
+    timeliness: "high" | "normal" | "background";
+    confidence: "community-pattern";
+  };
 }
 
 interface RedditSyncResult {
@@ -683,6 +689,7 @@ async function importLocalCorpusSignals(env: Env, inputs: Array<Partial<Research
       continue;
     }
     const tags = cleanResearchTags(input.tags);
+    const evidence = cleanResearchEvidence(input.evidence);
     const timestamp = now();
     const signal: ResearchSignal = {
       id: crypto.randomUUID(),
@@ -697,6 +704,7 @@ async function importLocalCorpusSignals(env: Env, inputs: Array<Partial<Research
       audience,
       insight,
       tags,
+      evidence,
       expiresAt: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
       createdAt: timestamp,
       updatedAt: timestamp
@@ -736,6 +744,21 @@ function cleanResearchText(value: unknown, maxLength: number, fallback: string) 
 function cleanResearchTags(value: unknown) {
   const values = Array.isArray(value) ? value : [];
   return [...new Set(values.map((item) => cleanResearchText(item, 32, "")).filter(Boolean))].slice(0, 3);
+}
+
+function cleanResearchEvidence(value: unknown): ResearchSignal["evidence"] | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as { problem?: unknown; considerations?: unknown; timeliness?: unknown };
+  const considerations = Array.isArray(raw.considerations)
+    ? [...new Set(raw.considerations.map((item) => cleanResearchText(item, 100, "")).filter(Boolean))].slice(0, 5)
+    : [];
+  if (considerations.length < 2) return undefined;
+  return {
+    problem: cleanResearchText(raw.problem, 100, "NTU student decision"),
+    considerations,
+    timeliness: raw.timeliness === "high" || raw.timeliness === "background" ? raw.timeliness : "normal",
+    confidence: "community-pattern"
+  };
 }
 
 function publicSourceType(value: string): ResearchSignal["sourceType"] | undefined {
@@ -980,7 +1003,7 @@ async function regeneratePost(env: Env, post: MarketingPost, feedback: string): 
 async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, researchSignals: ResearchSignal[], editorialBrief: ReturnType<typeof buildEditorialBrief>): Promise<Pick<MarketingPost, "title" | "body" | "tags" | "imageIdeas" | "callToAction" | "review"> | undefined> {
   const scopedOfficialSources = officialSourcesForCluster(editorialBrief.cluster);
   const sourceText = scopedOfficialSources.map((source) => ({ id: source.id, title: source.title, url: source.url, claims: source.claims })).map((source) => JSON.stringify(source)).join("\n");
-  const signalText = researchSignals.map((signal, index) => JSON.stringify({ signal: index + 1, theme: signal.theme, audience: signal.audience, tags: signal.tags ?? [], insight: signal.insight })).join("\n");
+  const signalText = researchSignals.map((signal, index) => JSON.stringify({ signal: index + 1, theme: signal.theme, audience: signal.audience, tags: signal.tags ?? [], insight: signal.insight, evidence: signal.evidence ? { problem: signal.evidence.problem, considerations: signal.evidence.considerations, timeliness: signal.evidence.timeliness } : undefined })).join("\n");
   const response = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: { ...jsonHeaders, Authorization: `Bearer ${env.DEEPSEEK_API_KEY}` },
@@ -990,7 +1013,7 @@ async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, res
       max_tokens: 1000,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "You write natural Simplified Chinese Xiaohongshu drafts for an NTU Chinese student society. Return JSON only. The title is 20 Chinese characters or fewer. Never invent dates, venues, event names, fees, eligibility, opening hours, deadlines, or services. Any factual statement must be directly supported by the supplied official sources. When a detail is unknown, write a general personal suggestion and tell readers to check the linked official page. The public-reference signals are NOT facts and MUST NOT be cited, quoted, closely paraphrased, attributed to a creator, or used to name a specific person. Never write Reddit, forum, netizen, post, or a similar attribution. Use the signals to synthesize one specific student decision or pain point, with at least two distinct considerations reflected in the structure. Do not merely say to check official pages. The body must contain a concrete opening situation, three or four visibly separated practical steps with a decision condition or action object in each, then a gentle verification reminder. Do not use generic filler, hard selling, or unsupported certainty. This is a draft for human review, so set review.approved to false." },
+        { role: "system", content: "You write natural Simplified Chinese Xiaohongshu drafts for an NTU Chinese student society. Return JSON only. The title is 20 Chinese characters or fewer. Never invent dates, venues, event names, fees, eligibility, opening hours, deadlines, or services. Any factual statement must be directly supported by the supplied official sources. When a detail is unknown, write a general personal suggestion and tell readers to check the linked official page. The public-reference signals are NOT facts and MUST NOT be cited, quoted, closely paraphrased, attributed to a creator, or used to name a specific person. Never write Reddit, forum, netizen, post, or a similar attribution. Use the signals to synthesize one specific student decision or pain point. You MUST incorporate at least two supplied decision factors as actionable conditions, without claiming that they are facts or mentioning their source. Do not merely say to check official pages. The body must contain a concrete opening situation, three or four visibly separated practical steps with a decision condition or action object in each, then a gentle verification reminder. Do not use generic filler, hard selling, or unsupported certainty. This is a draft for human review, so set review.approved to false." },
         { role: "user", content: `Draft to improve:\n${JSON.stringify({ title: post.title, body: post.body, tags: post.tags, feedback })}\n\nEditorial brief (follow its audience, angle and action plan; it is not evidence):\n${JSON.stringify(editorialBrief)}\n\nApproved official source pack, selected for this topic:\n${sourceText}\n\nPublic-reference signals (topic inspiration only, never factual evidence). Use their shared pattern to make the scenario and steps specific; do not mention or quote them:\n${signalText || "No public-reference signals yet."}\n\nReturn {title,body,tags,imageIdeas,callToAction,review:{score,notes,approved:false}}.` }
       ]
     })
@@ -1001,7 +1024,7 @@ async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, res
   if (!content) return undefined;
   const parsed = JSON.parse(content) as Partial<MarketingPost>;
   if (typeof parsed.title !== "string" || typeof parsed.body !== "string" || !Array.isArray(parsed.tags)) return undefined;
-  const safetyNotes = draftSafetyNotes(parsed.body.trim());
+  const safetyNotes = [...draftSafetyNotes(parsed.body.trim()), ...draftDepthNotes(parsed.body.trim(), editorialBrief)];
   return {
     title: fitTitle(parsed.title),
     body: parsed.body.trim(),

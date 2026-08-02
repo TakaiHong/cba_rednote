@@ -9,6 +9,12 @@ export interface InspirationSignal {
   interactionCount?: number;
   createdAt: string;
   updatedAt: string;
+  evidence?: {
+    problem: string;
+    considerations: string[];
+    timeliness: "high" | "normal" | "background";
+    confidence: "community-pattern";
+  };
 }
 
 export interface EditorialBrief {
@@ -17,6 +23,8 @@ export interface EditorialBrief {
   angle: string;
   format: "action-checklist" | "decision-guide" | "timeline" | "reassurance";
   actionSteps: string[];
+  decisionFactors: string[];
+  evidenceSignalCount: number;
   sourceBoundary: string;
 }
 
@@ -37,12 +45,17 @@ export function selectRedditInspirationSignals<T extends InspirationSignal>(
     && signal.insight.trim().length >= 12
   );
   if (!candidates.length) return [];
+  // Once the local corpus has been converted into evidence cards, prefer that
+  // richer source over legacy topic-only signals. This guarantees that a model
+  // draft receives decision conditions rather than only a broad theme label.
+  const evidenceCandidates = candidates.filter((signal) => signal.evidence?.considerations.length);
+  const eligible = evidenceCandidates.length ? evidenceCandidates : candidates;
 
   // A draft should synthesize a meaningful pattern, not borrow the shape of a
   // single discussion. Keep the set coherent, but use enough signals to make
   // the editorial angle less generic when the knowledge base is populated.
-  const target = Math.min(candidates.length, 6 + Math.floor(random() * 4));
-  const pool = [...candidates];
+  const target = Math.min(eligible.length, 6 + Math.floor(random() * 4));
+  const pool = [...eligible];
   const anchor = weightedPick(pool, random, referenceTime);
   const selected = [anchor];
   pool.splice(pool.findIndex((signal) => signal.id === anchor.id), 1);
@@ -65,10 +78,13 @@ export function buildEditorialBrief(signals: InspirationSignal[]): EditorialBrie
   const cluster = anchor ? signalCluster(anchor) : "general";
   const audience = anchor?.audience.trim() || "NTU Chinese students";
   const blueprint = briefBlueprint(cluster);
+  const decisionFactors = [...new Set(signals.flatMap((signal) => signal.evidence?.considerations ?? []))].slice(0, 5);
   return {
     cluster,
     audience,
     ...blueprint,
+    decisionFactors,
+    evidenceSignalCount: signals.filter((signal) => signal.evidence?.considerations.length).length,
     sourceBoundary: "Community signals only identify a question or pain point. Do not describe them as evidence, quote them, or turn them into a factual claim. Verify changing details against an official NTU or NBS source."
   };
 }
@@ -82,6 +98,17 @@ export function draftSafetyNotes(body: string): string[] {
   const actionMarkers = body.match(/(?:^|\n)\s*(?:[1-4][.、]|[-*•]|☐|✅|第一|第二|第三|第四)/gm) ?? [];
   if (actionMarkers.length < 3) {
     notes.push("Add at least three clearly separated, practical next steps before publishing.");
+  }
+  return notes;
+}
+
+export function draftDepthNotes(body: string, brief: EditorialBrief): string[] {
+  const notes: string[] = [];
+  const normalized = body.replace(/\s+/g, " ").trim();
+  if (normalized.length < 260) notes.push("Expand the draft with a concrete scenario, decision conditions, and a useful verification reminder.");
+  if (brief.decisionFactors.length >= 2) {
+    const matched = brief.decisionFactors.filter((factor) => factor.split(/[，、；]/).some((term) => term.length >= 2 && normalized.includes(term))).length;
+    if (matched < 2) notes.push("The draft does not yet reflect two selected community decision factors; revise before publishing.");
   }
   return notes;
 }

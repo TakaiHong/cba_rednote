@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildEditorialBrief, draftSafetyNotes, selectRedditInspirationSignals } from "../worker/src/inspiration.js";
+import { buildEditorialBrief, draftDepthNotes, draftSafetyNotes, selectRedditInspirationSignals } from "../worker/src/inspiration.js";
 
 const recent = "2026-08-01T00:00:00.000Z";
 const old = "2026-05-01T00:00:00.000Z";
@@ -66,4 +66,18 @@ test("flags community attribution and shallow drafts before operator review", ()
 
   const structured = draftSafetyNotes("A short situation.\n1. Check the official page.\n2. List your documents.\n3. Set a reminder.");
   assert.deepEqual(structured, []);
+});
+
+test("requires two anonymized decision factors when evidence cards are available", () => {
+  const brief = buildEditorialBrief([{ id: "academic", sourceType: "reddit", status: "approved", theme: "Course registration", audience: "NTU students", insight: "Students compare timetable and prerequisite constraints.", createdAt: recent, updatedAt: recent, evidence: { problem: "Course planning", considerations: ["把时间冲突、候补或排队等限制写进决策表", "把资格、先修或申请条件单独核对"], timeliness: "high", confidence: "community-pattern" } }]);
+  assert.equal(draftDepthNotes("开学前先核对官方页面。\n1. 打开课程页。\n2. 问老师。\n3. 做决定。", brief).length > 0, true);
+  assert.equal(draftDepthNotes("选课前，我会先把时间冲突、候补或排队等限制写进决策表。\n1. 先确认模块和学期。\n2. 再把资格、先修或申请条件单独核对。\n3. 最后回到官方页面确认变动。", brief).some((note) => note.includes("two selected")), false);
+});
+
+test("prefers evidence cards over legacy topic-only signals", () => {
+  const selected = selectRedditInspirationSignals([
+    { id: "legacy", sourceType: "reddit", status: "approved", theme: "Career", audience: "NTU students", insight: "A broad legacy topic signal for student planning.", createdAt: recent, updatedAt: recent },
+    { id: "evidence", sourceType: "reddit", status: "approved", theme: "Course registration", audience: "NTU students", insight: "A derived student decision pattern with constraints.", createdAt: recent, updatedAt: recent, evidence: { problem: "Course planning", considerations: ["把时间冲突、候补或排队等限制写进决策表", "把资格、先修或申请条件单独核对"], timeliness: "high", confidence: "community-pattern" } }
+  ], () => 0);
+  assert.deepEqual(selected.map((signal) => signal.id), ["evidence"]);
 });
