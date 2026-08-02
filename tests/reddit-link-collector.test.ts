@@ -119,3 +119,9 @@ test("classifies local Reddit content without returning its raw text", () => {
 test("adds a high-timeliness tag to operational student topics", () => {
   assert.ok(classifyRedditTopics("NTU add drop timetable and hall application").includes("高时效"));
 });
+
+test("classifies NBS career and work-pass discussions as timely job-seeking topics", () => {
+  const tags = classifyRedditTopics("NBS career fair job search and employment pass questions");
+  assert.ok(tags.includes("实习与求职"));
+  assert.ok(tags.includes("高时效"));
+});

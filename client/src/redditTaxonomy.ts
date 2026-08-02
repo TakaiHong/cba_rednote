@@ -18,13 +18,13 @@ const topicRules: Array<{ tag: string; pattern: RegExp }> = [
   { tag: "选课与学业安排", pattern: /\b(course registration|module|add.drop|add drop|timetable|class|exam|gpa|academic)\b|选课|课程|考试/i },
   { tag: "新生入学与校园融入", pattern: /\b(freshman|freshie|orientation|matriculation|admission|appeal|offer)\b|新生|入学/i },
   { tag: "交换与国际学生", pattern: /\b(exchange|international student|visa|student pass|immigration)\b|交换|留学生|签证/i },
-  { tag: "实习与求职", pattern: /\b(internship|career|job|resume|interview|graduate programme)\b|实习|求职|招聘/i },
+  { tag: "实习与求职", pattern: /\b(internship|career|job|job search|resume|interview|graduate programme|career fair|networking|employment pass|work pass|nbs|business school)\b|实习|求职|招聘|就业/i },
   { tag: "费用与生活服务", pattern: /\b(cost|budget|fee|concession|canteen|food|laundry|paynow)\b|费用|生活|食堂/i },
   { tag: "校园交通与设施", pattern: /\b(bus|mrt|transport|library|facility|campus|card)\b|交通|图书馆|设施/i },
   { tag: "社团与人际", pattern: /\b(cca|club|society|friend|social|community)\b|社团|朋友|社交/i }
 ];
 
-const highTimelinessPattern = /\b(course registration|add[ .-]?drop|timetable|exam|orientation|matriculation|admission|appeal|offer|hall|accommodation|room swap|exchange|internship|student pass|visa|immigration|convocation|deadline|application)\b|选课|加退选|课表|考试|迎新|入学|宿舍|住宿|交换|实习|签证|截止/i;
+const highTimelinessPattern = /\b(course registration|add[ .-]?drop|timetable|exam|orientation|matriculation|admission|appeal|offer|hall|accommodation|room swap|exchange|internship|job search|career fair|employment pass|work pass|student pass|visa|immigration|convocation|deadline|application)\b|选课|加退选|课表|考试|迎新|入学|宿舍|住宿|交换|实习|求职|签证|截止/i;
 
 export function classifyRedditTopics(text: string) {
   const tags = topicRules.filter((rule) => rule.pattern.test(text)).map((rule) => rule.tag);

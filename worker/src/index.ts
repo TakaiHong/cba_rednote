@@ -1,4 +1,4 @@
-import { selectRedditInspirationSignals } from "./inspiration.js";
+import { buildEditorialBrief, draftSafetyNotes, selectRedditInspirationSignals } from "./inspiration.js";
 
 export interface Env {
   DB: D1Database;
@@ -668,11 +668,15 @@ async function importLocalCorpusSignals(env: Env, inputs: Array<Partial<Research
       sourceUrl,
       sourceType: "reddit",
       collectionMethod: "browser-curated",
-      status: "pending_review",
+      // Browser import contains taxonomy output only: no username, post body,
+      // comment, profile or external link. It can guide topic selection but
+      // cannot be used as evidence for a factual statement.
+      status: "approved",
       theme,
       audience,
       insight,
       tags,
+      expiresAt: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
       createdAt: timestamp,
       updatedAt: timestamp
     };
@@ -920,8 +924,9 @@ async function createGeneratedPost(env: Env, existing: MarketingPost[], offset: 
   if (!useModel || !env.DEEPSEEK_API_KEY || Number(env.MAX_COST_CNY_PER_POST ?? 0.5) < 0.12) return fallback;
   try {
     const inspirationSignals = selectRedditInspirationSignals(await listResearchSignals(env));
-    const generated = await callDeepSeek(env, fallback, "", inspirationSignals);
-    if (generated) return withInspirationMetadata({ ...fallback, ...generated, id: crypto.randomUUID(), createdAt: now(), updatedAt: now(), generator: "deepseek-source-constrained", estimatedCostCny: 0.12 }, inspirationSignals);
+    const editorialBrief = buildEditorialBrief(inspirationSignals);
+    const generated = await callDeepSeek(env, fallback, "", inspirationSignals, editorialBrief);
+    if (generated) return withInspirationMetadata({ ...fallback, ...generated, id: crypto.randomUUID(), createdAt: now(), updatedAt: now(), generator: "deepseek-source-constrained", estimatedCostCny: 0.12 }, inspirationSignals, editorialBrief.angle);
   } catch {
     // A no-cost template is safer than blocking the operator or inventing a fact.
   }
@@ -930,13 +935,14 @@ async function createGeneratedPost(env: Env, existing: MarketingPost[], offset: 
 
 async function regeneratePost(env: Env, post: MarketingPost, feedback: string): Promise<MarketingPost> {
   const inspirationSignals = env.DEEPSEEK_API_KEY ? selectRedditInspirationSignals(await listResearchSignals(env)) : [];
-  const generated = env.DEEPSEEK_API_KEY ? await callDeepSeek(env, post, feedback, inspirationSignals).catch(() => undefined) : undefined;
+  const editorialBrief = buildEditorialBrief(inspirationSignals);
+  const generated = env.DEEPSEEK_API_KEY ? await callDeepSeek(env, post, feedback, inspirationSignals, editorialBrief).catch(() => undefined) : undefined;
   const base = generated ? { ...post, ...generated } : { ...post, title: fitTitle(post.title), body: `${post.body}\n\n补充：${feedback}` };
   const next = { ...base, id: post.id, revisionNotes: [...post.revisionNotes, feedback], updatedAt: now(), generator: generated ? "deepseek-source-constrained" : "template-revision" };
-  return generated ? withInspirationMetadata(next, inspirationSignals) : next;
+  return generated ? withInspirationMetadata(next, inspirationSignals, editorialBrief.angle) : next;
 }
 
-async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, researchSignals: ResearchSignal[]): Promise<Pick<MarketingPost, "title" | "body" | "tags" | "imageIdeas" | "callToAction" | "review"> | undefined> {
+async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, researchSignals: ResearchSignal[], editorialBrief: ReturnType<typeof buildEditorialBrief>): Promise<Pick<MarketingPost, "title" | "body" | "tags" | "imageIdeas" | "callToAction" | "review"> | undefined> {
   const sourceText = officialSources.map((source) => ({ id: source.id, title: source.title, url: source.url, claims: source.claims })).map((source) => JSON.stringify(source)).join("\n");
   const signalText = researchSignals.map((signal) => JSON.stringify({ theme: signal.theme, audience: signal.audience, tags: signal.tags ?? [], insight: signal.insight })).join("\n");
   const response = await fetch("https://api.deepseek.com/chat/completions", {
@@ -948,8 +954,8 @@ async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, res
       max_tokens: 1000,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: "You write natural Simplified Chinese Xiaohongshu drafts for an NTU Chinese student society. Return JSON only. The title is 20 Chinese characters or fewer. Never invent dates, venues, event names, fees, eligibility, opening hours, deadlines, or services. Any factual statement must be directly supported by the supplied official sources. When a detail is unknown, write a general personal suggestion and tell readers to check the linked official page. The public-reference signals are NOT facts and MUST NOT be cited, quoted, closely paraphrased, attributed to a creator, or used to name a specific person. Use them only to choose a useful topic, a realistic pain point, or a narrative structure. Avoid hard selling and avoid unsupported certainty." },
-        { role: "user", content: `Draft to improve:\n${JSON.stringify({ title: post.title, body: post.body, tags: post.tags, feedback })}\n\nApproved official source pack:\n${sourceText}\n\nPublic-reference signals (topic inspiration only, never factual evidence):\n${signalText || "No public-reference signals yet."}\n\nReturn {title,body,tags,imageIdeas,callToAction,review:{score,notes,approved}}.` }
+        { role: "system", content: "You write natural Simplified Chinese Xiaohongshu drafts for an NTU Chinese student society. Return JSON only. The title is 20 Chinese characters or fewer. Never invent dates, venues, event names, fees, eligibility, opening hours, deadlines, or services. Any factual statement must be directly supported by the supplied official sources. When a detail is unknown, write a general personal suggestion and tell readers to check the linked official page. The public-reference signals are NOT facts and MUST NOT be cited, quoted, closely paraphrased, attributed to a creator, or used to name a specific person. Never write Reddit, forum, netizen, post, or a similar attribution. Use community signals only to choose a useful topic, a realistic pain point, or a narrative structure. The body must contain a short opening situation, then at least three visibly separated practical steps, then a gentle verification reminder. Do not use generic filler. Avoid hard selling and unsupported certainty." },
+        { role: "user", content: `Draft to improve:\n${JSON.stringify({ title: post.title, body: post.body, tags: post.tags, feedback })}\n\nEditorial brief (follow its audience, angle and action plan; it is not evidence):\n${JSON.stringify(editorialBrief)}\n\nApproved official source pack:\n${sourceText}\n\nPublic-reference signals (topic inspiration only, never factual evidence):\n${signalText || "No public-reference signals yet."}\n\nReturn {title,body,tags,imageIdeas,callToAction,review:{score,notes,approved}}.` }
       ]
     })
   });
@@ -959,17 +965,22 @@ async function callDeepSeek(env: Env, post: MarketingPost, feedback: string, res
   if (!content) return undefined;
   const parsed = JSON.parse(content) as Partial<MarketingPost>;
   if (typeof parsed.title !== "string" || typeof parsed.body !== "string" || !Array.isArray(parsed.tags)) return undefined;
+  const safetyNotes = draftSafetyNotes(parsed.body.trim());
   return {
     title: fitTitle(parsed.title),
     body: parsed.body.trim(),
     tags: parsed.tags.filter((tag): tag is string => typeof tag === "string").map(cleanTag).filter(Boolean).slice(0, 10),
     imageIdeas: Array.isArray(parsed.imageIdeas) ? parsed.imageIdeas.filter((idea): idea is string => typeof idea === "string").slice(0, 3) : post.imageIdeas,
     callToAction: typeof parsed.callToAction === "string" ? parsed.callToAction.trim() : post.callToAction,
-    review: { score: 90, notes: ["Source-constrained AI draft. Review before saving to publishing list."], approved: true }
+    review: {
+      score: safetyNotes.length ? 72 : 90,
+      notes: ["Source-constrained AI draft. Review before saving to publishing list.", ...safetyNotes],
+      approved: safetyNotes.length === 0
+    }
   };
 }
 
-function withInspirationMetadata(post: MarketingPost, inspirationSignals: ResearchSignal[]): MarketingPost {
+function withInspirationMetadata(post: MarketingPost, inspirationSignals: ResearchSignal[], editorialAngle: string): MarketingPost {
   if (!inspirationSignals.length) return post;
   const localSignals = inspirationSignals.map((signal) => "社区灵感：" + signal.theme).slice(0, 5);
   return {
@@ -977,7 +988,7 @@ function withInspirationMetadata(post: MarketingPost, inspirationSignals: Resear
     topic: { ...post.topic, localSignals },
     review: {
       ...post.review,
-      notes: [...post.review.notes, "本次随机参考 " + inspirationSignals.length + " 条已核准社区选题信号；仅用于选题和叙事，不作为事实依据。"]
+      notes: [...post.review.notes, "内容策略：" + editorialAngle, "本次使用 " + inspirationSignals.length + " 条已核准、脱敏的社区选题信号；只用于选题和结构，不作为事实依据。"]
     }
   };
 }
