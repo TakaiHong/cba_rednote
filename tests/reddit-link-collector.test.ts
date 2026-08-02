@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { canonicalRedditPostUrl, filterAllowedSubredditLinks, onlyNewLinks, parseOptions, redditCollectionPlan, redditCollectionUrl, redditSubreddit } from "../scripts/collect-reddit-links.js";
-import { isNtuRelatedContent, parseByteLimit, parseOptions as parseContentOptions, redactPublicText } from "../scripts/collect-reddit-content.js";
+import { isNtuRelatedContent, orderCollectionCandidates, parseByteLimit, parseOptions as parseContentOptions, redactPublicText } from "../scripts/collect-reddit-content.js";
 import { classifyRedditTopics, parseLocalCorpusSignals } from "../client/src/redditTaxonomy.js";
 
 test("canonicalRedditPostUrl keeps only Reddit post URLs", () => {
@@ -101,6 +101,20 @@ test("requires NTU context outside the direct NTU community", () => {
   assert.equal(isNtuRelatedContent("ntu", "Hall fridge procedures", "", []), true);
   assert.equal(isNtuRelatedContent("sgexams", "Hall fridge procedures", "", []), false);
   assert.equal(isNtuRelatedContent("sgexams", "Exchange options", "NTU students can apply.", []), true);
+});
+
+test("prioritizes fresh post URLs and defers repeated navigation failures", () => {
+  const fresh = "https://www.reddit.com/r/NTU/comments/fresh";
+  const retry = "https://www.reddit.com/r/NTU/comments/retry";
+  const deferred = "https://www.reddit.com/r/NTU/comments/deferred";
+  assert.deepEqual(
+    orderCollectionCandidates(
+      [retry, fresh, deferred],
+      new Set<string>(),
+      new Map([[retry, 1], [deferred, 3]])
+    ),
+    [fresh, retry]
+  );
 });
 
 test("classifies local Reddit content without returning its raw text", () => {

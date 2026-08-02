@@ -16,6 +16,8 @@ const DEFAULT_TARGET_POSTS = 10_000;
 const MAX_TARGET_POSTS = 10_000;
 const DEFAULT_MAX_BYTES = 1024 * 1024 * 1024;
 const MAX_TRACKED_POSTS = 100_000;
+const MAX_FAILED_POSTS = 20_000;
+const MAX_TRANSIENT_FAILURES = 3;
 const REQUEST_DELAY_MS = 2200;
 const POST_NAVIGATION_TIMEOUT_MS = 20_000;
 const MAX_COMMENT_SCROLLS = 8;
@@ -38,7 +40,14 @@ interface Options {
 
 interface CollectorState {
   processedPostUrls: string[];
+  failedPostAttempts: FailedPostAttempt[];
   updatedAt: string;
+}
+
+interface FailedPostAttempt {
+  postUrl: string;
+  attempts: number;
+  lastAttemptAt: string;
 }
 
 interface RedditContentRecord {
@@ -80,6 +89,13 @@ export function isNtuRelatedContent(subreddit: string, title: string, body: stri
   return NTU_RELEVANCE_PATTERN.test([title, body, ...comments].join("\n"));
 }
 
+export function orderCollectionCandidates(knownLinks: string[], processed: Set<string>, failedAttempts: Map<string, number>) {
+  return [...new Set(knownLinks)]
+    .filter((href) => !processed.has(href))
+    .filter((href) => (failedAttempts.get(href) ?? 0) < MAX_TRANSIENT_FAILURES)
+    .sort((left, right) => (failedAttempts.get(left) ?? 0) - (failedAttempts.get(right) ?? 0));
+}
+
 export function parseOptions(args: string[]): Options {
   const valueFor = (flag: string) => {
     const index = args.indexOf(flag);
@@ -117,10 +133,19 @@ async function readState(statePath: string): Promise<CollectorState> {
     const parsed = JSON.parse(await readFile(statePath, "utf8")) as Partial<CollectorState>;
     return {
       processedPostUrls: Array.isArray(parsed.processedPostUrls) ? parsed.processedPostUrls.filter((value): value is string => typeof value === "string") : [],
+      failedPostAttempts: Array.isArray(parsed.failedPostAttempts)
+        ? parsed.failedPostAttempts.flatMap((value) => {
+            if (!value || typeof value !== "object") return [];
+            const candidate = value as Partial<FailedPostAttempt>;
+            const postUrl = typeof candidate.postUrl === "string" ? canonicalRedditPostUrl(candidate.postUrl) : undefined;
+            const attempts = typeof candidate.attempts === "number" && Number.isFinite(candidate.attempts) ? Math.max(1, Math.floor(candidate.attempts)) : 1;
+            return postUrl ? [{ postUrl, attempts, lastAttemptAt: typeof candidate.lastAttemptAt === "string" ? candidate.lastAttemptAt : "" }] : [];
+          })
+        : [],
       updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : ""
     };
   } catch {
-    return { processedPostUrls: [], updatedAt: "" };
+    return { processedPostUrls: [], failedPostAttempts: [], updatedAt: "" };
   }
 }
 
@@ -232,6 +257,16 @@ async function writeState(statePath: string, state: CollectorState) {
   await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
 }
 
+function stateSnapshot(processed: Set<string>, failedAttempts: Map<string, FailedPostAttempt>): CollectorState {
+  return {
+    processedPostUrls: [...processed].slice(-MAX_TRACKED_POSTS),
+    failedPostAttempts: [...failedAttempts.values()]
+      .filter((entry) => entry.attempts < MAX_TRANSIENT_FAILURES)
+      .slice(-MAX_FAILED_POSTS),
+    updatedAt: new Date().toISOString()
+  };
+}
+
 interface CollectorLock {
   path: string;
   handle: FileHandle;
@@ -279,6 +314,11 @@ async function main() {
     ...state.processedPostUrls.map(canonicalRedditPostUrl).filter((href): href is string => Boolean(href)),
     ...storedUrls
   ]);
+  const failedAttempts = new Map(
+    state.failedPostAttempts
+      .filter((entry) => !processed.has(entry.postUrl))
+      .map((entry) => [entry.postUrl, entry] as const)
+  );
   const knownLinks = (await readTextLines(options.links))
     .map(canonicalRedditPostUrl)
     .filter((href): href is string => Boolean(href))
@@ -286,11 +326,15 @@ async function main() {
       const subreddit = redditSubreddit(href);
       return subreddit ? ALLOWED_SUBREDDITS.has(subreddit) : false;
     });
-  const candidates = [...new Set(knownLinks)].filter((href) => !processed.has(href));
+  const candidates = orderCollectionCandidates(
+    knownLinks,
+    processed,
+    new Map([...failedAttempts].map(([postUrl, entry]) => [postUrl, entry.attempts]))
+  );
   let currentSize = await fileSize(options.output);
   let storedCount = storedUrls.size;
   if (storedCount >= options.targetPosts || currentSize >= options.maxBytes || candidates.length === 0) {
-    await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TRACKED_POSTS), updatedAt: new Date().toISOString() });
+    await writeState(options.state, stateSnapshot(processed, failedAttempts));
     console.log(`No collection run needed. Stored posts: ${storedCount}/${options.targetPosts}. Corpus bytes: ${currentSize}/${options.maxBytes}. Eligible unprocessed links: ${candidates.length}.`);
     return;
   }
@@ -323,7 +367,14 @@ async function main() {
           record = await collectPostRecord(page, postUrl);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          console.warn(`Skipping this run after a transient page failure for ${postUrl}: ${message}`);
+          const previous = failedAttempts.get(postUrl);
+          const attempts = (previous?.attempts ?? 0) + 1;
+          failedAttempts.set(postUrl, { postUrl, attempts, lastAttemptAt: new Date().toISOString() });
+          await writeState(options.state, stateSnapshot(processed, failedAttempts));
+          const disposition = attempts >= MAX_TRANSIENT_FAILURES
+            ? "Deferred after three navigation failures; retained locally for later manual review."
+            : `Will retry after unprocessed links are exhausted (${attempts}/${MAX_TRANSIENT_FAILURES}).`;
+          console.warn(`Transient page failure for ${postUrl}: ${message}\n${disposition}`);
           skipped += 1;
           continue;
         }
@@ -333,13 +384,15 @@ async function main() {
             break;
           }
           processed.add(postUrl);
-          await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TRACKED_POSTS), updatedAt: new Date().toISOString() });
+          failedAttempts.delete(postUrl);
+          await writeState(options.state, stateSnapshot(processed, failedAttempts));
           skipped += 1;
           continue;
         }
         if (!isNtuRelatedContent(record.subreddit, record.title, record.body, record.comments)) {
           processed.add(record.postUrl);
-          await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TRACKED_POSTS), updatedAt: new Date().toISOString() });
+          failedAttempts.delete(record.postUrl);
+          await writeState(options.state, stateSnapshot(processed, failedAttempts));
           skipped += 1;
           continue;
         }
@@ -349,14 +402,15 @@ async function main() {
         await appendFile(options.output, line, "utf8");
         currentSize += lineSize;
         processed.add(record.postUrl);
+        failedAttempts.delete(record.postUrl);
         storedCount += 1;
-        await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TRACKED_POSTS), updatedAt: new Date().toISOString() });
+        await writeState(options.state, stateSnapshot(processed, failedAttempts));
         collected += 1;
         await page.waitForTimeout(REQUEST_DELAY_MS);
       }
     }
   } finally {
-    await writeState(options.state, { processedPostUrls: [...processed].slice(-MAX_TRACKED_POSTS), updatedAt: new Date().toISOString() });
+    await writeState(options.state, stateSnapshot(processed, failedAttempts));
     await context?.close();
     await releaseCollectorLock(lock);
   }
