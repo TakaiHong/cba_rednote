@@ -14,6 +14,7 @@ const DEFAULT_WAIT_SECONDS = 45;
 const MAX_SCROLLS_PER_SOURCE = 50;
 const MAX_IDLE_SCROLLS = 6;
 const NAVIGATION_RETRY_DELAY_MS = 5000;
+const CAPTCHA_RESOLUTION_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_HISTORY_LINKS = 100_000;
 const MAX_CORPUS_LINKS = 100_000;
 const DEFAULT_SUBREDDITS = ["ntu", "sgexams", "asksingapore", "singapore", "sit_singapore"];
@@ -156,6 +157,19 @@ async function isCaptchaPage(page: Page) {
   return url.includes("captcha") || text.includes("captcha") || text.includes("unusual traffic");
 }
 
+async function waitForHumanCaptchaResolution(page: Page) {
+  if (!(await isCaptchaPage(page))) return;
+
+  console.warn("Reddit requested a CAPTCHA or traffic check. The browser will remain open for up to 10 minutes: complete it manually, then collection resumes automatically.");
+  const deadline = Date.now() + CAPTCHA_RESOLUTION_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(2000);
+    if (page.isClosed()) throw new Error("The Chrome Reddit page was closed while waiting for CAPTCHA completion.");
+    if (!(await isCaptchaPage(page))) return;
+  }
+  throw new Error("Reddit CAPTCHA was not completed within 10 minutes. No additional links were saved.");
+}
+
 async function collectVisiblePostLinks(page: Page, allowedSubreddits: Set<string>): Promise<string[]> {
   const hrefs = await page.locator('a[href*="/comments/"]').evaluateAll((links) => links.map((link) => link.getAttribute("href") ?? ""));
   const canonical = hrefs.map(canonicalRedditPostUrl).filter((href): href is string => Boolean(href));
@@ -204,17 +218,17 @@ async function main() {
     console.log(`Topic searches: ${options.topics.join(", ")}.`);
     await page.waitForTimeout(options.waitMs);
     if (page.isClosed()) throw new Error("The Chrome search page was closed before collection started. Keep the Reddit tab open and rerun the command.");
-    if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. Complete it manually, then rerun the command.");
+    await waitForHumanCaptchaResolution(page);
 
     const links = new Set<string>();
     for (const source of redditCollectionPlan(options.query, options.allowedSubreddits, options.topics)) {
       if (links.size >= options.limit) break;
       await navigateWithSingleRetry(page, redditCollectionUrl(source.query, source.subreddit));
-      if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. The collector stopped without saving additional links.");
+      await waitForHumanCaptchaResolution(page);
 
       let idleScrolls = 0;
       for (let scroll = 0; scroll < MAX_SCROLLS_PER_SOURCE && links.size < options.limit && idleScrolls < MAX_IDLE_SCROLLS; scroll += 1) {
-        if (await isCaptchaPage(page)) throw new Error("Reddit presented a CAPTCHA or traffic check. The collector stopped without saving additional links.");
+        await waitForHumanCaptchaResolution(page);
         const visibleLinks = await collectVisiblePostLinks(page, new Set([source.subreddit]));
         const candidates = onlyNewLinks(visibleLinks, history, options.limit);
         const before = links.size;
