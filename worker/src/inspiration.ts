@@ -38,7 +38,7 @@ export function selectRedditInspirationSignals<T extends InspirationSignal>(
   );
   if (!candidates.length) return [];
 
-  const target = Math.min(candidates.length, 3 + Math.floor(random() * 3));
+  const target = Math.min(candidates.length, 4 + Math.floor(random() * 3));
   const pool = [...candidates];
   const anchor = weightedPick(pool, random, referenceTime);
   const selected = [anchor];

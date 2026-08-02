@@ -18,7 +18,7 @@ test("selects only approved Reddit signals and returns a small unique set", () =
   }));
   signals.push({ ...signals[0], id: "pending", status: "pending_review" });
   const selected = selectRedditInspirationSignals(signals, () => 0.2, Date.parse("2026-08-02T00:00:00.000Z"));
-  assert.equal(selected.length, 3);
+  assert.equal(selected.length, 4);
   assert.equal(new Set(selected.map((signal) => signal.id)).size, selected.length);
   assert.ok(selected.every((signal) => signal.status === "approved"));
 });

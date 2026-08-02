@@ -583,6 +583,25 @@ async function listResearchSignals(env: Env): Promise<ResearchSignal[]> {
   await pruneExpiredResearchSignals(env);
   const result = await env.DB.prepare("SELECT payload FROM knowledge_entries ORDER BY updated_at DESC LIMIT 400").all<{ payload: string }>();
   const saved = result.results.map((row) => normalizeResearchSignal(JSON.parse(row.payload) as ResearchSignal));
+  const legacyBrowserImports = saved.filter((signal) => signal.sourceType === "reddit" && signal.collectionMethod === "browser-curated" && signal.status === "pending_review");
+  if (legacyBrowserImports.length) {
+    const timestamp = now();
+    await env.DB.batch(legacyBrowserImports.map((signal) => {
+      const approved: ResearchSignal = {
+        ...signal,
+        status: "approved",
+        expiresAt: signal.expiresAt ?? new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: timestamp
+      };
+      return env.DB.prepare("UPDATE knowledge_entries SET payload = ?, updated_at = ? WHERE id = ?")
+        .bind(JSON.stringify(approved), approved.updatedAt, approved.id);
+    }));
+    for (const signal of legacyBrowserImports) {
+      signal.status = "approved";
+      signal.expiresAt = signal.expiresAt ?? new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString();
+      signal.updatedAt = timestamp;
+    }
+  }
   const activeBrowserSignals = browserCuratedRedditSignals
     .map(normalizeResearchSignal)
     .filter((signal) => !signal.expiresAt || new Date(signal.expiresAt).getTime() > Date.now());
@@ -921,16 +940,30 @@ async function recentLogs(env: Env): Promise<RunLog[]> {
 
 async function createGeneratedPost(env: Env, existing: MarketingPost[], offset: number, useModel = true): Promise<MarketingPost> {
   const fallback = templatePost(offset);
-  if (!useModel || !env.DEEPSEEK_API_KEY || Number(env.MAX_COST_CNY_PER_POST ?? 0.5) < 0.12) return fallback;
+  if (!useModel) return fallback;
+  if (!env.DEEPSEEK_API_KEY) return modelUnavailableFallback(fallback, "DeepSeek API key is not configured in the Worker.");
+  if (Number(env.MAX_COST_CNY_PER_POST ?? 0.5) < 0.12) return modelUnavailableFallback(fallback, "The configured per-post budget is below the minimum model budget.");
   try {
     const inspirationSignals = selectRedditInspirationSignals(await listResearchSignals(env));
     const editorialBrief = buildEditorialBrief(inspirationSignals);
     const generated = await callDeepSeek(env, fallback, "", inspirationSignals, editorialBrief);
     if (generated) return withInspirationMetadata({ ...fallback, ...generated, id: crypto.randomUUID(), createdAt: now(), updatedAt: now(), generator: "deepseek-source-constrained", estimatedCostCny: 0.12 }, inspirationSignals, editorialBrief.angle);
   } catch {
-    // A no-cost template is safer than blocking the operator or inventing a fact.
+    return modelUnavailableFallback(fallback, "DeepSeek did not return a usable draft. Check the Worker secret and provider status.");
   }
-  return fallback;
+  return modelUnavailableFallback(fallback, "DeepSeek did not return a usable draft. Check the Worker secret and provider status.");
+}
+
+function modelUnavailableFallback(post: MarketingPost, reason: string): MarketingPost {
+  return {
+    ...post,
+    generator: "deepseek-unavailable",
+    review: {
+      score: 0,
+      approved: false,
+      notes: ["AI generation did not run: " + reason, "This is a template fallback and did not use Reddit inspiration signals."]
+    }
+  };
 }
 
 async function regeneratePost(env: Env, post: MarketingPost, feedback: string): Promise<MarketingPost> {
