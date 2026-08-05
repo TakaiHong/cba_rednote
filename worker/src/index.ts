@@ -1,4 +1,5 @@
 import { buildEditorialBrief, draftDepthNotes, draftSafetyNotes, selectRedditInspirationSignals } from "./inspiration.js";
+import { sendTelegramDraft } from "./telegram.js";
 
 export interface Env {
   DB: D1Database;
@@ -10,6 +11,9 @@ export interface Env {
   DEEPSEEK_API_KEY?: string;
   DEEPSEEK_MODEL?: string;
   MAX_COST_CNY_PER_POST?: string;
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_CHAT_ID?: string;
+  TELEGRAM_DASHBOARD_URL?: string;
   REDDIT_CLIENT_ID?: string;
   REDDIT_CLIENT_SECRET?: string;
   REDDIT_USER_AGENT?: string;
@@ -401,6 +405,15 @@ export default {
       const post = await createGeneratedPost(env, posts, posts.length);
       await savePost(env, post);
       await appendLog(env, "scheduled-generate", "ok", `Created daily draft ${post.id}`, { postId: post.id });
+      const telegram = await sendTelegramDraft({
+        botToken: env.TELEGRAM_BOT_TOKEN,
+        chatId: env.TELEGRAM_CHAT_ID,
+        dashboardUrl: env.TELEGRAM_DASHBOARD_URL || "https://ntu-cba-rednote.web.app/#make",
+        post
+      });
+      if (telegram.configured) {
+        await appendLog(env, "scheduled-telegram", telegram.delivered ? "ok" : "error", telegram.detail, { postId: post.id });
+      }
     } catch (error) {
       await appendLog(env, "scheduled-generate", "error", error instanceof Error ? error.message : String(error));
     }

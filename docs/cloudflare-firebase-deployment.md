@@ -47,6 +47,23 @@ ALLOWED_FIREBASE_EMAILS=<operator Gmail address>
 DEEPSEEK_API_KEY=<key>
 ```
 
+## Daily Telegram draft notification (optional)
+
+The Cloudflare Cron already creates one review draft daily at 09:15 Singapore time. To receive that draft in Telegram, create a bot with `@BotFather`, start a chat with it, then configure these Worker secrets in Cloudflare. The message is a review-only draft; it never publishes to Xiaohongshu.
+
+```powershell
+npx.cmd wrangler secret put TELEGRAM_BOT_TOKEN --config worker/wrangler.toml
+npx.cmd wrangler secret put TELEGRAM_CHAT_ID --config worker/wrangler.toml
+```
+
+Optional non-secret Worker variable:
+
+```text
+TELEGRAM_DASHBOARD_URL=https://ntu-cba-rednote.web.app/#make
+```
+
+After setting the secrets, deploy the Worker. A Telegram delivery failure is logged but never prevents the daily draft from being saved to D1.
+
 The production Worker API base is `https://ntu-cba-content-api.ntucba2025.workers.dev/api`.
 
 ## 3. Deploy Firebase Hosting
