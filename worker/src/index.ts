@@ -402,14 +402,17 @@ export default {
         }
       }
       const posts = await listPosts(env);
-      const post = await createGeneratedPost(env, posts, posts.length);
+      const generated = await createGeneratedPost(env, posts, posts.length);
+      const cover = coverSvg(generated);
+      const post = { ...generated, imageAssets: [...new Set([...generated.imageAssets, `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cover)}`])] };
       await savePost(env, post);
       await appendLog(env, "scheduled-generate", "ok", `Created daily draft ${post.id}`, { postId: post.id });
       const telegram = await sendTelegramDraft({
         botToken: env.TELEGRAM_BOT_TOKEN,
         chatId: env.TELEGRAM_CHAT_ID,
         dashboardUrl: env.TELEGRAM_DASHBOARD_URL || "https://ntu-cba-rednote.web.app/#make",
-        post
+        post,
+        coverSvg: cover
       });
       if (telegram.configured) {
         await appendLog(env, "scheduled-telegram", telegram.delivered ? "ok" : "error", telegram.detail, { postId: post.id });

@@ -39,3 +39,20 @@ test("sends a draft through Telegram when configured", async () => {
   assert.match(request?.url ?? "", /bottoken\/sendMessage/);
   assert.match(await request?.text() ?? "", /待人工审核/);
 });
+
+test("attaches the generated cover after the draft message", async () => {
+  const calls: Request[] = [];
+  const result = await sendTelegramDraft({
+    botToken: "token",
+    chatId: "chat",
+    post: draft,
+    coverSvg: "<svg xmlns='http://www.w3.org/2000/svg'></svg>",
+    fetcher: async (input, init) => {
+      calls.push(new Request(input, init));
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    }
+  });
+  assert.equal(result.delivered, true);
+  assert.equal(calls.length, 2);
+  assert.match(calls[1].url, /bottoken\/sendDocument/);
+});

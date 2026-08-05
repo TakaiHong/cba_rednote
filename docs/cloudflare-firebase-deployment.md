@@ -49,7 +49,7 @@ DEEPSEEK_API_KEY=<key>
 
 ## Daily Telegram draft notification (optional)
 
-The Cloudflare Cron already creates one review draft daily at 09:15 Singapore time. To receive that draft in Telegram, create a bot with `@BotFather`, start a chat with it, then configure these Worker secrets in Cloudflare. The message is a review-only draft; it never publishes to Xiaohongshu.
+The Cloudflare Cron already creates one review draft daily at 09:15 Singapore time. To receive that draft in Telegram, create a bot with `@BotFather`, start a chat with it, then configure these Worker secrets in Cloudflare. Telegram receives the review-only text draft plus an editable sticky-note SVG cover; it never publishes to Xiaohongshu.
 
 ```powershell
 npx.cmd wrangler secret put TELEGRAM_BOT_TOKEN --config worker/wrangler.toml

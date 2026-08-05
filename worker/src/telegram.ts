@@ -33,9 +33,10 @@ export async function sendTelegramDraft(options: {
   chatId?: string;
   dashboardUrl?: string;
   post: TelegramDraft;
+  coverSvg?: string;
   fetcher?: typeof fetch;
 }): Promise<{ configured: boolean; delivered: boolean; detail: string }> {
-  const { botToken, chatId, dashboardUrl, post, fetcher = fetch } = options;
+  const { botToken, chatId, dashboardUrl, post, coverSvg, fetcher = fetch } = options;
   if (!botToken || !chatId) return { configured: false, delivered: false, detail: "Telegram is not configured." };
 
   const response = await fetcher(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -46,5 +47,16 @@ export async function sendTelegramDraft(options: {
   if (!response.ok) return { configured: true, delivered: false, detail: `Telegram API returned HTTP ${response.status}.` };
   const payload = await response.json().catch(() => undefined) as { ok?: boolean; description?: string } | undefined;
   if (!payload?.ok) return { configured: true, delivered: false, detail: payload?.description || "Telegram rejected the message." };
-  return { configured: true, delivered: true, detail: "Telegram notification delivered." };
+  if (!coverSvg) return { configured: true, delivered: true, detail: "Telegram notification delivered." };
+
+  const form = new FormData();
+  form.set("chat_id", chatId);
+  form.set("caption", "自动生成的便利贴封面，请在运营台审核后使用。");
+  form.set("document", new Blob([coverSvg], { type: "image/svg+xml" }), "ntu-cba-draft-cover.svg");
+  const documentResponse = await fetcher(`https://api.telegram.org/bot${botToken}/sendDocument`, { method: "POST", body: form });
+  const documentPayload = await documentResponse.json().catch(() => undefined) as { ok?: boolean; description?: string } | undefined;
+  if (!documentResponse.ok || !documentPayload?.ok) {
+    return { configured: true, delivered: true, detail: documentPayload?.description || `Telegram text delivered, but the cover attachment returned HTTP ${documentResponse.status}.` };
+  }
+  return { configured: true, delivered: true, detail: "Telegram draft and cover attachment delivered." };
 }
